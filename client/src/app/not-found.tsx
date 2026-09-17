@@ -2,15 +2,15 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { MoveLeft } from "lucide-react";
 
 export default function NotFound() {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      const x = (e.clientX / window.innerWidth - 0.5) * 16;
-      const y = (e.clientY / window.innerHeight - 0.5) * 16;
+      // Calculate normalized mouse offset from screen center
+      const x = (e.clientX / window.innerWidth - 0.5) * 24;
+      const y = (e.clientY / window.innerHeight - 0.5) * 24;
       setMousePos({ x, y });
     };
     window.addEventListener("mousemove", handleMouseMove);
@@ -18,105 +18,220 @@ export default function NotFound() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#f8f7f5] text-[#14281a] font-sans antialiased flex flex-col justify-between p-6 sm:p-10 select-none">
-      {/* Minimal Top Bar without branding */}
-      <div className="w-full max-w-4xl mx-auto flex items-center justify-between text-xs font-mono uppercase tracking-widest text-[#14281a]/50">
-        <span>HTTP 404</span>
-        <span>NOT FOUND</span>
-      </div>
-
-      {/* Hero Content: Bold, Minimal, Punchy */}
-      <main className="w-full max-w-3xl mx-auto text-center py-12">
-        {/* Animated Minimalist Doodle */}
-        <div className="relative mx-auto w-36 h-36 sm:w-44 sm:h-44 mb-8 flex items-center justify-center">
+    <div className="min-h-screen bg-[#f7f7f7] text-[#141414] font-sans antialiased flex items-center justify-center p-6 sm:p-12 select-none">
+      <div className="w-full max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-center gap-10 md:gap-16">
+        
+        {/* Left: One-Eyed Green Monster Character */}
+        <div className="relative w-64 h-64 sm:w-80 sm:h-80 shrink-0 flex items-center justify-center">
           <svg
-            viewBox="0 0 160 160"
-            className="w-full h-full drop-shadow-sm"
-            style={{
-              transform: `translate3d(${mousePos.x}px, ${mousePos.y}px, 0)`,
-              transition: "transform 0.12s ease-out",
-            }}
+            viewBox="0 0 300 320"
+            className="w-full h-full drop-shadow-xl overflow-visible"
           >
-            {/* Magnifying Glass Frame */}
-            <circle
-              cx="75"
-              cy="70"
-              r="50"
-              fill="#ffffff"
-              stroke="#14281a"
-              strokeWidth="5"
-            />
-            {/* Green Tint Lens */}
-            <circle cx="75" cy="70" r="42" fill="#84d64f" fillOpacity="0.18" />
+            <defs>
+              {/* Radial gradient for 3D sphere depth */}
+              <radialGradient id="monsterBody" cx="38%" cy="32%" r="65%">
+                <stop offset="0%" stopColor="#a3e635" />
+                <stop offset="45%" stopColor="#84cc16" />
+                <stop offset="85%" stopColor="#65a30d" />
+                <stop offset="100%" stopColor="#4d7c0f" />
+              </radialGradient>
+              
+              {/* Radial gradient for Iris */}
+              <radialGradient id="monsterIris" cx="40%" cy="40%" r="60%">
+                <stop offset="0%" stopColor="#2dd4bf" />
+                <stop offset="60%" stopColor="#0d9488" />
+                <stop offset="100%" stopColor="#115e59" />
+              </radialGradient>
 
-            {/* Eyes looking around */}
+              {/* Floor Shadow Gradient */}
+              <radialGradient id="floorShadow" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="#000000" stopOpacity="0.25" />
+                <stop offset="60%" stopColor="#000000" stopOpacity="0.08" />
+                <stop offset="100%" stopColor="#000000" stopOpacity="0" />
+              </radialGradient>
+            </defs>
+
+            {/* Floor Soft Shadow */}
+            <ellipse cx="150" cy="295" rx="90" ry="14" fill="url(#floorShadow)" />
+
+            {/* Monster Left Leg */}
+            <path
+              d="M 115 220 C 110 245 105 265 95 285"
+              stroke="#65a30d"
+              strokeWidth="16"
+              strokeLinecap="round"
+              fill="none"
+            />
+            {/* Left Foot */}
+            <path
+              d="M 80 288 C 80 280 115 280 115 288 C 115 294 75 294 80 288 Z"
+              fill="#4d7c0f"
+            />
+            <circle cx="84" cy="289" r="4.5" fill="#3f6212" />
+            <circle cx="94" cy="289" r="4.5" fill="#3f6212" />
+            <circle cx="104" cy="289" r="4.5" fill="#3f6212" />
+
+            {/* Monster Right Leg */}
+            <path
+              d="M 185 220 C 190 245 195 265 205 285"
+              stroke="#65a30d"
+              strokeWidth="16"
+              strokeLinecap="round"
+              fill="none"
+            />
+            {/* Right Foot */}
+            <path
+              d="M 185 288 C 185 280 220 280 220 288 C 220 294 180 294 185 288 Z"
+              fill="#4d7c0f"
+            />
+            <circle cx="196" cy="289" r="4.5" fill="#3f6212" />
+            <circle cx="206" cy="289" r="4.5" fill="#3f6212" />
+            <circle cx="216" cy="289" r="4.5" fill="#3f6212" />
+
+            {/* Monster Left Arm */}
+            <path
+              d="M 75 145 C 50 170 52 215 58 245"
+              stroke="#65a30d"
+              strokeWidth="13"
+              strokeLinecap="round"
+              fill="none"
+            />
+            <circle cx="58" cy="247" r="8" fill="#4d7c0f" />
+
+            {/* Monster Right Arm */}
+            <path
+              d="M 225 145 C 250 170 248 215 242 245"
+              stroke="#65a30d"
+              strokeWidth="13"
+              strokeLinecap="round"
+              fill="none"
+            />
+            <circle cx="242" cy="247" r="8" fill="#4d7c0f" />
+
+            {/* Cute Horns */}
+            {/* Left Horn */}
+            <path
+              d="M 98 75 C 92 50 82 45 74 48 C 82 62 88 72 96 82 Z"
+              fill="#d9f99d"
+              stroke="#4d7c0f"
+              strokeWidth="2"
+            />
+            {/* Right Horn */}
+            <path
+              d="M 202 75 C 208 50 218 45 226 48 C 218 62 212 72 204 82 Z"
+              fill="#d9f99d"
+              stroke="#4d7c0f"
+              strokeWidth="2"
+            />
+
+            {/* Big Round Monster Body */}
+            <circle
+              cx="150"
+              cy="150"
+              r="85"
+              fill="url(#monsterBody)"
+            />
+
+            {/* Eye Outer Whites */}
+            <ellipse
+              cx="150"
+              cy="125"
+              rx="42"
+              ry="42"
+              fill="#ffffff"
+              stroke="#4d7c0f"
+              strokeWidth="4"
+            />
+
+            {/* Interactive Eye Gaze (Iris + Pupil + Highlights) */}
             <g
               style={{
-                transform: `translate(${mousePos.x * 0.5}px, ${mousePos.y * 0.5}px)`,
+                transform: `translate(${mousePos.x}px, ${mousePos.y}px)`,
                 transition: "transform 0.08s ease-out",
               }}
             >
-              <circle cx="62" cy="66" r="6" fill="#14281a" />
-              <circle cx="60.5" cy="64" r="2" fill="#ffffff" />
-              <circle cx="88" cy="66" r="6" fill="#14281a" />
-              <circle cx="86.5" cy="64" r="2" fill="#ffffff" />
+              {/* Iris */}
+              <circle
+                cx="150"
+                cy="125"
+                r="22"
+                fill="url(#monsterIris)"
+              />
+              
+              {/* Pupil */}
+              <circle
+                cx="150"
+                cy="125"
+                r="11"
+                fill="#0f172a"
+              />
+
+              {/* Glossy Eye Reflections */}
+              <circle
+                cx="144"
+                cy="118"
+                r="4.5"
+                fill="#ffffff"
+              />
+              <circle
+                cx="156"
+                cy="131"
+                r="2"
+                fill="#ffffff"
+                opacity="0.8"
+              />
             </g>
 
-            {/* Confused Doodle Mouth */}
+            {/* Upper Eyelid / Brow Expression */}
             <path
-              d="M 67 85 Q 75 79 83 85"
+              d="M 112 104 Q 150 92 188 104"
               fill="none"
-              stroke="#14281a"
-              strokeWidth="3.5"
-              strokeLinecap="round"
-            />
-
-            {/* Minimal Handle */}
-            <path
-              d="M 112 107 L 142 137"
-              stroke="#14281a"
-              strokeWidth="8"
-              strokeLinecap="round"
-            />
-            <path
-              d="M 112 107 L 134 129"
-              stroke="#84d64f"
+              stroke="#3f6212"
               strokeWidth="4"
               strokeLinecap="round"
             />
-          </svg>
 
-          {/* Bold 404 Stamp */}
-          <div className="absolute -top-1 -right-2 bg-[#14281a] text-[#84d64f] font-mono text-xs font-black px-2.5 py-1 rounded-md tracking-wider">
-            404
+            {/* Surprised / Shocked Mouth */}
+            <path
+              d="M 132 185 Q 150 178 168 185 Q 168 206 150 208 Q 132 206 132 185 Z"
+              fill="#1c1917"
+              stroke="#3f6212"
+              strokeWidth="2.5"
+            />
+            {/* Cute Monster Teeth */}
+            <path
+              d="M 142 184 L 145 189 L 148 184"
+              fill="#ffffff"
+            />
+            <path
+              d="M 152 184 L 155 189 L 158 184"
+              fill="#ffffff"
+            />
+
+          </svg>
+        </div>
+
+        {/* Right: Bold Headline, Sarcastic Text, Pill Button */}
+        <div className="flex-1 text-center md:text-left max-w-md">
+          <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-[#111827] leading-[1.08] mb-4">
+            OOPS! PAGE<br />NOT FOUND.
+          </h1>
+
+          <p className="text-sm sm:text-base text-[#4b5563] font-normal leading-relaxed mb-8">
+            You must have picked the wrong door because this page does not exist. Stop wasting your time here like you do hunting down dead apply links on broken career pages.
+          </p>
+
+          <div>
+            <Link
+              href="/"
+              className="inline-flex items-center justify-center rounded-full bg-[#2563eb] hover:bg-[#1d4ed8] text-white px-8 py-3.5 text-xs font-bold uppercase tracking-wider transition-all active:scale-[0.98] shadow-md shadow-blue-500/20"
+            >
+              Back to Home
+            </Link>
           </div>
         </div>
 
-        {/* Bold Typography */}
-        <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-[#14281a] leading-none mb-5">
-          This page doesn&apos;t exist.
-        </h1>
-
-        <p className="text-base sm:text-xl font-medium text-[#4a5550] max-w-xl mx-auto leading-relaxed mb-8">
-          Stop wasting time here like you do hunting down dead apply buttons on broken career portals.
-        </p>
-
-        {/* Minimal Bold Button */}
-        <div className="flex items-center justify-center max-w-xs mx-auto">
-          <Link
-            href="/"
-            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#14281a] text-[#84d64f] hover:bg-[#1a3422] px-7 py-3.5 text-sm font-bold tracking-tight transition-all active:scale-[0.98] shadow-sm"
-          >
-            <MoveLeft className="w-4 h-4 text-[#84d64f]" />
-            <span>Go Back Home</span>
-          </Link>
-        </div>
-      </main>
-
-      {/* Minimal Footer */}
-      <footer className="w-full max-w-4xl mx-auto text-center text-xs text-[#79857f] font-mono pt-6 border-t border-neutral-200/60">
-        404 // DEAD END
-      </footer>
+      </div>
     </div>
   );
 }
