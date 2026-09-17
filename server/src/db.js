@@ -65,6 +65,18 @@ db.exec(`
     channel TEXT NOT NULL,
     sent_at TEXT DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+    id TEXT PRIMARY KEY,
+    email TEXT NOT NULL UNIQUE,
+    otp_code TEXT,
+    verification_token TEXT UNIQUE,
+    is_verified INTEGER DEFAULT 0,
+    otp_expires_at TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    verified_at TEXT,
+    status TEXT DEFAULT 'active'
+  );
 `);
 
 function seedDefaults() {
@@ -299,5 +311,44 @@ module.exports = {
   hasApplication(studentId, listingId) {
     const result = db.prepare('SELECT 1 FROM applications WHERE student_id = ? AND listing_id = ? LIMIT 1').get(studentId, listingId);
     return Boolean(result);
+  },
+  upsertNewsletterSubscriber({ id, email, otp_code, verification_token, otp_expires_at }) {
+    const existing = db.prepare('SELECT * FROM newsletter_subscribers WHERE email = ?').get(email);
+    if (existing) {
+      db.prepare(`
+        UPDATE newsletter_subscribers
+        SET otp_code = ?, verification_token = ?, otp_expires_at = ?, status = 'active'
+        WHERE email = ?
+      `).run(otp_code, verification_token, otp_expires_at, email);
+      return db.prepare('SELECT * FROM newsletter_subscribers WHERE email = ?').get(email);
+    } else {
+      db.prepare(`
+        INSERT INTO newsletter_subscribers (id, email, otp_code, verification_token, is_verified, otp_expires_at, status)
+        VALUES (?, ?, ?, ?, 0, ?, 'active')
+      `).run(id, email, otp_code, verification_token, otp_expires_at);
+      return db.prepare('SELECT * FROM newsletter_subscribers WHERE email = ?').get(email);
+    }
+  },
+  getNewsletterSubscriberByEmail(email) {
+    return db.prepare('SELECT * FROM newsletter_subscribers WHERE email = ?').get(email);
+  },
+  getNewsletterSubscriberByToken(token) {
+    return db.prepare('SELECT * FROM newsletter_subscribers WHERE verification_token = ?').get(token);
+  },
+  verifyNewsletterSubscriber(email) {
+    const verifiedAt = new Date().toISOString();
+    db.prepare(`
+      UPDATE newsletter_subscribers
+      SET is_verified = 1, verified_at = ?, otp_code = NULL, verification_token = NULL
+      WHERE email = ?
+    `).run(verifiedAt, email);
+    return db.prepare('SELECT * FROM newsletter_subscribers WHERE email = ?').get(email);
+  },
+  listActiveNewsletterSubscribers() {
+    return db.prepare("SELECT * FROM newsletter_subscribers WHERE is_verified = 1 AND status = 'active'").all();
+  },
+  unsubscribeNewsletter(email) {
+    db.prepare("UPDATE newsletter_subscribers SET status = 'unsubscribed' WHERE email = ?").run(email);
+    return true;
   },
 };

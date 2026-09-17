@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { CompanyLogo, getCompanyDomain } from "@/components/CompanyLogo";
 import { LiquidSilkBackground } from "@/components/LiquidSilkBackground";
+import { NewsletterSection } from "@/components/NewsletterSection";
 import { useAppliedJobs } from "@/lib/appliedJobs";
 import { useAuth } from "@/lib/useAuth";
 
@@ -658,47 +659,7 @@ export default function Home() {
         {/* ======================================================== */}
         {/* EXACT EMERALD SILK NEWSLETTER CARD */}
         {/* ======================================================== */}
-        <section
-          data-footer-zone="true"
-          className="mt-16 sm:mt-24 relative overflow-hidden rounded-[32px] sm:rounded-[38px] min-h-[340px] sm:min-h-[380px] flex flex-col justify-center items-center text-center p-8 sm:p-14 lg:p-16 shadow-2xl border border-[#14281a]"
-        >
-          {/* Interactive 3D WebGL Liquid Silk Background */}
-          <LiquidSilkBackground imageSrc="/images/emerald_silk_horizontal.jpg" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0a180e]/50 via-transparent to-[#0a180e]/50 pointer-events-none" />
-
-          {/* Headline */}
-          <h2 className="relative z-10 text-[2rem] sm:text-[2.75rem] lg:text-[3.15rem] font-medium sm:font-semibold tracking-[-0.02em] leading-[1.18] text-white/95 max-w-[720px] mx-auto drop-shadow-sm">
-            Subscribe to our newsletter to get job updates.
-          </h2>
-
-          {/* Form Row */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              setSubscribedEmail(true);
-              setTimeout(() => setSubscribedEmail(false), 3500);
-            }}
-            className="relative z-10 mt-8 flex flex-col sm:flex-row items-center justify-center gap-3.5 w-full max-w-[640px] mx-auto"
-          >
-            <div className="relative w-full sm:w-[400px]">
-              <input
-                type="email"
-                required
-                placeholder="Enter your email"
-                className="w-full rounded-full border border-white/40 bg-black/25 backdrop-blur-xs px-6 py-3.5 text-sm text-white placeholder:text-white/70 outline-none focus:border-white/90 transition shadow-inner"
-              />
-            </div>
-            <button
-              type="submit"
-              className="w-full sm:w-auto shrink-0 rounded-full bg-[#84d64f] hover:bg-[#75c73d] text-[#14281a] px-6 py-3 text-sm font-bold transition-all flex items-center justify-center gap-3 shadow-md active:scale-[0.98]"
-            >
-              <span>{subscribedEmail ? "Subscribed!" : "Subscribe"}</span>
-              <span className="h-6 w-6 rounded-full bg-white flex items-center justify-center text-[#14281a] shrink-0 shadow-2xs">
-                <ArrowRight className="w-3.5 h-3.5" />
-              </span>
-            </button>
-          </form>
-        </section>
+        <NewsletterSection />
 
         {/* ======================================================== */}
         {/* FOOTER NAVIGATION & OPTIONS */}

@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const authRoutes = require('./routes/auth');
 const listingsRoutes = require('./routes/listings');
 const adminRoutes = require('./routes/admin');
+const newsletterRoutes = require('./routes/newsletter');
 const { getUserById, listApplicationsByStudent, listNotificationsByStudent } = require('./store');
 
 const app = express();
@@ -42,6 +43,7 @@ app.get('/health', (req, res) => res.json({ ok: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/listings', listingsRoutes);
 app.use('/api/admin', authRequired, adminRoutes);
+app.use('/api/newsletter', newsletterRoutes);
 
 app.get('/api/profile', authRequired, (req, res) => {
   const user = getUserById(req.user.id);

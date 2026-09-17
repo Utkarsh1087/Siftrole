@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { CompanyLogo, getCompanyDomain } from "@/components/CompanyLogo";
 import { LiquidSilkBackground } from "@/components/LiquidSilkBackground";
+import { NewsletterSection } from "@/components/NewsletterSection";
 import { SiftAiChat, Listing } from "@/components/SiftAiChat";
 import { useAppliedJobs } from "@/lib/appliedJobs";
 import { useAuth } from "@/lib/useAuth";
@@ -644,51 +645,7 @@ export default function JobsPage() {
         {/* ======================================================== */}
         {/* EXACT EMERALD SILK NEWSLETTER CARD */}
         {/* ======================================================== */}
-        <section
-          data-footer-zone="true"
-          className="mt-16 sm:mt-24 relative overflow-hidden rounded-[32px] sm:rounded-[38px] min-h-[340px] sm:min-h-[380px] flex flex-col justify-center items-center text-center p-8 sm:p-14 lg:p-16 shadow-2xl border border-[#14281a]/40"
-        >
-          {/* Interactive 3D WebGL Liquid Silk Background */}
-          <LiquidSilkBackground imageSrc="/images/emerald_silk_horizontal.jpg" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#031d14]/40 via-transparent to-[#031d14]/40 pointer-events-none" />
-
-          {/* Headline */}
-          <h2 className="relative z-10 text-[2rem] sm:text-[2.75rem] lg:text-[3.15rem] font-medium sm:font-semibold tracking-[-0.02em] leading-[1.18] text-white/95 max-w-[720px] mx-auto drop-shadow-sm">
-            Subscribe to our newsletter to get job updates.
-          </h2>
-
-          {/* Form Row */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              setSubscribedEmail(true);
-              setTimeout(() => setSubscribedEmail(false), 3500);
-            }}
-            className="relative z-10 mt-8 flex flex-col sm:flex-row items-center justify-center gap-3.5 w-full max-w-[640px] mx-auto"
-          >
-            <div className="relative w-full sm:w-[400px]">
-              <input
-                type="email"
-                required
-                placeholder="Enter your email"
-                className="w-full rounded-2xl bg-white/95 text-[#121816] placeholder:text-[#79857f] px-5 py-3.5 text-sm outline-none border border-[#84d64f]/40 shadow-inner focus:ring-2 focus:ring-[#84d64f] font-medium"
-              />
-            </div>
-            <button
-              type="submit"
-              className="w-full sm:w-auto rounded-full bg-[#84d64f] hover:bg-[#75c73d] text-[#14281a] px-8 py-3.5 text-sm font-heading font-bold transition shadow-lg active:scale-[0.98] shrink-0 cursor-pointer"
-            >
-              {subscribedEmail ? "Subscribed!" : "Subscribe"}
-            </button>
-          </form>
-
-          {subscribedEmail && (
-            <div className="relative z-10 mt-4 inline-flex items-center gap-2 rounded-xl bg-[#14281a]/90 px-4 py-2 text-xs font-bold text-[#84d64f] border border-[#84d64f]/50">
-              <CheckCircle2 className="w-4 h-4 text-[#84d64f]" />
-              <span>Thank you! We will notify you when matching verified roles go live.</span>
-            </div>
-          )}
-        </section>
+        <NewsletterSection />
 
         {/* ======================================================== */}
         {/* EXACT ORIGINAL BRAND FOOTER WITH NATURAL TRACKING */}
