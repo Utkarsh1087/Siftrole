@@ -369,22 +369,6 @@ export default function DashboardPage() {
     setNewApplyUrl("");
     setNewNotes("");
     setNewStatus("saved");
-      applied_date: "Just now",
-      match_score: 88,
-      notes: newNotes,
-    };
-
-    setApplications((prev) => [newApp, ...prev]);
-    setIsAddModalOpen(false);
-
-    // Reset Form
-    setNewCompany("");
-    setNewTitle("");
-    setNewLocation("");
-    setNewSalary("");
-    setNewApplyUrl("");
-    setNewNotes("");
-    setNewStatus("saved");
 
     try {
       await fetch("/api/applications", {
