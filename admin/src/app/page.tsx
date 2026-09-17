@@ -100,6 +100,11 @@ export default function AdminDashboard() {
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
   const [pendingFilter, setPendingFilter] = useState<"all" | "pending_approval" | "flagged">("all");
 
+  // Deep Company Verification State
+  const [verificationReports, setVerificationReports] = useState<Record<string, any>>({});
+  const [isVerifyingCompanyId, setIsVerifyingCompanyId] = useState<string | null>(null);
+  const [activeVerificationModal, setActiveVerificationModal] = useState<any | null>(null);
+
   // 1. Chatbot & Schema State
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -281,6 +286,63 @@ export default function AdminDashboard() {
       console.error("Bulk reject error:", e);
     } finally {
       setIsBulkProcessing(false);
+    }
+  };
+
+  const handleDeepVerifyCompany = async (listingTarget: any) => {
+    const targetKey = listingTarget.id || listingTarget.company;
+    setIsVerifyingCompanyId(targetKey);
+    try {
+      const res = await fetch("/api/ai/verify-company", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          companyName: listingTarget.company,
+          careerPageUrl: listingTarget.apply_url || "",
+          applyUrl: listingTarget.apply_url || "",
+          jobTitle: listingTarget.title || "",
+          jobLocation: listingTarget.location || "",
+          rawJdSnippet: listingTarget.raw_jd_text || "",
+          autoApproveCompany: false,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.report) {
+          setVerificationReports((prev) => ({
+            ...prev,
+            [targetKey]: data.report,
+            [listingTarget.company]: data.report,
+          }));
+          setActiveVerificationModal({
+            listing: listingTarget,
+            report: data.report,
+          });
+        }
+      }
+    } catch (e) {
+      console.error("Deep verification error:", e);
+      alert("Failed to complete deep company verification.");
+    } finally {
+      setIsVerifyingCompanyId(null);
+    }
+  };
+
+  const handleVerifyAndApprove = async (listingId: string, companyName: string, updatedFields?: any) => {
+    try {
+      await fetch("/api/ai/verify-company", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          companyName,
+          autoApproveCompany: true,
+        }),
+      });
+      await handleApproveListing(listingId, updatedFields);
+      setActiveVerificationModal(null);
+      fetchCompanies();
+    } catch (e) {
+      console.error("Verify & approve error:", e);
     }
   };
 
@@ -1395,6 +1457,15 @@ export default function AdminDashboard() {
                                 <td className="py-3.5 px-4 text-right">
                                   <div className="inline-flex items-center gap-1.5">
                                     <button
+                                      onClick={() => handleDeepVerifyCompany(listing)}
+                                      disabled={isVerifyingCompanyId === listing.id || isVerifyingCompanyId === listing.company}
+                                      className="rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 px-2.5 py-1.5 text-xs font-bold inline-flex items-center gap-1 shadow-xs transition cursor-pointer disabled:opacity-50"
+                                      title="Run deep AI verification on company existence and legitimacy"
+                                    >
+                                      <ShieldCheck className={`w-3 h-3 text-indigo-600 ${isVerifyingCompanyId === listing.id ? "animate-spin" : ""}`} />
+                                      {isVerifyingCompanyId === listing.id ? "Verifying..." : "Verify Co."}
+                                    </button>
+                                    <button
                                       onClick={() => {
                                         setEditingPendingListing(listing);
                                         handleRefineWithAi(listing);
@@ -1456,6 +1527,15 @@ export default function AdminDashboard() {
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
+                      onClick={() => handleDeepVerifyCompany(editingPendingListing)}
+                      disabled={isVerifyingCompanyId === editingPendingListing.id}
+                      className="rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-900 px-3 py-1.5 text-xs font-bold inline-flex items-center gap-1.5 shadow-xs transition cursor-pointer disabled:opacity-50"
+                    >
+                      <ShieldCheck className={`w-3.5 h-3.5 text-indigo-600 ${isVerifyingCompanyId === editingPendingListing.id ? "animate-spin" : ""}`} />
+                      {isVerifyingCompanyId === editingPendingListing.id ? "Verifying..." : "Verify Company"}
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => handleRefineWithAi(editingPendingListing)}
                       disabled={isRefiningAi}
                       className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 text-xs font-bold inline-flex items-center gap-1.5 shadow-xs transition cursor-pointer disabled:opacity-50"
@@ -1471,6 +1551,61 @@ export default function AdminDashboard() {
                     </button>
                   </div>
                 </div>
+
+                {/* Company Verification Banner if Cached */}
+                {verificationReports[editingPendingListing.id] || verificationReports[editingPendingListing.company] ? (
+                  (() => {
+                    const report = verificationReports[editingPendingListing.id] || verificationReports[editingPendingListing.company];
+                    return (
+                      <div className="mb-4 p-3.5 rounded-xl border bg-slate-50 text-xs space-y-2 border-slate-200">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-0.5 rounded text-[0.68rem] font-black uppercase tracking-wide ${
+                              report.verdict === "VERIFIED"
+                                ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                                : report.verdict === "CAUTION"
+                                ? "bg-amber-100 text-amber-900 border border-amber-300"
+                                : "bg-rose-100 text-rose-900 border border-rose-300"
+                            }`}>
+                              AI Verdict: {report.verdict}
+                            </span>
+                            <span className="font-bold text-slate-700 text-xs">
+                              Trust Score: <span className="text-[#083327] font-black">{report.trustScore}/100</span>
+                            </span>
+                          </div>
+                          <span className="text-[0.68rem] text-slate-500 font-medium">
+                            {report.companyProfile?.industry} • {report.companyProfile?.headquarters}
+                          </span>
+                        </div>
+                        <p className="text-[0.72rem] text-slate-600 leading-relaxed">
+                          {report.recommendation}
+                        </p>
+                        {report.redFlags && report.redFlags.length > 0 && (
+                          <div className="text-[0.68rem] text-rose-700 font-semibold bg-rose-50 p-2 rounded-lg border border-rose-200">
+                            ⚠️ Risks: {report.redFlags.join(" • ")}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()
+                ) : (
+                  <div className="mb-4 p-3 rounded-xl border border-indigo-100 bg-indigo-50/50 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-indigo-600 shrink-0" />
+                      <span className="text-xs text-indigo-950 font-medium">
+                        Deep AI verification checks corporate identity, domain authenticity, and scam risk.
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDeepVerifyCompany(editingPendingListing)}
+                      disabled={isVerifyingCompanyId === editingPendingListing.id}
+                      className="px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-bold text-[0.68rem] hover:bg-indigo-700 transition cursor-pointer disabled:opacity-50 shrink-0"
+                    >
+                      Verify Now
+                    </button>
+                  </div>
+                )}
 
                 <form
                   onSubmit={(e) => {
@@ -1610,24 +1745,223 @@ export default function AdminDashboard() {
                     />
                   </div>
 
-                  <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
+                  <div className="flex items-center justify-between pt-4 border-t border-slate-100">
                     <button
                       type="button"
-                      onClick={() => setEditingPendingListing(null)}
-                      className="rounded-xl px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                      onClick={() => handleVerifyAndApprove(editingPendingListing.id, editingPendingListing.company, {
+                        title: editingPendingListing.title,
+                        company: editingPendingListing.company,
+                        location: editingPendingListing.location,
+                        employment_type: editingPendingListing.employment_type,
+                        eligibility: editingPendingListing.eligibility,
+                        stipend_or_salary: editingPendingListing.stipend_or_salary,
+                        skills_required: Array.isArray(editingPendingListing.skills_required)
+                          ? editingPendingListing.skills_required
+                          : typeof editingPendingListing.skills_required === "string"
+                          ? editingPendingListing.skills_required.split(",").map((s: string) => s.trim()).filter(Boolean)
+                          : [],
+                        experience_level: editingPendingListing.experience_level,
+                        apply_url: editingPendingListing.apply_url,
+                        status: "active",
+                      })}
+                      className="rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 px-4 py-2 text-xs font-bold inline-flex items-center gap-1.5 transition cursor-pointer"
+                      title="Mark company verified and approve listing"
                     >
-                      Cancel
+                      <ShieldCheck className="w-4 h-4 text-indigo-700" /> Verify Co. & Publish
                     </button>
-                    <button
-                      type="submit"
-                      disabled={isApprovingId === editingPendingListing.id}
-                      className="rounded-xl bg-[#083327] hover:bg-[#0c4333] text-white px-5 py-2 text-xs font-bold shadow-xs transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
-                    >
-                      <CheckCircle className="w-3.5 h-3.5" />
-                      {isApprovingId === editingPendingListing.id ? "Publishing..." : "Approve & Publish to Platform"}
-                    </button>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditingPendingListing(null)}
+                        className="rounded-xl px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isApprovingId === editingPendingListing.id}
+                        className="rounded-xl bg-[#083327] hover:bg-[#0c4333] text-white px-5 py-2 text-xs font-bold shadow-xs transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
+                      >
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        {isApprovingId === editingPendingListing.id ? "Publishing..." : "Approve & Publish to Platform"}
+                      </button>
+                    </div>
                   </div>
                 </form>
+              </div>
+            </div>
+          )}
+
+          {/* Standalone Deep Company Verification Report Modal */}
+          {activeVerificationModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
+              <div className="w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-900 flex items-center justify-center font-bold">
+                      <ShieldCheck className="w-6 h-6 text-indigo-700" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900">
+                        AI Corporate Verification: {activeVerificationModal.report.companyName}
+                      </h3>
+                      <p className="text-[0.72rem] text-slate-500">
+                        Deep multi-point authenticity check powered by Groq LLM and domain security analysis
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setActiveVerificationModal(null)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Score & Verdict Card */}
+                <div className={`p-4 rounded-2xl border flex items-center justify-between ${
+                  activeVerificationModal.report.verdict === "VERIFIED"
+                    ? "bg-emerald-50/80 border-emerald-200 text-emerald-950"
+                    : activeVerificationModal.report.verdict === "CAUTION"
+                    ? "bg-amber-50/80 border-amber-200 text-amber-950"
+                    : "bg-rose-50/80 border-rose-200 text-rose-950"
+                }`}>
+                  <div className="space-y-1">
+                    <div className="text-[0.68rem] font-bold uppercase tracking-wider text-slate-500">
+                      Overall Legitimacy Assessment
+                    </div>
+                    <div className="text-lg font-black flex items-center gap-2">
+                      <span className={`px-2.5 py-0.5 rounded-lg text-xs font-black uppercase ${
+                        activeVerificationModal.report.verdict === "VERIFIED"
+                          ? "bg-emerald-600 text-white"
+                          : activeVerificationModal.report.verdict === "CAUTION"
+                          ? "bg-amber-600 text-white"
+                          : "bg-rose-600 text-white"
+                      }`}>
+                        {activeVerificationModal.report.verdict}
+                      </span>
+                      <span>{activeVerificationModal.report.recommendation}</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[0.68rem] font-bold uppercase tracking-wider text-slate-500">Trust Score</div>
+                    <div className="text-3xl font-black text-[#083327]">{activeVerificationModal.report.trustScore}/100</div>
+                  </div>
+                </div>
+
+                {/* Company Profile Details */}
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <div className="text-[0.68rem] font-bold text-slate-500 uppercase">Industry & Sector</div>
+                    <div className="font-bold text-slate-900 mt-0.5">{activeVerificationModal.report.companyProfile?.industry || "Technology"}</div>
+                  </div>
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <div className="text-[0.68rem] font-bold text-slate-500 uppercase">Headquarters</div>
+                    <div className="font-bold text-slate-900 mt-0.5">{activeVerificationModal.report.companyProfile?.headquarters || "Global / Remote"}</div>
+                  </div>
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <div className="text-[0.68rem] font-bold text-slate-500 uppercase">Domain & Web Identity</div>
+                    <div className="font-bold text-slate-900 mt-0.5 truncate">{activeVerificationModal.report.companyProfile?.websiteOrDomain || "Direct domain"}</div>
+                  </div>
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <div className="text-[0.68rem] font-bold text-slate-500 uppercase">Recruiting ATS Infrastructure</div>
+                    <div className="font-bold text-slate-900 mt-0.5">{activeVerificationModal.report.companyProfile?.atsProvider || "Official Portal"}</div>
+                  </div>
+                </div>
+
+                {/* Company Summary */}
+                <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+                  <div className="text-[0.68rem] font-bold text-slate-500 uppercase mb-1">Company Overview</div>
+                  <p className="text-slate-700 leading-relaxed">{activeVerificationModal.report.companyProfile?.summary}</p>
+                </div>
+
+                {/* Green Flags vs Red Flags */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="p-3.5 bg-emerald-50/50 rounded-xl border border-emerald-200 space-y-1.5">
+                    <div className="text-[0.68rem] font-bold text-emerald-800 uppercase flex items-center gap-1">
+                      <CheckCircle className="w-3.5 h-3.5 text-emerald-600" /> Trust Signals & Green Flags
+                    </div>
+                    <ul className="space-y-1 text-emerald-950 text-[0.72rem]">
+                      {activeVerificationModal.report.greenFlags?.map((flag: string, idx: number) => (
+                        <li key={idx} className="flex items-start gap-1.5">
+                          <span className="text-emerald-600 font-bold">•</span>
+                          <span>{flag}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="p-3.5 bg-rose-50/50 rounded-xl border border-rose-200 space-y-1.5">
+                    <div className="text-[0.68rem] font-bold text-rose-800 uppercase flex items-center gap-1">
+                      <ShieldCheck className="w-3.5 h-3.5 text-rose-600" /> Risk Factors & Red Flags
+                    </div>
+                    {activeVerificationModal.report.redFlags && activeVerificationModal.report.redFlags.length > 0 ? (
+                      <ul className="space-y-1 text-rose-950 text-[0.72rem]">
+                        {activeVerificationModal.report.redFlags.map((flag: string, idx: number) => (
+                          <li key={idx} className="flex items-start gap-1.5">
+                            <span className="text-rose-600 font-bold">•</span>
+                            <span>{flag}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="text-emerald-700 text-[0.72rem] font-medium pt-1">
+                        Zero scam indicators or suspicious domain redirects found.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Modal Footer Actions */}
+                <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs">
+                  <button
+                    onClick={() => {
+                      if (activeVerificationModal.listing?.id) {
+                        handleRejectListing(activeVerificationModal.listing.id);
+                        setActiveVerificationModal(null);
+                      }
+                    }}
+                    className="px-3.5 py-2 rounded-xl text-rose-700 hover:bg-rose-50 border border-rose-200 font-bold transition cursor-pointer"
+                  >
+                    Reject as Suspicious
+                  </button>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setActiveVerificationModal(null)}
+                      className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-bold transition cursor-pointer"
+                    >
+                      Close
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (activeVerificationModal.listing?.id) {
+                          handleVerifyAndApprove(
+                            activeVerificationModal.listing.id,
+                            activeVerificationModal.report.companyName,
+                            {
+                              title: activeVerificationModal.listing.title,
+                              company: activeVerificationModal.listing.company,
+                              location: activeVerificationModal.listing.location,
+                              employment_type: activeVerificationModal.listing.employment_type,
+                              eligibility: activeVerificationModal.listing.eligibility,
+                              stipend_or_salary: activeVerificationModal.listing.stipend_or_salary,
+                              skills_required: activeVerificationModal.listing.skills_required,
+                              experience_level: activeVerificationModal.listing.experience_level,
+                              apply_url: activeVerificationModal.listing.apply_url,
+                              status: "active",
+                            }
+                          );
+                        }
+                      }}
+                      className="px-5 py-2 rounded-xl bg-[#083327] hover:bg-[#0c4333] text-white font-bold inline-flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+                    >
+                      <CheckCircle className="w-3.5 h-3.5" />
+                      Verify Company & Approve Listing
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}
