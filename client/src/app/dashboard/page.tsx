@@ -426,12 +426,26 @@ export default function DashboardPage() {
               </Link>
 
               <span className="hidden sm:inline-block h-5 w-[1px] bg-neutral-200" />
+              <Link href="/jobs" className="hidden md:inline-flex text-xs font-bold text-[#55615b] hover:text-[#121816] transition">
+                All Jobs
+              </Link>
+              <Link href="/cold-email" className="hidden md:inline-flex text-xs font-bold text-[#3c7818] hover:text-[#58a826] transition">
+                HR Outreach
+              </Link>
               <span className="hidden sm:inline-block rounded-full bg-[#eef8e5] border border-[#cce8be] px-3 py-0.5 text-xs font-black text-[#14281a]">
                 Application Checklist
               </span>
             </div>
 
             <div className="flex items-center gap-3">
+              <Link
+                href="/cold-email"
+                className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-[#14281a] hover:bg-[#1f3d27] text-[#84d64f] px-3.5 py-1.5 text-xs font-bold transition shadow-2xs"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>HR Emails</span>
+              </Link>
+
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-[#84d64f] text-[#14281a] font-black text-xs flex items-center justify-center shadow-xs">
                   {userName.charAt(0)}

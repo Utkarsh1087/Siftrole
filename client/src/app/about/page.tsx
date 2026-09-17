@@ -65,6 +65,9 @@ export default function AboutPage() {
               <Link href="/jobs" className="hover:text-[#121816] transition-colors">
                 All Jobs
               </Link>
+              <Link href="/cold-email" className="hover:text-[#121816] transition-colors">
+                HR Outreach
+              </Link>
               <Link href="/about" className="text-[#3c7818] font-bold hover:text-[#58a826] transition-colors">
                 About
               </Link>
