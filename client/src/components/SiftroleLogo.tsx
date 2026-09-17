@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useId } from "react";
 import Link from "next/link";
 
 interface SiftroleLogoProps {
@@ -20,8 +20,10 @@ export function SiftroleLogoMark({
   className?: string;
   themeColor?: "emerald" | "light" | "dark" | "gradient";
 }) {
-  const gradId = `siftrole-logo-grad-${Math.random().toString(36).substring(2, 7)}`;
-  const accentGradId = `siftrole-logo-acc-${Math.random().toString(36).substring(2, 7)}`;
+  const rawId = useId();
+  const idSuffix = rawId.replace(/[^a-zA-Z0-9_-]/g, "");
+  const gradId = `siftrole-logo-grad-${idSuffix}`;
+  const accentGradId = `siftrole-logo-acc-${idSuffix}`;
 
   return (
     <svg
