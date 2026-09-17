@@ -159,9 +159,6 @@ export default function ColdEmailPage() {
         <section className="mt-8 sm:mt-12 pb-4">
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full bg-[#eef8e5] border border-[#cce8be] px-3.5 py-1 text-xs font-bold text-[#14281a] mb-3">
-                <Sparkles className="w-3.5 h-3.5 text-[#58a826]" /> Verified Recruiter Directory & AI Drafter
-              </div>
               <h1 className="text-[2.8rem] sm:text-[3.8rem] font-black leading-[1.05] tracking-[-0.04em] text-[#121816]">
                 Direct HR Outreach Hub
               </h1>
