@@ -154,10 +154,10 @@ export default function AboutPage() {
                 Finding job and internship openings should not require checking 50 company career pages every single morning. Siftrole monitors official career portals across top engineering companies in real time, organizes them into a clean actionable checklist, and lets you track exactly where you have applied.
               </p>
 
-              {/* Upcoming Feature Callout */}
+              {/* AI Matching Feature Callout */}
               <div className="mt-6 inline-flex items-center gap-2.5 rounded-2xl bg-white/10 border border-white/20 px-4 py-2.5 text-xs sm:text-sm font-bold text-[#84d64f]">
                 <Sparkles className="w-4 h-4 text-[#84d64f] shrink-0" />
-                <span>Coming Soon: 1-Click Automated Easy Apply directly to verified company portals.</span>
+                <span>Instant AI Matching: Upload your resume to calculate your match score and discover tailored roles.</span>
               </div>
 
               <div className="mt-8 flex flex-wrap items-center gap-4">
@@ -249,23 +249,23 @@ export default function AboutPage() {
               <div>
                 <div className="flex items-center justify-between mb-5">
                   <div className="w-12 h-12 rounded-2xl bg-[#eef8e5] border border-[#cce8be] flex items-center justify-center text-[#3c7818] group-hover:bg-[#14281a] group-hover:text-[#84d64f] group-hover:border-[#14281a] transition-all duration-300 shadow-2xs">
-                    <SendHorizontal className="w-6 h-6" />
+                    <Sparkles className="w-6 h-6" />
                   </div>
                   <span className="rounded-full border border-neutral-300/80 bg-white/90 group-hover:border-[#84d64f] group-hover:bg-white px-3 py-1 text-[0.72rem] font-extrabold uppercase tracking-wider text-[#14281a] transition-colors shadow-2xs">
                     Problem 03
                   </span>
                 </div>
                 <h3 className="text-xl sm:text-[1.35rem] font-black text-[#121816] tracking-tight group-hover:text-[#14281a] transition-colors">
-                  Tedious Repetitive Forms
+                  Manual & Mismatched Job Hunting
                 </h3>
                 <p className="mt-3 text-xs sm:text-sm leading-[1.7] text-[#55615b] group-hover:text-[#284236] transition-colors">
-                  Re-entering the same contact information, work history, and resume across dozens of different company forms wastes valuable engineering time.
+                  Candidates waste dozens of hours scrolling through hundreds of openings that do not match their tech stack, graduation year, or experience level.
                 </p>
               </div>
               <div className="mt-8 pt-5 border-t border-neutral-200/70 group-hover:border-[#cce8be] transition-colors">
                 <div className="inline-flex items-center gap-2 rounded-xl bg-[#eef8e5] border border-[#cce8be] group-hover:bg-white px-3.5 py-2 text-xs font-black text-[#14281a] transition-all shadow-2xs">
                   <CheckCircle2 className="w-4 h-4 text-[#3c7818] shrink-0" />
-                  <span>Siftrole Fix: Upcoming 1-Click Easy Apply</span>
+                  <span>Siftrole Fix: Instant AI Resume Fit & Job Search</span>
                 </div>
               </div>
             </div>
