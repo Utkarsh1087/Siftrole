@@ -6,6 +6,7 @@ const listingsRoutes = require('./routes/listings');
 const adminRoutes = require('./routes/admin');
 const newsletterRoutes = require('./routes/newsletter');
 const { getUserById, listApplicationsByStudent, listNotificationsByStudent } = require('./store');
+const { generalApiLimiter, authLimiter } = require('./middleware/rateLimiter');
 
 const app = express();
 const JWT_SECRET = process.env.JWT_SECRET || 'siftrole-dev-secret';
@@ -36,13 +37,29 @@ function authRequired(req, res, next) {
   }
 }
 
+function adminOnly(req, res, next) {
+  if (!req.user || req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Forbidden: Administrator privileges required.' });
+  }
+  return next();
+}
+
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 
+// Global bot protection and API rate limiter
+app.use(generalApiLimiter);
+
 app.get('/health', (req, res) => res.json({ ok: true }));
-app.use('/api/auth', authRoutes);
+
+// Apply dedicated auth rate limiter to prevent brute force
+app.use('/api/auth', authLimiter, authRoutes);
+
 app.use('/api/listings', listingsRoutes);
-app.use('/api/admin', authRequired, adminRoutes);
+
+// Strictly guard administrative routes with JWT authentication and admin role check
+app.use('/api/admin', authRequired, adminOnly, adminRoutes);
+
 app.use('/api/newsletter', newsletterRoutes);
 
 app.get('/api/profile', authRequired, (req, res) => {

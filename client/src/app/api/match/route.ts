@@ -12,8 +12,8 @@ export async function POST(req: NextRequest) {
     let companyName = "Company";
 
     if (listingId) {
-      const listing = await prisma.listing.findUnique({
-        where: { id: listingId },
+      const listing = await prisma.listing.findFirst({
+        where: { id: listingId, status: "active" },
         select: { title: true, company: true, skills_required: true, raw_jd_text: true },
       }).catch(() => null);
 
