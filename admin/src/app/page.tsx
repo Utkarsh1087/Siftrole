@@ -86,15 +86,19 @@ export default function AdminDashboard() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Global Header Stats
-  const [stats, setStats] = useState({ total: 994, active: 989, manual: 0, flagged: 5, companies: 6 });
+  const [stats, setStats] = useState({ total: 994, active: 989, pending: 0, manual: 0, flagged: 5, companies: 6 });
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
 
-  // AI Flagged Review Queue State
-  const [flaggedListings, setFlaggedListings] = useState<any[]>([]);
-  const [flaggedSearch, setFlaggedSearch] = useState("");
-  const [editingFlaggedListing, setEditingFlaggedListing] = useState<any | null>(null);
+  // Review Queue (Pending Scraped Finds & Flagged Roles) State
+  const [pendingListings, setPendingListings] = useState<any[]>([]);
+  const [pendingSearch, setPendingSearch] = useState("");
+  const [selectedPendingIds, setSelectedPendingIds] = useState<string[]>([]);
+  const [editingPendingListing, setEditingPendingListing] = useState<any | null>(null);
   const [isApprovingId, setIsApprovingId] = useState<string | null>(null);
+  const [isRefiningAi, setIsRefiningAi] = useState(false);
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+  const [pendingFilter, setPendingFilter] = useState<"all" | "pending_approval" | "flagged">("all");
 
   // 1. Chatbot & Schema State
   const [messages, setMessages] = useState<Message[]>([
@@ -156,20 +160,18 @@ export default function AdminDashboard() {
     fetchCompanies();
     fetchUsers();
     fetchAnalytics();
-    fetchFlaggedListings();
+    fetchPendingListings();
   }, []);
 
-  const fetchFlaggedListings = async () => {
+  const fetchPendingListings = async () => {
     try {
-      const res = await fetch("/api/listings");
+      const res = await fetch("/api/listings?status=pending");
       if (res.ok) {
         const data = await res.json();
-        const allListings = data.listings || [];
-        const flagged = allListings.filter((l: any) => l.status === "flagged");
-        setFlaggedListings(flagged);
+        setPendingListings(data.listings || []);
       }
     } catch (e) {
-      console.error("Fetch flagged listings error:", e);
+      console.error("Fetch pending listings error:", e);
     }
   };
 
@@ -186,9 +188,10 @@ export default function AdminDashboard() {
         body: JSON.stringify(payload),
       });
       if (res.ok) {
-        setFlaggedListings((prev) => prev.filter((item) => item.id !== id));
+        setPendingListings((prev) => prev.filter((item) => item.id !== id));
+        setSelectedPendingIds((prev) => prev.filter((item) => item !== id));
         fetchStats();
-        setEditingFlaggedListing(null);
+        setEditingPendingListing(null);
       }
     } catch (e) {
       console.error("Approve listing error:", e);
@@ -198,17 +201,86 @@ export default function AdminDashboard() {
   };
 
   const handleRejectListing = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this suspicious / unverified posting?")) return;
+    if (!confirm("Are you sure you want to reject and delete this scraped job listing?")) return;
     try {
       const res = await fetch(`/api/listings/${id}`, {
         method: "DELETE",
       });
       if (res.ok) {
-        setFlaggedListings((prev) => prev.filter((item) => item.id !== id));
+        setPendingListings((prev) => prev.filter((item) => item.id !== id));
+        setSelectedPendingIds((prev) => prev.filter((item) => item !== id));
         fetchStats();
       }
     } catch (e) {
       console.error("Reject listing error:", e);
+    }
+  };
+
+  const handleRefineWithAi = async (listingTarget: any) => {
+    setIsRefiningAi(true);
+    try {
+      const res = await fetch("/api/ai/refine-listing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(listingTarget),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.refined) {
+          setEditingPendingListing((prev: any) => ({
+            ...prev,
+            ...data.refined,
+          }));
+        }
+      }
+    } catch (e) {
+      console.error("AI refinement error:", e);
+      alert("Failed to refine listing with AI");
+    } finally {
+      setIsRefiningAi(false);
+    }
+  };
+
+  const handleBulkApprove = async () => {
+    if (selectedPendingIds.length === 0) return;
+    setIsBulkProcessing(true);
+    try {
+      const res = await fetch("/api/listings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: selectedPendingIds, action: "approve" }),
+      });
+      if (res.ok) {
+        setSelectedPendingIds([]);
+        fetchPendingListings();
+        fetchStats();
+      }
+    } catch (e) {
+      console.error("Bulk approve error:", e);
+    } finally {
+      setIsBulkProcessing(false);
+    }
+  };
+
+  const handleBulkReject = async () => {
+    if (selectedPendingIds.length === 0) return;
+    if (!confirm(`Are you sure you want to reject and delete ${selectedPendingIds.length} listings?`)) return;
+    setIsBulkProcessing(true);
+    try {
+      const res = await fetch("/api/listings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: selectedPendingIds, action: "reject" }),
+      });
+      if (res.ok) {
+        setSelectedPendingIds([]);
+        fetchPendingListings();
+        fetchStats();
+      }
+    } catch (e) {
+      console.error("Bulk reject error:", e);
+    } finally {
+      setIsBulkProcessing(false);
     }
   };
 
@@ -613,13 +685,13 @@ export default function AdminDashboard() {
               </div>
             </button>
 
-            {/* 2. AI Flagged Review Queue */}
+            {/* 2. Review Queue (Pending & Flagged) */}
             <button
               onClick={() => {
                 setActiveNav("review_queue");
-                fetchFlaggedListings();
+                fetchPendingListings();
               }}
-              title="AI Flagged Review Queue"
+              title="Review Queue (Pending Scrapes & Flagged Roles)"
               className={`w-full flex items-center ${
                 isSidebarCollapsed ? "justify-center px-0 py-2.5" : "justify-between px-3 py-2.5"
               } rounded-xl text-xs font-bold transition ${
@@ -630,13 +702,13 @@ export default function AdminDashboard() {
             >
               <div className="flex items-center gap-2.5">
                 <ShieldCheck className={`w-4 h-4 shrink-0 ${activeNav === "review_queue" ? "text-white" : "text-amber-600"}`} />
-                {!isSidebarCollapsed && <span>AI Flagged Queue</span>}
+                {!isSidebarCollapsed && <span>Review Queue</span>}
               </div>
               {!isSidebarCollapsed && (
                 <span className={`text-[0.65rem] font-extrabold px-1.5 py-0.5 rounded-full ${
                   activeNav === "review_queue" ? "bg-white/20 text-white" : "bg-amber-200 text-amber-900"
                 }`}>
-                  {stats.flagged || flaggedListings.length || 0}
+                  {stats.pending || pendingListings.length || 0}
                 </span>
               )}
             </button>
@@ -1125,43 +1197,92 @@ export default function AdminDashboard() {
           )}
 
           {/* ======================================================== */}
-          {/* TAB: AI FLAGGED & SUSPICIOUS REVIEW QUEUE */}
+          {/* TAB: REVIEW QUEUE (PENDING SCRAPED FINDS & FLAGGED JOBS) */}
           {/* ======================================================== */}
           {activeNav === "review_queue" && (
             <div className="space-y-4">
+              {/* Header Toolbar */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-                <div className="relative flex-1 max-w-sm">
-                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    placeholder="Search flagged roles by title, company, or flag..."
-                    value={flaggedSearch}
-                    onChange={(e) => setFlaggedSearch(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs outline-none focus:bg-white focus:border-[#083327]"
-                  />
+                <div className="flex flex-wrap items-center gap-3 flex-1">
+                  <div className="relative flex-1 min-w-[220px] max-w-sm">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      placeholder="Search pending jobs by title, company, or location..."
+                      value={pendingSearch}
+                      onChange={(e) => setPendingSearch(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs outline-none focus:bg-white focus:border-[#083327]"
+                    />
+                  </div>
+
+                  {/* Filter Pills */}
+                  <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+                    <button
+                      onClick={() => setPendingFilter("all")}
+                      className={`px-2.5 py-1 text-[0.68rem] font-bold rounded-lg transition ${
+                        pendingFilter === "all" ? "bg-white text-slate-900 shadow-xs" : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      All ({pendingListings.length})
+                    </button>
+                    <button
+                      onClick={() => setPendingFilter("pending_approval")}
+                      className={`px-2.5 py-1 text-[0.68rem] font-bold rounded-lg transition ${
+                        pendingFilter === "pending_approval" ? "bg-white text-slate-900 shadow-xs" : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      New Scrapes ({pendingListings.filter((l) => l.status === "pending_approval").length})
+                    </button>
+                    <button
+                      onClick={() => setPendingFilter("flagged")}
+                      className={`px-2.5 py-1 text-[0.68rem] font-bold rounded-lg transition ${
+                        pendingFilter === "flagged" ? "bg-white text-slate-900 shadow-xs" : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      Flagged ({pendingListings.filter((l) => l.status === "flagged").length})
+                    </button>
+                  </div>
                 </div>
+
+                {/* Bulk Actions & Refresh */}
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-amber-800 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200">
-                    {flaggedListings.length} Roles Require Admin Verification
-                  </span>
+                  {selectedPendingIds.length > 0 && (
+                    <div className="flex items-center gap-1.5 animate-fadeIn">
+                      <button
+                        onClick={handleBulkApprove}
+                        disabled={isBulkProcessing}
+                        className="rounded-xl bg-[#083327] hover:bg-[#0c4333] text-white px-3 py-1.5 text-xs font-bold inline-flex items-center gap-1 shadow-xs transition cursor-pointer disabled:opacity-50"
+                      >
+                        <CheckCircle className="w-3.5 h-3.5" /> Approve ({selectedPendingIds.length})
+                      </button>
+                      <button
+                        onClick={handleBulkReject}
+                        disabled={isBulkProcessing}
+                        className="rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 px-3 py-1.5 text-xs font-bold inline-flex items-center gap-1 transition cursor-pointer disabled:opacity-50"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Reject ({selectedPendingIds.length})
+                      </button>
+                    </div>
+                  )}
+
                   <button
-                    onClick={fetchFlaggedListings}
+                    onClick={fetchPendingListings}
                     className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 transition"
-                    title="Refresh flagged listings"
+                    title="Refresh pending jobs"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
 
-              {flaggedListings.length === 0 ? (
+              {pendingListings.length === 0 ? (
                 <div className="rounded-2xl border border-slate-200 bg-white p-16 text-center shadow-xs">
                   <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center mx-auto mb-3">
                     <CheckCircle className="w-6 h-6" />
                   </div>
-                  <h3 className="text-base font-bold text-[#083327]">All Scraped Roles Clean & Verified</h3>
+                  <h3 className="text-base font-bold text-[#083327]">All Scraped Jobs Reviewed</h3>
                   <p className="mt-1 text-xs text-slate-500 max-w-md mx-auto">
-                    The AI parser found zero missing fields or suspicious anomalies in the latest ingestion cycle.
+                    There are no pending scraped listings awaiting approval. Background scraper cycles will automatically populate new finds here.
                   </p>
                 </div>
               ) : (
@@ -1170,90 +1291,138 @@ export default function AdminDashboard() {
                     <table className="w-full text-left text-xs">
                       <thead className="bg-slate-50 text-[#083327] font-bold border-b border-slate-200">
                         <tr>
-                          <th className="py-3 px-5">Company & Role</th>
-                          <th className="py-3 px-5">AI Detection Reason</th>
-                          <th className="py-3 px-5">Location</th>
-                          <th className="py-3 px-5">Stipend / Salary</th>
-                          <th className="py-3 px-5">Eligibility</th>
-                          <th className="py-3 px-5 text-right">Review Actions</th>
+                          <th className="py-3 px-4 w-10">
+                            <input
+                              type="checkbox"
+                              checked={
+                                pendingListings.length > 0 &&
+                                selectedPendingIds.length === pendingListings.length
+                              }
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedPendingIds(pendingListings.map((l) => l.id));
+                                } else {
+                                  setSelectedPendingIds([]);
+                                }
+                              }}
+                              className="rounded border-slate-300 accent-[#083327] cursor-pointer"
+                            />
+                          </th>
+                          <th className="py-3 px-4">Company & Role</th>
+                          <th className="py-3 px-4">Ingestion Status</th>
+                          <th className="py-3 px-4">Location</th>
+                          <th className="py-3 px-4">Stipend / Salary</th>
+                          <th className="py-3 px-4">Eligibility</th>
+                          <th className="py-3 px-4 text-right">Review Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {flaggedListings
-                          .filter((l) =>
-                            l.title.toLowerCase().includes(flaggedSearch.toLowerCase()) ||
-                            l.company.toLowerCase().includes(flaggedSearch.toLowerCase())
-                          )
-                          .map((listing) => {
-                            const rawJdText = listing.raw_jd_text || "";
-                            const flagLines = rawJdText.includes("--- AI ANOMALY REPORT ---")
-                              ? rawJdText.split("-------------------------")[0].split("Flags:\n")[1] || ""
-                              : "";
-
+                        {pendingListings
+                          .filter((l) => {
+                            if (pendingFilter === "pending_approval" && l.status !== "pending_approval") return false;
+                            if (pendingFilter === "flagged" && l.status !== "flagged") return false;
                             return (
-                              <tr key={listing.id} className="hover:bg-amber-50/40 transition">
-                                <td className="py-3.5 px-5 font-bold text-[#083327]">
+                              l.title.toLowerCase().includes(pendingSearch.toLowerCase()) ||
+                              l.company.toLowerCase().includes(pendingSearch.toLowerCase()) ||
+                              (l.location && l.location.toLowerCase().includes(pendingSearch.toLowerCase()))
+                            );
+                          })
+                          .map((listing) => {
+                            const isSelected = selectedPendingIds.includes(listing.id);
+                            return (
+                              <tr
+                                key={listing.id}
+                                className={`transition ${
+                                  isSelected
+                                    ? "bg-emerald-50/50"
+                                    : listing.status === "flagged"
+                                    ? "hover:bg-amber-50/40"
+                                    : "hover:bg-slate-50/60"
+                                }`}
+                              >
+                                <td className="py-3.5 px-4">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setSelectedPendingIds((prev) => [...prev, listing.id]);
+                                      } else {
+                                        setSelectedPendingIds((prev) => prev.filter((id) => id !== listing.id));
+                                      }
+                                    }}
+                                    className="rounded border-slate-300 accent-[#083327] cursor-pointer"
+                                  />
+                                </td>
+
+                                <td className="py-3.5 px-4 font-bold text-[#083327]">
                                   <div className="flex items-center gap-2.5">
                                     <CompanyLogo company={listing.company} size="sm" />
                                     <div>
                                       <div className="font-bold text-slate-900">{listing.title}</div>
-                                      <div className="text-[0.68rem] text-slate-500 font-normal">{listing.company}</div>
+                                      <div className="text-[0.68rem] text-slate-500 font-normal flex items-center gap-1.5">
+                                        <span>{listing.company}</span>
+                                        {listing.employment_type && (
+                                          <span className="text-slate-400">• {listing.employment_type}</span>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
                                 </td>
 
-                                <td className="py-3.5 px-5 max-w-[240px]">
-                                  <div className="space-y-1">
-                                    {!listing.stipend_or_salary && (
-                                      <span className="inline-block rounded bg-rose-50 border border-rose-200 text-rose-700 px-2 py-0.5 text-[0.65rem] font-bold mr-1">
-                                        Missing Salary
-                                      </span>
-                                    )}
-                                    {!listing.eligibility && (
-                                      <span className="inline-block rounded bg-amber-50 border border-amber-200 text-amber-800 px-2 py-0.5 text-[0.65rem] font-bold mr-1">
-                                        Missing Eligibility
-                                      </span>
-                                    )}
-                                    {flagLines ? (
-                                      <div className="text-[0.68rem] text-slate-600 line-clamp-2">
-                                        {flagLines.replace(/•\s*/g, "")}
-                                      </div>
-                                    ) : (
-                                      <span className="inline-block rounded bg-amber-100 text-amber-900 px-2 py-0.5 text-[0.65rem] font-bold">
-                                        AI Needs Verification
-                                      </span>
-                                    )}
-                                  </div>
+                                <td className="py-3.5 px-4">
+                                  {listing.status === "flagged" ? (
+                                    <span className="inline-flex items-center gap-1 rounded bg-amber-50 border border-amber-200 text-amber-800 px-2 py-0.5 text-[0.65rem] font-bold">
+                                      <ShieldCheck className="w-3 h-3 text-amber-600" /> AI Flagged Anomaly
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 rounded bg-blue-50 border border-blue-200 text-blue-800 px-2 py-0.5 text-[0.65rem] font-bold">
+                                      <Clock className="w-3 h-3 text-blue-600" /> Scraped • Pending Check
+                                    </span>
+                                  )}
                                 </td>
 
-                                <td className="py-3.5 px-5 font-medium text-slate-700">{listing.location}</td>
-                                <td className="py-3.5 px-5 font-bold text-slate-900">
-                                  {listing.stipend_or_salary || <span className="text-rose-500 italic">Unspecified</span>}
-                                </td>
-                                <td className="py-3.5 px-5 text-slate-700">
-                                  {listing.eligibility || <span className="text-amber-600 italic">Not set</span>}
+                                <td className="py-3.5 px-4 font-medium text-slate-700">{listing.location || "Remote"}</td>
+
+                                <td className="py-3.5 px-4 font-bold text-slate-900">
+                                  {listing.stipend_or_salary || <span className="text-slate-400 font-normal italic">Unspecified</span>}
                                 </td>
 
-                                <td className="py-3.5 px-5 text-right">
-                                  <div className="inline-flex items-center gap-2">
+                                <td className="py-3.5 px-4 text-slate-700">
+                                  {listing.eligibility || <span className="text-slate-400 italic">Not set</span>}
+                                </td>
+
+                                <td className="py-3.5 px-4 text-right">
+                                  <div className="inline-flex items-center gap-1.5">
                                     <button
-                                      onClick={() => setEditingFlaggedListing(listing)}
-                                      className="rounded-lg bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 text-xs font-bold inline-flex items-center gap-1 shadow-xs transition cursor-pointer"
+                                      onClick={() => {
+                                        setEditingPendingListing(listing);
+                                        handleRefineWithAi(listing);
+                                      }}
+                                      className="rounded-lg bg-emerald-50 hover:bg-emerald-100 text-[#083327] border border-emerald-200 px-2.5 py-1.5 text-xs font-bold inline-flex items-center gap-1 shadow-xs transition cursor-pointer"
+                                      title="Refine role details with Groq AI"
                                     >
-                                      <Edit2 className="w-3.5 h-3.5" /> Fix & Review
+                                      <Sparkles className="w-3 h-3 text-emerald-700" /> AI Refine
+                                    </button>
+                                    <button
+                                      onClick={() => setEditingPendingListing(listing)}
+                                      className="rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 px-2.5 py-1.5 text-xs font-bold inline-flex items-center gap-1 shadow-xs transition cursor-pointer"
+                                      title="Edit fields manually"
+                                    >
+                                      <Edit2 className="w-3 h-3" /> Edit
                                     </button>
                                     <button
                                       onClick={() => handleApproveListing(listing.id)}
                                       disabled={isApprovingId === listing.id}
                                       className="rounded-lg bg-[#083327] hover:bg-[#0c4333] text-white px-3 py-1.5 text-xs font-bold inline-flex items-center gap-1 shadow-xs transition cursor-pointer disabled:opacity-50"
-                                      title="Approve immediately to live checklist"
+                                      title="Approve immediately to live platform"
                                     >
                                       <CheckCircle className="w-3.5 h-3.5" /> Approve
                                     </button>
                                     <button
                                       onClick={() => handleRejectListing(listing.id)}
                                       className="p-1.5 rounded-lg hover:bg-rose-50 text-rose-600 transition cursor-pointer"
-                                      title="Delete suspicious role"
+                                      title="Reject and delete"
                                     >
                                       <Trash2 className="w-3.5 h-3.5" />
                                     </button>
@@ -1270,44 +1439,60 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* Quick Fix Modal for Flagged Role */}
-          {editingFlaggedListing && (
+          {/* Quick Review and AI Refinement Modal for Pending Scraped Roles */}
+          {editingPendingListing && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
-              <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl relative">
+              <div className="w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold">
-                      <ShieldCheck className="w-4 h-4" />
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-100 text-[#083327] flex items-center justify-center font-bold">
+                      <Sparkles className="w-5 h-5 text-[#083327]" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-bold text-[#083327]">Fix & Approve Scraped Role</h3>
-                      <p className="text-[0.7rem] text-slate-500">Correct any missing fields before publishing to the student master checklist</p>
+                      <h3 className="text-sm font-bold text-[#083327]">Review & Refine Scraped Job</h3>
+                      <p className="text-[0.7rem] text-slate-500">Edit fields manually or trigger Groq AI to auto-structure compensation and requirements</p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setEditingFlaggedListing(null)}
-                    className="p-1 rounded-lg text-slate-400 hover:text-slate-700 cursor-pointer"
-                  >
-                    ✕
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleRefineWithAi(editingPendingListing)}
+                      disabled={isRefiningAi}
+                      className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 text-xs font-bold inline-flex items-center gap-1.5 shadow-xs transition cursor-pointer disabled:opacity-50"
+                    >
+                      <Sparkles className={`w-3.5 h-3.5 ${isRefiningAi ? "animate-spin" : ""}`} />
+                      {isRefiningAi ? "Refining with AI..." : "Refine with AI"}
+                    </button>
+                    <button
+                      onClick={() => setEditingPendingListing(null)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  </div>
                 </div>
 
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
-                    handleApproveListing(editingFlaggedListing.id, {
-                      title: editingFlaggedListing.title,
-                      company: editingFlaggedListing.company,
-                      location: editingFlaggedListing.location,
-                      employment_type: editingFlaggedListing.employment_type,
-                      eligibility: editingFlaggedListing.eligibility,
-                      stipend_or_salary: editingFlaggedListing.stipend_or_salary,
-                      skills_required: editingFlaggedListing.skills_required,
-                      apply_url: editingFlaggedListing.apply_url,
+                    handleApproveListing(editingPendingListing.id, {
+                      title: editingPendingListing.title,
+                      company: editingPendingListing.company,
+                      location: editingPendingListing.location,
+                      employment_type: editingPendingListing.employment_type,
+                      eligibility: editingPendingListing.eligibility,
+                      stipend_or_salary: editingPendingListing.stipend_or_salary,
+                      skills_required: Array.isArray(editingPendingListing.skills_required)
+                        ? editingPendingListing.skills_required
+                        : typeof editingPendingListing.skills_required === "string"
+                        ? editingPendingListing.skills_required.split(",").map((s: string) => s.trim()).filter(Boolean)
+                        : [],
+                      experience_level: editingPendingListing.experience_level,
+                      apply_url: editingPendingListing.apply_url,
                       status: "active",
                     });
                   }}
-                  className="space-y-3 text-xs"
+                  className="space-y-3.5 text-xs"
                 >
                   <div className="grid grid-cols-2 gap-3">
                     <div>
@@ -1315,8 +1500,8 @@ export default function AdminDashboard() {
                       <input
                         type="text"
                         required
-                        value={editingFlaggedListing.title || ""}
-                        onChange={(e) => setEditingFlaggedListing({ ...editingFlaggedListing, title: e.target.value })}
+                        value={editingPendingListing.title || ""}
+                        onChange={(e) => setEditingPendingListing({ ...editingPendingListing, title: e.target.value })}
                         className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs outline-none focus:bg-white focus:border-[#083327]"
                       />
                     </div>
@@ -1325,8 +1510,8 @@ export default function AdminDashboard() {
                       <input
                         type="text"
                         required
-                        value={editingFlaggedListing.company || ""}
-                        onChange={(e) => setEditingFlaggedListing({ ...editingFlaggedListing, company: e.target.value })}
+                        value={editingPendingListing.company || ""}
+                        onChange={(e) => setEditingPendingListing({ ...editingPendingListing, company: e.target.value })}
                         className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs outline-none focus:bg-white focus:border-[#083327]"
                       />
                     </div>
@@ -1338,8 +1523,8 @@ export default function AdminDashboard() {
                       <input
                         type="text"
                         required
-                        value={editingFlaggedListing.location || ""}
-                        onChange={(e) => setEditingFlaggedListing({ ...editingFlaggedListing, location: e.target.value })}
+                        value={editingPendingListing.location || ""}
+                        onChange={(e) => setEditingPendingListing({ ...editingPendingListing, location: e.target.value })}
                         className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs outline-none focus:bg-white focus:border-[#083327]"
                       />
                     </div>
@@ -1347,8 +1532,8 @@ export default function AdminDashboard() {
                       <label className="block text-[0.7rem] font-bold text-slate-700 mb-1">Employment Type</label>
                       <input
                         type="text"
-                        value={editingFlaggedListing.employment_type || ""}
-                        onChange={(e) => setEditingFlaggedListing({ ...editingFlaggedListing, employment_type: e.target.value })}
+                        value={editingPendingListing.employment_type || ""}
+                        onChange={(e) => setEditingPendingListing({ ...editingPendingListing, employment_type: e.target.value })}
                         placeholder="e.g. Internship, Full-time"
                         className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs outline-none focus:bg-white focus:border-[#083327]"
                       />
@@ -1358,26 +1543,58 @@ export default function AdminDashboard() {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[0.7rem] font-bold text-slate-700 mb-1">
-                        Compensation / Salary <span className="text-emerald-700">(Fix Missing)</span>
+                        Compensation / Salary
                       </label>
                       <input
                         type="text"
-                        value={editingFlaggedListing.stipend_or_salary || ""}
-                        onChange={(e) => setEditingFlaggedListing({ ...editingFlaggedListing, stipend_or_salary: e.target.value })}
+                        value={editingPendingListing.stipend_or_salary || ""}
+                        onChange={(e) => setEditingPendingListing({ ...editingPendingListing, stipend_or_salary: e.target.value })}
                         placeholder="e.g. $140K - $170K / Year or $55/hr"
                         className="w-full rounded-xl border border-emerald-300 bg-emerald-50/40 px-3 py-2 text-xs font-bold text-emerald-950 outline-none focus:bg-white focus:border-[#083327]"
                       />
                     </div>
                     <div>
                       <label className="block text-[0.7rem] font-bold text-slate-700 mb-1">
-                        Eligibility <span className="text-emerald-700">(Fix Missing)</span>
+                        Eligibility
                       </label>
                       <input
                         type="text"
-                        value={editingFlaggedListing.eligibility || ""}
-                        onChange={(e) => setEditingFlaggedListing({ ...editingFlaggedListing, eligibility: e.target.value })}
+                        value={editingPendingListing.eligibility || ""}
+                        onChange={(e) => setEditingPendingListing({ ...editingPendingListing, eligibility: e.target.value })}
                         placeholder="e.g. Graduating 2026/2027 • B.Tech in CS"
                         className="w-full rounded-xl border border-emerald-300 bg-emerald-50/40 px-3 py-2 text-xs font-bold text-emerald-950 outline-none focus:bg-white focus:border-[#083327]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[0.7rem] font-bold text-slate-700 mb-1">Experience Level</label>
+                      <input
+                        type="text"
+                        value={editingPendingListing.experience_level || ""}
+                        onChange={(e) => setEditingPendingListing({ ...editingPendingListing, experience_level: e.target.value })}
+                        placeholder="e.g. Entry Level, 0-2 Years"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs outline-none focus:bg-white focus:border-[#083327]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[0.7rem] font-bold text-slate-700 mb-1">Skills (comma-separated)</label>
+                      <input
+                        type="text"
+                        value={
+                          Array.isArray(editingPendingListing.skills_required)
+                            ? editingPendingListing.skills_required.join(", ")
+                            : editingPendingListing.skills_required || ""
+                        }
+                        onChange={(e) =>
+                          setEditingPendingListing({
+                            ...editingPendingListing,
+                            skills_required: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
+                          })
+                        }
+                        placeholder="e.g. Python, React, TypeScript, SQL"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs outline-none focus:bg-white focus:border-[#083327]"
                       />
                     </div>
                   </div>
@@ -1387,8 +1604,8 @@ export default function AdminDashboard() {
                     <input
                       type="url"
                       required
-                      value={editingFlaggedListing.apply_url || ""}
-                      onChange={(e) => setEditingFlaggedListing({ ...editingFlaggedListing, apply_url: e.target.value })}
+                      value={editingPendingListing.apply_url || ""}
+                      onChange={(e) => setEditingPendingListing({ ...editingPendingListing, apply_url: e.target.value })}
                       className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-mono outline-none focus:bg-white focus:border-[#083327]"
                     />
                   </div>
@@ -1396,17 +1613,18 @@ export default function AdminDashboard() {
                   <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
                     <button
                       type="button"
-                      onClick={() => setEditingFlaggedListing(null)}
+                      onClick={() => setEditingPendingListing(null)}
                       className="rounded-xl px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      disabled={isApprovingId === editingFlaggedListing.id}
-                      className="rounded-xl bg-[#083327] hover:bg-[#0c4333] text-white px-5 py-2 text-xs font-bold shadow-xs transition cursor-pointer disabled:opacity-50"
+                      disabled={isApprovingId === editingPendingListing.id}
+                      className="rounded-xl bg-[#083327] hover:bg-[#0c4333] text-white px-5 py-2 text-xs font-bold shadow-xs transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
                     >
-                      {isApprovingId === editingFlaggedListing.id ? "Publishing..." : "Approve & Publish to Master Checklist"}
+                      <CheckCircle className="w-3.5 h-3.5" />
+                      {isApprovingId === editingPendingListing.id ? "Publishing..." : "Approve & Publish to Platform"}
                     </button>
                   </div>
                 </form>

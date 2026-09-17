@@ -93,7 +93,7 @@ export async function syncCompany(companyId: string): Promise<SyncResult> {
       },
     });
 
-    const listingStatus = nearMatch || item.status === "flagged" ? "flagged" : "active";
+    const listingStatus = nearMatch || item.status === "flagged" ? "flagged" : "pending_approval";
     if (listingStatus === "flagged") {
       flagged++;
     }

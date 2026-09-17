@@ -240,11 +240,74 @@ seedDefaults();
 
 module.exports = {
   db,
-  getAllListings() {
-    return db.prepare('SELECT * FROM listings ORDER BY created_at DESC').all().map((listing) => ({
+  getAllListings(onlyActive = true) {
+    const query = onlyActive
+      ? "SELECT * FROM listings WHERE status = 'active' ORDER BY created_at DESC"
+      : "SELECT * FROM listings ORDER BY created_at DESC";
+    return db.prepare(query).all().map((listing) => ({
       ...listing,
       skills_required: listing.skills_required ? JSON.parse(listing.skills_required) : [],
     }));
+  },
+  getPendingListings() {
+    return db.prepare("SELECT * FROM listings WHERE status IN ('pending_approval', 'flagged') ORDER BY created_at DESC").all().map((listing) => ({
+      ...listing,
+      skills_required: listing.skills_required ? JSON.parse(listing.skills_required) : [],
+    }));
+  },
+  approveListing(id, updates = null) {
+    if (updates && typeof updates === 'object') {
+      const {
+        title,
+        company,
+        location,
+        employment_type,
+        stipend_or_salary,
+        skills_required,
+        apply_url,
+        deadline,
+      } = updates;
+
+      const skillsJson = Array.isArray(skills_required) ? JSON.stringify(skills_required) : JSON.stringify([]);
+
+      db.prepare(`
+        UPDATE listings
+        SET title = COALESCE(?, title),
+            company = COALESCE(?, company),
+            location = COALESCE(?, location),
+            employment_type = COALESCE(?, employment_type),
+            stipend_or_salary = COALESCE(?, stipend_or_salary),
+            skills_required = ?,
+            apply_url = COALESCE(?, apply_url),
+            deadline = COALESCE(?, deadline),
+            status = 'active',
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).run(
+        title || null,
+        company || null,
+        location || null,
+        employment_type || null,
+        stipend_or_salary || null,
+        skillsJson,
+        apply_url || null,
+        deadline || null,
+        id
+      );
+    } else {
+      db.prepare("UPDATE listings SET status = 'active', updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(id);
+    }
+    return this.getListingById(id);
+  },
+  bulkApproveListings(ids = []) {
+    if (!Array.isArray(ids) || ids.length === 0) return 0;
+    const placeholders = ids.map(() => '?').join(',');
+    const info = db.prepare(`UPDATE listings SET status = 'active', updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders})`).run(...ids);
+    return info.changes;
+  },
+  rejectListing(id) {
+    db.prepare("UPDATE listings SET status = 'rejected', updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(id);
+    return true;
   },
   getListingById(id) {
     const listing = db.prepare('SELECT * FROM listings WHERE id = ?').get(id);

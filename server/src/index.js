@@ -74,5 +74,10 @@ app.get('/api/roles', (req, res) => {
   res.json({ roles: ['student', 'recruiter', 'admin'] });
 });
 
+const { initScraperScheduler } = require('./scraperCron');
+
 const port = process.env.PORT || 4000;
-app.listen(port, () => console.log(`Server running on ${port}`));
+app.listen(port, () => {
+  console.log(`Server running on ${port}`);
+  initScraperScheduler();
+});
