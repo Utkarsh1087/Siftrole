@@ -225,10 +225,10 @@ export default function Home() {
             {/* Right Column: Transparent Girl Cutout with Laptop */}
             <div className="relative flex items-center justify-center min-h-[480px] sm:min-h-[560px] lg:min-h-[620px]">
               {/* Soft ambient glow behind cutout */}
-              <div className="absolute w-[440px] h-[440px] rounded-full bg-[#84d64f]/15 blur-3xl pointer-events-none" />
+              <div className="absolute w-[440px] h-[440px] rounded-full bg-[#84d64f]/15 blur-3xl pointer-events-none -translate-y-6 sm:-translate-y-10 lg:-translate-y-14" />
 
               {/* Fully transparent cut-out image */}
-              <div className="relative w-full max-w-[580px] h-[500px] sm:h-[580px] lg:h-[640px] transition-transform duration-300">
+              <div className="relative w-full max-w-[580px] h-[500px] sm:h-[580px] lg:h-[640px] -translate-y-6 sm:-translate-y-10 lg:-translate-y-14 transition-transform duration-300">
                 <Image
                   src="/images/student_hero_green_sweater.png?v=2"
                   alt="Student developer finding verified tech roles on Siftrole"
