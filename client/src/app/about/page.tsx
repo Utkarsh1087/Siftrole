@@ -396,14 +396,14 @@ export default function AboutPage() {
           </div>
 
           {/* SIFTROLE giant bottom wordmark with adjacent logo on left */}
-          <div className="mt-12 select-none overflow-hidden flex items-center justify-center gap-3 sm:gap-6 text-[#14281a]">
-            <div className="w-[10vw] h-[10vw] max-w-[130px] max-h-[130px] min-w-[40px] min-h-[40px] shrink-0 flex items-center justify-center">
+          <div className="mt-12 select-none overflow-hidden flex items-center justify-center gap-3 sm:gap-7 text-[#14281a]">
+            <div className="w-[12vw] h-[12vw] sm:w-[13vw] sm:h-[13vw] max-w-[210px] max-h-[210px] min-w-[56px] min-h-[56px] shrink-0 flex items-center justify-center">
               <Image
                 src="/images/siftrole-logo.png"
                 alt="Siftrole Logo"
-                width={260}
-                height={260}
-                className="w-full h-full object-contain drop-shadow-[0_10px_25px_rgba(132,214,79,0.35)]"
+                width={380}
+                height={380}
+                className="w-full h-full object-contain drop-shadow-[0_12px_32px_rgba(132,214,79,0.38)]"
                 unoptimized
               />
             </div>
