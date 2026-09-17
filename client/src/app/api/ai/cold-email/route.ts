@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { executeLLMCascade } from "@/lib/ai/llmCascade";
 
 export async function POST(req: Request) {
   try {
@@ -14,10 +15,9 @@ export async function POST(req: Request) {
       tone = "concise-human",
     } = body;
 
-    const groqApiKey = process.env.GROQ_API_KEY || process.env.AI_API_KEY;
-
     let subject = "";
     let emailBody = "";
+    let providerUsed = "Local Dynamic Engine";
 
     const systemPrompt = `You are a cold email assistant for Siftrole candidate outreach.
 You generate professional, authentic, concise cold emails for job candidates reaching out to recruiters.
@@ -45,40 +45,34 @@ Desired Tone: ${tone}
 
 Draft a 3 to 5 sentence human-like cold email.`;
 
-    if (groqApiKey) {
-      try {
-        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${groqApiKey}`,
-          },
-          body: JSON.stringify({
-            model: "llama-3.3-70b-versatile",
-            temperature: 0.65,
-            response_format: { type: "json_object" },
-            messages: [
-              { role: "system", content: systemPrompt },
-              { role: "user", content: userPrompt },
-            ],
-          }),
-        });
+    // Execute failover cascade across all 5+ configured API keys
+    const llmResult = await executeLLMCascade({
+      systemPrompt,
+      userPrompt,
+      temperature: 0.65,
+      responseFormatJson: true,
+      timeoutMs: 4000,
+    });
 
-        if (response.ok) {
-          const data = await response.json();
-          const content = data.choices?.[0]?.message?.content;
-          if (content) {
-            const parsed = JSON.parse(content);
-            subject = parsed.subject || `Quick question re: ${roleAppliedFor} at ${company}`;
-            emailBody = parsed.body || "";
-          }
+    if (llmResult?.content) {
+      try {
+        const parsed = JSON.parse(llmResult.content);
+        subject = parsed.subject || `Quick question re: ${roleAppliedFor} at ${company}`;
+        emailBody = parsed.body || "";
+        providerUsed = llmResult.provider;
+      } catch {
+        // If JSON parse fails, attempt regex extraction or fallback
+        const subjectMatch = llmResult.content.match(/"subject":\s*"([^"]+)"/);
+        const bodyMatch = llmResult.content.match(/"body":\s*"([^"]+)"/);
+        if (bodyMatch) {
+          subject = subjectMatch ? subjectMatch[1] : `Quick question re: ${roleAppliedFor} at ${company}`;
+          emailBody = bodyMatch[1].replace(/\\n/g, "\n");
+          providerUsed = llmResult.provider;
         }
-      } catch (e) {
-        console.warn("[Cold Mail AI API] LLM request failed, falling back to dynamic template:", e);
       }
     }
 
-    // Fallback template if LLM is unavailable or offline
+    // Local deterministic fallback ONLY as the absolute last resort if all API keys fail
     if (!emailBody) {
       const firstName = recruiterName.split(" ")[0];
       subject = `${roleAppliedFor} applicant - ${userCandidateName}`;
@@ -101,6 +95,7 @@ ${userCandidateName}`;
       subject,
       body: emailBody,
       mailtoUrl,
+      provider: providerUsed,
     });
   } catch (error) {
     console.error("Cold email generation error:", error);

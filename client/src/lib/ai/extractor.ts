@@ -1,6 +1,7 @@
 import prisma from "../prisma";
 import { computeRawJdHash, computeNormalizedKey, extractSkillsFromText } from "../sync/dedup";
 import { NormalizedListing, ListingSchema } from "../scrapers/types";
+import { executeLLMCascade } from "./llmCascade";
 
 export const STRICT_EXTRACTION_SYSTEM_PROMPT = `
 You are a precise, strict Job Description extraction system for Siftrole.
@@ -247,55 +248,29 @@ export async function extractJobFromRawText(
   const normalizedRaw = rawText.trim();
   const rawJdHash = computeRawJdHash(normalizedRaw);
 
-  const groqApiKey = process.env.GROQ_API_KEY || process.env.AI_API_KEY;
   let extractedData: any = null;
   let modelUsed = "local-nlp-extractor";
   let tokensUsed = 0;
 
-  if (groqApiKey) {
-    const candidateModels = [
-      "llama-3.3-70b-versatile",
-      "llama-3.1-8b-instant",
-      "openai/gpt-oss-120b",
-      "openai/gpt-oss-20b",
-      "qwen/qwen3.8-27b",
-    ];
+  // Attempt multi-key failover cascade across all 5+ configured API keys
+  const cascadeResult = await executeLLMCascade({
+    systemPrompt: STRICT_EXTRACTION_SYSTEM_PROMPT,
+    userPrompt: `Raw Job Description:\n\n${normalizedRaw}`,
+    temperature: 0.1,
+    responseFormatJson: true,
+    timeoutMs: 4200,
+  });
 
-    for (const model of candidateModels) {
-      try {
-        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${groqApiKey}`,
-          },
-          body: JSON.stringify({
-            model,
-            temperature: 0.1,
-            response_format: { type: "json_object" },
-            messages: [
-              { role: "system", content: STRICT_EXTRACTION_SYSTEM_PROMPT },
-              { role: "user", content: `Raw Job Description:\n\n${normalizedRaw}` },
-            ],
-          }),
-        });
-
-        if (response.ok) {
-          const json = await response.json();
-          const content = json.choices?.[0]?.message?.content;
-          if (content) {
-            extractedData = JSON.parse(content);
-            modelUsed = model;
-            tokensUsed = json.usage?.total_tokens || 0;
-            break;
-          }
-        }
-      } catch (err) {
-        console.warn(`[AI Extractor] Groq model ${model} call failed, trying next fallback:`, err);
-      }
+  if (cascadeResult?.content) {
+    try {
+      extractedData = JSON.parse(cascadeResult.content);
+      modelUsed = cascadeResult.provider;
+    } catch {
+      // quiet fallback
     }
   }
 
+  // Local fallback strictly as the absolute last resort if all API keys fail
   if (!extractedData) {
     extractedData = localRuleBasedExtract(normalizedRaw);
     modelUsed = "local-nlp-extractor";
