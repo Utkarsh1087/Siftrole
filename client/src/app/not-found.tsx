@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowRight, MoveLeft } from "lucide-react";
-import { SiftroleLogoMark } from "@/components/SiftroleLogo";
 
 export default function NotFound() {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -20,26 +19,13 @@ export default function NotFound() {
 
   return (
     <div className="min-h-screen bg-[#f8f7f5] text-[#14281a] font-sans antialiased flex flex-col justify-between p-6 sm:p-10 select-none">
-      {/* Minimal Header */}
-      <header className="w-full max-w-5xl mx-auto flex items-center justify-between">
-        <Link href="/" className="inline-flex items-center gap-2.5 group">
-          <div className="h-8 w-8 rounded-lg bg-[#14281a] p-1.5 flex items-center justify-center text-[#84d64f] group-hover:scale-105 transition-transform">
-            <SiftroleLogoMark className="w-full h-full" />
-          </div>
-          <span className="font-heading text-lg font-bold tracking-tight text-[#14281a]">
-            sift<span className="text-[#3c7818]">role</span>
-          </span>
-        </Link>
+      {/* Minimal Top Bar without branding */}
+      <div className="w-full max-w-4xl mx-auto flex items-center justify-between text-xs font-mono uppercase tracking-widest text-[#14281a]/50">
+        <span>HTTP 404</span>
+        <span>NOT FOUND</span>
+      </div>
 
-        <Link
-          href="/jobs"
-          className="text-xs font-bold uppercase tracking-wider text-[#14281a]/70 hover:text-[#14281a] transition-colors"
-        >
-          Active Jobs
-        </Link>
-      </header>
-
-      {/* Hero Content: Bold & Minimal */}
+      {/* Hero Content: Bold, Minimal, Punchy */}
       <main className="w-full max-w-3xl mx-auto text-center py-12">
         {/* Animated Minimalist Doodle */}
         <div className="relative mx-auto w-36 h-36 sm:w-44 sm:h-44 mb-8 flex items-center justify-center">
@@ -136,9 +122,8 @@ export default function NotFound() {
       </main>
 
       {/* Minimal Footer */}
-      <footer className="w-full max-w-5xl mx-auto flex items-center justify-between text-xs text-[#79857f] font-medium pt-6 border-t border-neutral-200/60">
-        <span>Siftrole verified feeds only</span>
-        <span>Error 404</span>
+      <footer className="w-full max-w-4xl mx-auto text-center text-xs text-[#79857f] font-mono pt-6 border-t border-neutral-200/60">
+        404 // DEAD END
       </footer>
     </div>
   );
