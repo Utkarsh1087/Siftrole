@@ -50,6 +50,8 @@ interface Message {
   text: string;
   timestamp: string;
   recommendedJobs?: Listing[];
+  totalMatchesCount?: number;
+  filterQuery?: string;
   extractedSkills?: string[];
 }
 
@@ -404,12 +406,17 @@ export function SiftAiChat({
           .filter((item) => item.score >= 35)
           .sort((a, b) => b.score - a.score);
 
+        let totalMatchesCount = 0;
+        let filterQuery: string | undefined = undefined;
+
         if (matchesWithScores.length > 0) {
           foundJobs = matchesWithScores.slice(0, 3).map((item) => item.job);
+          totalMatchesCount = matchesWithScores.length;
+          filterQuery = conversationalCleaned || query;
           const displaySubject = conversationalCleaned || query;
 
           if (isRemoteSearch && searchTokens.length <= 1) {
-            replyText = `Found **${foundJobs.length} verified remote engineering roles** available across official feeds:`;
+            replyText = `Found **${matchesWithScores.length} verified remote engineering roles** available across official feeds:`;
           } else if (isInternSearch && searchTokens.length <= 1) {
             replyText = `Here are active early-career and entry-level engineering openings open for direct application:`;
           } else if (isHighSalarySearch && searchTokens.length <= 1) {
@@ -427,6 +434,19 @@ export function SiftAiChat({
             replyText = `Here are top active verified tech roles currently ingesting live from official company feeds:`;
           }
         }
+
+        const aiMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          sender: "ai",
+          text: replyText,
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          recommendedJobs: foundJobs.length > 0 ? foundJobs : undefined,
+          totalMatchesCount: totalMatchesCount > 0 ? totalMatchesCount : undefined,
+          filterQuery: filterQuery,
+        };
+
+        setMessages((prev) => [...prev, aiMsg]);
+        return;
       }
 
       const aiMsg: Message = {
@@ -566,9 +586,11 @@ export function SiftAiChat({
               {/* Recommended Mini Job Cards */}
               {m.recommendedJobs && m.recommendedJobs.length > 0 && (
                 <div className="mt-3 space-y-2 pt-2.5 border-t border-neutral-300/60">
-                  <span className="text-[0.65rem] font-bold uppercase tracking-wider text-[#55615b] block">
-                    Recommended Openings:
-                  </span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[0.65rem] font-bold uppercase tracking-wider text-[#55615b] block">
+                      Top Previews ({Math.min(3, m.recommendedJobs.length)}{m.totalMatchesCount ? ` of ${m.totalMatchesCount}` : ""}):
+                    </span>
+                  </div>
                   {m.recommendedJobs.map((j) => (
                     <Link
                       key={j.id || j.title}
@@ -602,6 +624,25 @@ export function SiftAiChat({
                       <ArrowRight className="w-3.5 h-3.5 text-[#3c7818]" />
                     </Link>
                   ))}
+
+                  {/* View All Matching Roles on Main Checklist Button */}
+                  {m.filterQuery && (
+                    <button
+                      onClick={() => {
+                        onFilterBySearch(m.filterQuery!);
+                        const el = document.getElementById("jobs-feed-section") || document.getElementById("jobs-filter-section");
+                        if (el) {
+                          el.scrollIntoView({ behavior: "smooth", block: "start" });
+                        }
+                      }}
+                      className="w-full mt-2 rounded-xl bg-[#eef8e5] hover:bg-[#84d64f] border border-[#cce8be] hover:border-[#84d64f] p-2.5 text-[0.72rem] font-black text-[#14281a] transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs group active:scale-[0.98]"
+                    >
+                      <span>
+                        View all {m.totalMatchesCount || m.recommendedJobs.length} roles on main checklist
+                      </span>
+                      <ArrowRight className="w-3.5 h-3.5 text-[#3c7818] group-hover:text-[#14281a] group-hover:translate-x-0.5 transition-transform" />
+                    </button>
+                  )}
                 </div>
               )}
             </div>

@@ -408,7 +408,7 @@ export default function JobsPage() {
           {/* ======================================================== */}
           {/* LEFT COLUMN: LISTINGS FEED + PAGINATION */}
           {/* ======================================================== */}
-          <div className="lg:col-span-8 space-y-4">
+          <div id="jobs-feed-section" className="lg:col-span-8 space-y-4">
             {isLoadingListings ? (
               <div className="py-24 text-center bg-white rounded-[26px] border border-neutral-200/80 text-[#79857f]">
                 <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-[#84d64f] border-t-transparent mb-3" />
