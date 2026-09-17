@@ -113,7 +113,7 @@ export default function NotFound() {
           This page does not exist.
         </h1>
 
-        {/* Sarcastic Copy in Easy English */}
+        {/* Sarcastic Copy */}
         <p
           className="text-base sm:text-xl font-medium text-[#55615b] max-w-xl mx-auto leading-relaxed mb-10"
           style={{
@@ -121,7 +121,7 @@ export default function NotFound() {
             transition: "transform 0.15s ease-out",
           }}
         >
-          Don&apos;t waste your time here like you do finding different apply links on different career pages.
+          You are again wasting time here reading this line, like you do finding opportunities on different career pages.
         </p>
 
         {/* High-Contrast Bold Platform Button with Magnetic Hover Accent */}
