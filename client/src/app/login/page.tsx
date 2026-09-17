@@ -274,10 +274,12 @@ function LoginForm() {
                       Terms of Use
                     </Link>{" "}
                     and{" "}
-                    <Link href="/privacy" target="_blank" className="text-[#3c7818] font-bold underline hover:text-[#14281a]">
-                      Privacy Policy
-                    </Link>
-                    . <span className="text-red-500 font-bold">*</span>
+                    <span className="whitespace-nowrap">
+                      <Link href="/privacy" target="_blank" className="text-[#3c7818] font-bold underline hover:text-[#14281a]">
+                        Privacy Policy
+                      </Link>
+                      .<span className="text-red-500 font-bold ml-0.5">*</span>
+                    </span>
                   </label>
                 </div>
               </div>
