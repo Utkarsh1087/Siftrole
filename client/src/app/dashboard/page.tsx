@@ -841,18 +841,21 @@ export default function DashboardPage() {
                           <span>{app.applied_date || "Active candidate"}</span>
 
                           <div className="flex items-center gap-1.5">
-                            <select
-                              value={app.status}
-                              onChange={(e) => handleStatusChange(app.id, e.target.value as ApplicationStage)}
-                              title="Change stage manually"
-                              className="h-6 rounded-lg border border-neutral-200 bg-white px-2 text-[0.68rem] font-bold text-[#55615b] outline-none cursor-pointer hover:border-[#84d64f] shadow-2xs transition"
-                            >
-                              <option value="saved">Saved</option>
-                              <option value="applied">Applied</option>
-                              <option value="interviewing">Interview</option>
-                              <option value="offered">Offer</option>
-                              <option value="rejected">Archive</option>
-                            </select>
+                            <div className="relative inline-flex items-center">
+                              <select
+                                value={app.status}
+                                onChange={(e) => handleStatusChange(app.id, e.target.value as ApplicationStage)}
+                                title="Change stage manually"
+                                className="appearance-none h-6 rounded-lg border border-neutral-200/90 bg-white hover:bg-[#fbfaf8] hover:border-[#84d64f] pl-2 pr-5 text-[0.68rem] font-bold text-[#55615b] outline-none cursor-pointer shadow-2xs transition"
+                              >
+                                <option value="saved">Saved</option>
+                                <option value="applied">Applied</option>
+                                <option value="interviewing">Interview</option>
+                                <option value="offered">Offer</option>
+                                <option value="rejected">Archive</option>
+                              </select>
+                              <ChevronDown className="w-2.5 h-2.5 text-[#55615b] pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2" />
+                            </div>
 
                             <button
                               onClick={() => handleDelete(app.id)}
@@ -914,17 +917,20 @@ export default function DashboardPage() {
 
                         {/* Status Stage */}
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <select
-                            value={app.status}
-                            onChange={(e) => handleStatusChange(app.id, e.target.value as ApplicationStage)}
-                            className="rounded-xl border border-neutral-200 bg-neutral-50 hover:bg-white hover:border-[#84d64f] px-3 py-1.5 text-xs font-bold text-[#14281a] outline-none cursor-pointer transition shadow-2xs"
-                          >
-                            <option value="saved">Saved to Apply</option>
-                            <option value="applied">Applied</option>
-                            <option value="interviewing">Interviewing</option>
-                            <option value="offered">Offer Received</option>
-                            <option value="rejected">Archived</option>
-                          </select>
+                          <div className="relative inline-flex items-center">
+                            <select
+                              value={app.status}
+                              onChange={(e) => handleStatusChange(app.id, e.target.value as ApplicationStage)}
+                              className="appearance-none rounded-xl border border-neutral-200/90 bg-white hover:bg-[#fbfaf8] hover:border-[#84d64f] pl-3 pr-7 py-1.5 text-xs font-bold text-[#14281a] shadow-2xs outline-none cursor-pointer transition focus:border-[#84d64f] focus:ring-2 focus:ring-[#84d64f]/20"
+                            >
+                              <option value="saved">Saved to Apply</option>
+                              <option value="applied">Applied</option>
+                              <option value="interviewing">Interviewing</option>
+                              <option value="offered">Offer Received</option>
+                              <option value="rejected">Archived</option>
+                            </select>
+                            <ChevronDown className="w-3.5 h-3.5 text-[#55615b] pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" />
+                          </div>
                         </td>
 
                         {/* Compensation */}
@@ -1016,16 +1022,19 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-bold text-[#121816]">Stage</label>
-                    <select
-                      value={newStatus}
-                      onChange={(e) => setNewStatus(e.target.value as ApplicationStage)}
-                      className="w-full rounded-xl border border-neutral-300 px-3.5 py-2.5 text-xs text-[#121816] outline-none focus:border-[#84d64f] bg-white cursor-pointer font-bold"
-                    >
-                      <option value="saved">Saved to Apply</option>
-                      <option value="applied">Applied</option>
-                      <option value="interviewing">Interviewing</option>
-                      <option value="offered">Offer Received</option>
-                    </select>
+                    <div className="relative">
+                      <select
+                        value={newStatus}
+                        onChange={(e) => setNewStatus(e.target.value as ApplicationStage)}
+                        className="w-full appearance-none rounded-xl border border-neutral-300 bg-white hover:bg-[#fbfaf8] hover:border-neutral-400 pl-3.5 pr-8 py-2.5 text-xs text-[#121816] font-bold outline-none focus:border-[#84d64f] focus:ring-2 focus:ring-[#84d64f]/20 cursor-pointer shadow-2xs transition"
+                      >
+                        <option value="saved">Saved to Apply</option>
+                        <option value="applied">Applied</option>
+                        <option value="interviewing">Interviewing</option>
+                        <option value="offered">Offer Received</option>
+                      </select>
+                      <ChevronDown className="w-3.5 h-3.5 text-[#55615b] pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" />
+                    </div>
                   </div>
                 </div>
 

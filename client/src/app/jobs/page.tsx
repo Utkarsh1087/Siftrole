@@ -26,6 +26,7 @@ import {
   Zap,
   CheckCircle2,
   Check,
+  ChevronDown,
 } from "lucide-react";
 import { CompanyLogo, getCompanyDomain } from "@/components/CompanyLogo";
 import { LiquidSilkBackground } from "@/components/LiquidSilkBackground";
@@ -304,7 +305,7 @@ export default function JobsPage() {
                 <select
                   value={selectedCompany}
                   onChange={(e) => setSelectedCompany(e.target.value)}
-                  className="appearance-none rounded-xl border border-neutral-200/80 bg-[#fbfaf8] px-4 py-2.5 pr-8 text-xs font-bold text-[#121816] outline-none transition focus:border-[#84d64f] focus:bg-white cursor-pointer"
+                  className="appearance-none rounded-xl border border-neutral-200/90 bg-white hover:bg-[#fbfaf8] hover:border-neutral-300 pl-3.5 pr-8 py-2.5 text-xs font-bold text-[#121816] shadow-2xs outline-none transition focus:border-[#84d64f] focus:ring-2 focus:ring-[#84d64f]/20 cursor-pointer"
                 >
                   <option value="all">All Companies ({companiesList.length || 6})</option>
                   {companiesList.map((c) => (
@@ -313,6 +314,7 @@ export default function JobsPage() {
                     </option>
                   ))}
                 </select>
+                <ChevronDown className="w-3.5 h-3.5 text-[#55615b] pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" />
               </div>
 
               {/* Role Type Select */}
@@ -320,13 +322,14 @@ export default function JobsPage() {
                 <select
                   value={selectedRoleType}
                   onChange={(e) => setSelectedRoleType(e.target.value)}
-                  className="appearance-none rounded-xl border border-neutral-200/80 bg-[#fbfaf8] px-4 py-2.5 pr-8 text-xs font-bold text-[#121816] outline-none transition focus:border-[#84d64f] focus:bg-white cursor-pointer"
+                  className="appearance-none rounded-xl border border-neutral-200/90 bg-white hover:bg-[#fbfaf8] hover:border-neutral-300 pl-3.5 pr-8 py-2.5 text-xs font-bold text-[#121816] shadow-2xs outline-none transition focus:border-[#84d64f] focus:ring-2 focus:ring-[#84d64f]/20 cursor-pointer"
                 >
                   <option value="all">All Role Types</option>
                   <option value="FullTime">Full-Time</option>
                   <option value="Internship">Internship</option>
                   <option value="Contract">Contract</option>
                 </select>
+                <ChevronDown className="w-3.5 h-3.5 text-[#55615b] pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" />
               </div>
 
               {/* Applied Status Filter */}
@@ -334,12 +337,13 @@ export default function JobsPage() {
                 <select
                   value={appliedFilter}
                   onChange={(e) => setAppliedFilter(e.target.value as "all" | "unapplied" | "applied")}
-                  className="appearance-none rounded-xl border border-neutral-200/80 bg-[#fbfaf8] px-4 py-2.5 pr-8 text-xs font-bold text-[#121816] outline-none transition focus:border-[#84d64f] focus:bg-white cursor-pointer"
+                  className="appearance-none rounded-xl border border-neutral-200/90 bg-white hover:bg-[#fbfaf8] hover:border-neutral-300 pl-3.5 pr-8 py-2.5 text-xs font-bold text-[#121816] shadow-2xs outline-none transition focus:border-[#84d64f] focus:ring-2 focus:ring-[#84d64f]/20 cursor-pointer"
                 >
                   <option value="all">Status: All Roles</option>
                   <option value="unapplied">Status: Not Applied Yet</option>
                   <option value="applied">Status: Applied ({appliedJobIds.size})</option>
                 </select>
+                <ChevronDown className="w-3.5 h-3.5 text-[#55615b] pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" />
               </div>
 
               {(selectedCompany !== "all" || selectedRoleType !== "all" || appliedFilter !== "all" || searchQuery.trim() || activeResumeSkills.length > 0) && (

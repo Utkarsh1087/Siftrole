@@ -1530,16 +1530,19 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <select
-                    value={userStatusFilter}
-                    onChange={(e) => setUserStatusFilter(e.target.value)}
-                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700"
-                  >
-                    <option value="ALL">All Status</option>
-                    <option value="ACTIVE">Active</option>
-                    <option value="INACTIVE">Inactive</option>
-                    <option value="SUSPENDED">Suspended</option>
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={userStatusFilter}
+                      onChange={(e) => setUserStatusFilter(e.target.value)}
+                      className="appearance-none bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl pl-3 pr-8 py-2 text-xs font-bold text-slate-700 outline-none transition focus:border-[#083327] focus:ring-2 focus:ring-[#083327]/10 cursor-pointer shadow-2xs"
+                    >
+                      <option value="ALL">All Status</option>
+                      <option value="ACTIVE">Active</option>
+                      <option value="INACTIVE">Inactive</option>
+                      <option value="SUSPENDED">Suspended</option>
+                    </select>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-500 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" />
+                  </div>
 
                   <button
                     onClick={() => {
@@ -1972,17 +1975,20 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Job Feed System *</label>
-                  <select
-                    value={companyForm.ats_type}
-                    onChange={(e) => setCompanyForm({ ...companyForm, ats_type: e.target.value })}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 outline-none text-slate-800"
-                  >
-                    <option value="GREENHOUSE">Greenhouse</option>
-                    <option value="LEVER">Lever</option>
-                    <option value="ASHBY">Ashby</option>
-                    <option value="SMARTRECRUITERS">SmartRecruiters</option>
-                    <option value="MANUAL">Manual</option>
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={companyForm.ats_type}
+                      onChange={(e) => setCompanyForm({ ...companyForm, ats_type: e.target.value })}
+                      className="w-full appearance-none rounded-xl border border-slate-200 bg-white hover:bg-slate-50 pl-3 pr-8 py-2 outline-none text-slate-800 font-medium transition focus:border-slate-800 cursor-pointer shadow-2xs"
+                    >
+                      <option value="GREENHOUSE">Greenhouse</option>
+                      <option value="LEVER">Lever</option>
+                      <option value="ASHBY">Ashby</option>
+                      <option value="SMARTRECRUITERS">SmartRecruiters</option>
+                      <option value="MANUAL">Manual</option>
+                    </select>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-500 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" />
+                  </div>
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Company Slug / Token *</label>
@@ -2060,15 +2066,18 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Status</label>
-                  <select
-                    value={userForm.status}
-                    onChange={(e) => setUserForm({ ...userForm, status: e.target.value })}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 outline-none text-slate-800"
-                  >
-                    <option value="ACTIVE">Active</option>
-                    <option value="INACTIVE">Inactive</option>
-                    <option value="SUSPENDED">Suspended</option>
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={userForm.status}
+                      onChange={(e) => setUserForm({ ...userForm, status: e.target.value })}
+                      className="w-full appearance-none rounded-xl border border-slate-200 bg-white hover:bg-slate-50 pl-3 pr-8 py-2 outline-none text-slate-800 font-medium transition focus:border-slate-800 cursor-pointer shadow-2xs"
+                    >
+                      <option value="ACTIVE">Active</option>
+                      <option value="INACTIVE">Inactive</option>
+                      <option value="SUSPENDED">Suspended</option>
+                    </select>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-500 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" />
+                  </div>
                 </div>
               </div>
               <div>

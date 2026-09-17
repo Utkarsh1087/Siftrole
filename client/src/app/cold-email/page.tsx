@@ -21,6 +21,7 @@ import {
   CheckSquare2,
   Square,
   Zap,
+  ChevronDown,
 } from "lucide-react";
 import { CompanyLogo } from "@/components/CompanyLogo";
 import {
@@ -273,28 +274,34 @@ export default function ColdEmailPage() {
             {/* Department & Status Selects */}
             <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
               {/* Department */}
-              <select
-                value={selectedDepartment}
-                onChange={(e) => setSelectedDepartment(e.target.value)}
-                className="appearance-none rounded-xl border border-neutral-200/80 bg-[#fbfaf8] px-4 py-2.5 pr-8 text-xs font-bold text-[#121816] outline-none transition focus:border-[#84d64f] focus:bg-white cursor-pointer"
-              >
-                <option value="all">All Departments</option>
-                <option value="Engineering">Engineering Talent</option>
-                <option value="Early Career / University">Early Career / University</option>
-                <option value="AI & Research">AI & Research</option>
-                <option value="Product & Design">Product & Design</option>
-              </select>
+              <div className="relative">
+                <select
+                  value={selectedDepartment}
+                  onChange={(e) => setSelectedDepartment(e.target.value)}
+                  className="appearance-none rounded-xl border border-neutral-200/90 bg-white hover:bg-[#fbfaf8] hover:border-neutral-300 pl-3.5 pr-8 py-2.5 text-xs font-bold text-[#121816] shadow-2xs outline-none transition focus:border-[#84d64f] focus:ring-2 focus:ring-[#84d64f]/20 cursor-pointer"
+                >
+                  <option value="all">All Departments</option>
+                  <option value="Engineering">Engineering Talent</option>
+                  <option value="Early Career / University">Early Career / University</option>
+                  <option value="AI & Research">AI & Research</option>
+                  <option value="Product & Design">Product & Design</option>
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-[#55615b] pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" />
+              </div>
 
               {/* Status (Mailed vs Unmailed) */}
-              <select
-                value={mailedFilter}
-                onChange={(e) => setMailedFilter(e.target.value as "all" | "unmailed" | "mailed")}
-                className="appearance-none rounded-xl border border-neutral-200/80 bg-[#fbfaf8] px-4 py-2.5 pr-8 text-xs font-bold text-[#121816] outline-none transition focus:border-[#84d64f] focus:bg-white cursor-pointer"
-              >
-                <option value="all">Status: All Contacts</option>
-                <option value="unmailed">Status: Not Mailed Yet</option>
-                <option value="mailed">Status: Mailed ({mailedContactIds.size})</option>
-              </select>
+              <div className="relative">
+                <select
+                  value={mailedFilter}
+                  onChange={(e) => setMailedFilter(e.target.value as "all" | "unmailed" | "mailed")}
+                  className="appearance-none rounded-xl border border-neutral-200/90 bg-white hover:bg-[#fbfaf8] hover:border-neutral-300 pl-3.5 pr-8 py-2.5 text-xs font-bold text-[#121816] shadow-2xs outline-none transition focus:border-[#84d64f] focus:ring-2 focus:ring-[#84d64f]/20 cursor-pointer"
+                >
+                  <option value="all">Status: All Contacts</option>
+                  <option value="unmailed">Status: Not Mailed Yet</option>
+                  <option value="mailed">Status: Mailed ({mailedContactIds.size})</option>
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-[#55615b] pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" />
+              </div>
 
               {(searchQuery.trim() || selectedDepartment !== "all" || mailedFilter !== "all") && (
                 <button
