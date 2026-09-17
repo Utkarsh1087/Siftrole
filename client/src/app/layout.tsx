@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { Inter, Plus_Jakarta_Sans, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Suspense } from "react";
 import { SmoothScrollProvider } from "@/components/SmoothScrollProvider";
+import { TopProgressBar } from "@/components/TopProgressBar";
+import { PageTransition } from "@/components/PageTransition";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -49,7 +52,12 @@ export default function RootLayout({
       className={`${inter.variable} ${plusJakartaSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-[#f8f7f5] text-[#121816] font-sans">
-        <SmoothScrollProvider>{children}</SmoothScrollProvider>
+        <Suspense fallback={null}>
+          <TopProgressBar />
+        </Suspense>
+        <SmoothScrollProvider>
+          <PageTransition>{children}</PageTransition>
+        </SmoothScrollProvider>
       </body>
     </html>
   );

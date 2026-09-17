@@ -1,10 +1,24 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 
 export function SmoothScrollProvider({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const lenisRef = useRef<any>(null);
+
+  // Reset scroll smoothly on route transitions when no hash is targeted
   useEffect(() => {
-    let lenisInstance: any = null;
+    if (typeof window !== "undefined" && !window.location.hash) {
+      if (lenisRef.current) {
+        lenisRef.current.scrollTo(0, { immediate: true });
+      } else {
+        window.scrollTo(0, 0);
+      }
+    }
+  }, [pathname]);
+
+  useEffect(() => {
     let rafId: number;
 
     const scrollToHash = (hash: string) => {
@@ -12,8 +26,8 @@ export function SmoothScrollProvider({ children }: { children: React.ReactNode }
       const targetId = hash.replace("#", "");
       const targetEl = document.getElementById(targetId);
       if (targetEl) {
-        if (lenisInstance) {
-          lenisInstance.scrollTo(targetEl, { offset: -90, duration: 1.2 });
+        if (lenisRef.current) {
+          lenisRef.current.scrollTo(targetEl, { offset: -90, duration: 1.2 });
         } else {
           targetEl.scrollIntoView({ behavior: "smooth", block: "start" });
         }
@@ -43,7 +57,7 @@ export function SmoothScrollProvider({ children }: { children: React.ReactNode }
     const initLenis = async () => {
       try {
         const Lenis = (await import("lenis")).default;
-        lenisInstance = new Lenis({
+        const lenis = new Lenis({
           duration: 1.2,
           easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
           orientation: "vertical",
@@ -54,8 +68,10 @@ export function SmoothScrollProvider({ children }: { children: React.ReactNode }
           infinite: false,
         });
 
+        lenisRef.current = lenis;
+
         function raf(time: number) {
-          lenisInstance.raf(time);
+          lenis.raf(time);
           rafId = requestAnimationFrame(raf);
         }
 
@@ -76,7 +92,10 @@ export function SmoothScrollProvider({ children }: { children: React.ReactNode }
     return () => {
       document.removeEventListener("click", handleAnchorClick);
       if (rafId) cancelAnimationFrame(rafId);
-      if (lenisInstance) lenisInstance.destroy();
+      if (lenisRef.current) {
+        lenisRef.current.destroy();
+        lenisRef.current = null;
+      }
     };
   }, []);
 
