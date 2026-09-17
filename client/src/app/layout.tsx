@@ -27,9 +27,14 @@ export const metadata: Metadata = {
   title: "Siftrole | Verified Tech Jobs & Internships for Builders",
   description: "Siftrole connects students and early-career builders with verified tech opportunities directly from trusted company career feeds.",
   icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
-    apple: "/favicon.svg",
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
   },
 };
 
