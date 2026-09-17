@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { ArrowRight, CheckCircle2, Sparkles, ShieldCheck, Mail, AlertCircle } from "lucide-react";
+import { ArrowRight, CheckCircle2, ShieldCheck, AlertCircle } from "lucide-react";
 import { LiquidSilkBackground } from "@/components/LiquidSilkBackground";
 import { NewsletterOtpModal } from "@/components/NewsletterOtpModal";
 
@@ -74,24 +74,15 @@ export function NewsletterSection({ className = "" }: NewsletterSectionProps) {
         <LiquidSilkBackground imageSrc="/images/emerald_silk_horizontal.jpg" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#0a180e]/55 via-transparent to-[#0a180e]/55 pointer-events-none" />
 
-        {/* Small top badge */}
-        <div className="relative z-10 inline-flex items-center gap-1.5 rounded-full bg-white/10 backdrop-blur-xs border border-white/20 px-3.5 py-1 text-[0.7rem] font-bold text-[#84d64f] mb-3">
-          <Sparkles className="w-3.5 h-3.5" /> Siftrole Daily Job Radar
-        </div>
-
         {/* Headline */}
         <h2 className="relative z-10 text-[2rem] sm:text-[2.75rem] lg:text-[3.15rem] font-medium sm:font-semibold tracking-[-0.02em] leading-[1.18] text-white/95 max-w-[720px] mx-auto drop-shadow-sm">
           Subscribe to our newsletter to get job updates.
         </h2>
 
-        <p className="relative z-10 mt-3 text-xs sm:text-sm text-[#eef8e5]/80 max-w-[540px] mx-auto">
-          Get verified new tech job postings, salary insights, and hiring team contacts sent straight to your inbox every morning.
-        </p>
-
         {/* Form Row */}
         <form
           onSubmit={handleSubscribe}
-          className="relative z-10 mt-7 flex flex-col sm:flex-row items-center justify-center gap-3 w-full max-w-[640px] mx-auto"
+          className="relative z-10 mt-8 flex flex-col sm:flex-row items-center justify-center gap-3.5 w-full max-w-[640px] mx-auto"
         >
           <div className="relative w-full sm:w-[400px]">
             <input
