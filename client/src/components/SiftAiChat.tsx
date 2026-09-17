@@ -453,13 +453,13 @@ export function SiftAiChat({
 
       {/* Header */}
       <div className="p-4 border-b border-neutral-100 bg-[#fbfaf8] flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          <div className="h-9 w-9 rounded-xl bg-[#14281a] p-1.5 flex items-center justify-center shadow-xs shrink-0">
+        <div className="flex items-center gap-2">
+          <div className="h-7 w-7 relative flex items-center justify-center shrink-0">
             <Image
               src="/images/siftrole-logo.png"
               alt="Sift AI"
-              width={32}
-              height={32}
+              width={28}
+              height={28}
               className="w-full h-full object-contain"
               unoptimized
             />
