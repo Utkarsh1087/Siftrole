@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowRight, MoveLeft } from "lucide-react";
+import { MoveLeft } from "lucide-react";
 
 export default function NotFound() {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -101,22 +101,14 @@ export default function NotFound() {
           Stop wasting time here like you do hunting down dead apply buttons on broken career portals.
         </p>
 
-        {/* Minimal Bold Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto">
-          <Link
-            href="/jobs"
-            className="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-[#14281a] text-[#84d64f] hover:bg-[#1a3422] px-6 py-3.5 text-sm font-bold tracking-tight transition-all active:scale-[0.98]"
-          >
-            <span>Find Real Openings</span>
-            <ArrowRight className="w-4 h-4 text-[#84d64f]" />
-          </Link>
-
+        {/* Minimal Bold Button */}
+        <div className="flex items-center justify-center max-w-xs mx-auto">
           <Link
             href="/"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border-2 border-[#14281a]/15 hover:border-[#14281a] bg-transparent text-[#14281a] px-5 py-3.5 text-sm font-bold transition-all active:scale-[0.98]"
+            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#14281a] text-[#84d64f] hover:bg-[#1a3422] px-7 py-3.5 text-sm font-bold tracking-tight transition-all active:scale-[0.98] shadow-sm"
           >
-            <MoveLeft className="w-4 h-4" />
-            <span>Home</span>
+            <MoveLeft className="w-4 h-4 text-[#84d64f]" />
+            <span>Go Back Home</span>
           </Link>
         </div>
       </main>
