@@ -28,12 +28,32 @@ export async function GET(req: NextRequest) {
       where.source = source;
     }
 
-    if (search) {
-      where.OR = [
-        { title: { contains: search, mode: "insensitive" } },
-        { company: { contains: search, mode: "insensitive" } },
-        { location: { contains: search, mode: "insensitive" } },
+    if (search.trim()) {
+      const trimmed = search.trim();
+      const stopWords = new Set([
+        "a", "an", "the", "in", "at", "for", "with", "on", "and", "or", "to", "of", "be", "me", "any", "some", "all", "job", "jobs", "role", "roles", "opening", "openings", "position", "positions"
+      ]);
+
+      const tokens = trimmed
+        .toLowerCase()
+        .replace(/[?,.!:;()\[\]]/g, " ")
+        .split(/\s+/)
+        .filter((t) => t.length > 1 && !stopWords.has(t));
+
+      const orConditions: any[] = [
+        { title: { contains: trimmed, mode: "insensitive" } },
+        { company: { contains: trimmed, mode: "insensitive" } },
+        { location: { contains: trimmed, mode: "insensitive" } },
       ];
+
+      for (const token of tokens) {
+        orConditions.push({ title: { contains: token, mode: "insensitive" } });
+        orConditions.push({ company: { contains: token, mode: "insensitive" } });
+        orConditions.push({ location: { contains: token, mode: "insensitive" } });
+        orConditions.push({ normalized_title: { contains: token, mode: "insensitive" } });
+      }
+
+      where.OR = orConditions;
     }
 
     const listings = await prisma.listing.findMany({

@@ -412,7 +412,7 @@ export function SiftAiChat({
         if (matchesWithScores.length > 0) {
           foundJobs = matchesWithScores.slice(0, 3).map((item) => item.job);
           totalMatchesCount = matchesWithScores.length;
-          filterQuery = conversationalCleaned || query;
+          filterQuery = (searchTokens.length > 0 ? searchTokens.join(" ") : conversationalCleaned) || query;
           const displaySubject = conversationalCleaned || query;
 
           if (isRemoteSearch && searchTokens.length <= 1) {
