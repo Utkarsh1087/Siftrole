@@ -154,11 +154,6 @@ export default function AboutPage() {
                 Finding job and internship openings should not require checking 50 company career pages every single morning. Siftrole monitors official career portals across top engineering companies in real time, organizes them into a clean actionable checklist, and lets you track exactly where you have applied.
               </p>
 
-              {/* AI Matching Feature Callout */}
-              <div className="mt-6 inline-flex items-center gap-2.5 rounded-2xl bg-white/10 border border-white/20 px-4 py-2.5 text-xs sm:text-sm font-bold text-[#84d64f]">
-                <Sparkles className="w-4 h-4 text-[#84d64f] shrink-0" />
-                <span>Instant AI Matching: Upload your resume to calculate your match score and discover tailored roles.</span>
-              </div>
 
               <div className="mt-8 flex flex-wrap items-center gap-4">
                 <Link
