@@ -1,91 +1,148 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { MoveLeft } from "lucide-react";
 
 export default function NotFound() {
-  const router = useRouter();
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0, normX: 0, normY: 0 });
+  const [smoothMouse, setSmoothMouse] = useState({ x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  // Allow pressing Escape key to return to home
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        router.push("/");
-      }
+    const handleMouseMove = (e: MouseEvent) => {
+      const { clientX, clientY } = e;
+      const width = window.innerWidth || 1;
+      const height = window.innerHeight || 1;
+      
+      const normX = (clientX / width - 0.5) * 2; // -1 to 1
+      const normY = (clientY / height - 0.5) * 2; // -1 to 1
+
+      setMousePos({ x: clientX, y: clientY, normX, normY });
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [router]);
+
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
+
+  // Smooth lerp / interpolation loop for buttery physics
+  useEffect(() => {
+    let animId: number;
+    const animate = () => {
+      setSmoothMouse((prev) => ({
+        x: prev.x + (mousePos.x - prev.x) * 0.12,
+        y: prev.y + (mousePos.y - prev.y) * 0.12,
+      }));
+      animId = requestAnimationFrame(animate);
+    };
+    animId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animId);
+  }, [mousePos.x, mousePos.y]);
+
+  // Calculate dynamic 3D text shadow offset based on cursor position
+  const shadowX = -mousePos.normX * 18;
+  const shadowY = -mousePos.normY * 18;
 
   return (
-    <div className="min-h-screen bg-[#f8f7f5] text-[#121816] font-sans antialiased selection:bg-[#84d64f]/30 flex flex-col justify-between p-6 sm:p-10 relative overflow-hidden select-none">
-      {/* Background Micro Dot Grid */}
-      <div className="fixed inset-0 pointer-events-none z-0 bg-[radial-gradient(#14281a_1px,transparent_1px)] [background-size:28px_28px] opacity-[0.035]" />
+    <div
+      ref={containerRef}
+      className="min-h-screen bg-[#f8f7f5] text-[#121816] font-sans antialiased selection:bg-[#84d64f]/30 flex flex-col justify-between p-6 sm:p-12 relative overflow-hidden select-none"
+    >
+      {/* Interactive Cursor Spotlight Glow */}
+      <div
+        className="fixed inset-0 pointer-events-none z-0 transition-opacity duration-500"
+        style={{
+          background: `radial-gradient(650px circle at ${smoothMouse.x}px ${smoothMouse.y}px, rgba(132, 214, 79, 0.16), transparent 70%)`,
+        }}
+      />
 
-      {/* Ambient Gradient Glows */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute -top-[20%] left-1/2 -translate-x-1/2 w-[850px] h-[500px] bg-gradient-to-b from-[#84d64f]/25 via-[#84d64f]/8 to-transparent blur-3xl opacity-80" />
-        <div className="absolute -bottom-[25%] -right-[10%] w-[550px] h-[400px] bg-[#84d64f]/15 blur-3xl rounded-full" />
+      {/* Floating Background Accent Elements that react with inverted parallax */}
+      <div
+        className="fixed top-1/4 left-1/6 w-64 h-64 rounded-full bg-[#84d64f]/10 blur-3xl pointer-events-none z-0"
+        style={{
+          transform: `translate3d(${-mousePos.normX * 35}px, ${-mousePos.normY * 35}px, 0)`,
+          transition: "transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)",
+        }}
+      />
+      <div
+        className="fixed bottom-1/4 right-1/6 w-80 h-80 rounded-full bg-[#84d64f]/8 blur-3xl pointer-events-none z-0"
+        style={{
+          transform: `translate3d(${mousePos.normX * 45}px, ${mousePos.normY * 45}px, 0)`,
+          transition: "transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)",
+        }}
+      />
+
+      {/* Top Status Bar */}
+      <div className="relative z-10 w-full max-w-3xl mx-auto flex items-center justify-between text-xs font-mono uppercase tracking-widest text-[#55615b]">
+        <span className="inline-flex items-center gap-1.5 font-bold">
+          <span className="h-1.5 w-1.5 rounded-full bg-[#84d64f] animate-ping" />
+          HTTP 404
+        </span>
+        <span className="font-semibold text-[#14281a]/60 font-mono">
+          X: {Math.round(mousePos.x)} | Y: {Math.round(mousePos.y)}
+        </span>
       </div>
 
-      {/* Top Header Bar */}
-      <header className="relative z-10 w-full max-w-3xl mx-auto flex items-center justify-between text-xs font-mono uppercase tracking-widest text-[#55615b]">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/80 border border-neutral-200/80 shadow-2xs backdrop-blur-sm">
-          <span className="h-1.5 w-1.5 rounded-full bg-[#84d64f] animate-ping" />
-          <span className="font-bold text-[#14281a]">HTTP 404</span>
+      {/* Main Center Content with 3D Parallax Movement */}
+      <main
+        className="relative z-10 w-full max-w-3xl mx-auto text-center py-12"
+        style={{
+          transform: `perspective(1000px) rotateX(${-mousePos.normY * 6}deg) rotateY(${mousePos.normX * 6}deg)`,
+          transition: "transform 0.15s cubic-bezier(0.1, 0.9, 0.2, 1)",
+        }}
+      >
+        {/* Giant Bold 404 with Dynamic Cursor-Reactive Text Shadow */}
+        <div
+          className="font-heading s__code font-black text-[#14281a] tracking-tight leading-none mb-2 transition-all duration-75"
+          style={{
+            textShadow: `${shadowX}px ${shadowY}px 30px rgba(20, 40, 26, 0.18), ${shadowX * 0.5}px ${shadowY * 0.5}px 10px rgba(132, 214, 79, 0.35)`,
+            transform: `translate3d(${mousePos.normX * 12}px, ${mousePos.normY * 12}px, 20px)`,
+          }}
+        >
+          404
         </div>
-        <span className="text-[0.7rem] font-semibold tracking-wider text-neutral-400">ROUTE UNRESOLVED</span>
-      </header>
 
-      {/* Main Center Card: Glassmorphic & Ultra Stylish */}
-      <main className="relative z-10 w-full max-w-2xl mx-auto my-auto py-6">
-        <div className="relative rounded-3xl border border-neutral-200/90 bg-white/75 backdrop-blur-xl shadow-2xl shadow-[#14281a]/5 p-8 sm:p-14 text-center overflow-hidden">
-          
-          {/* Subtle Top Decorative Accent Line */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-[#84d64f] to-transparent rounded-full" />
+        {/* Bold Punchy Headline */}
+        <h1
+          className="font-heading text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-[#14281a] leading-[1.1] mb-5"
+          style={{
+            transform: `translate3d(${mousePos.normX * 6}px, ${mousePos.normY * 6}px, 10px)`,
+            transition: "transform 0.15s ease-out",
+          }}
+        >
+          This page is a ghost listing.
+        </h1>
 
-          {/* Giant Stylish 404 Display */}
-          <div className="relative inline-block mb-3">
-            <span className="font-heading s__code font-black bg-gradient-to-b from-[#14281a] via-[#1a3422] to-[#2e5939] bg-clip-text text-transparent drop-shadow-xs leading-none select-none block">
-              404
-            </span>
-            <div className="absolute -inset-4 bg-[#84d64f]/15 blur-2xl rounded-full -z-10" />
-          </div>
+        {/* Sarcastic Copy */}
+        <p
+          className="text-base sm:text-xl font-medium text-[#55615b] max-w-xl mx-auto leading-relaxed mb-10"
+          style={{
+            transform: `translate3d(${mousePos.normX * 3}px, ${mousePos.normY * 3}px, 5px)`,
+            transition: "transform 0.15s ease-out",
+          }}
+        >
+          This page doesn&apos;t exist. Stop wasting your time here like you do hunting down dead apply links on broken career portals.
+        </p>
 
-          {/* Bold Punchy Headline */}
-          <h1 className="font-heading text-2xl sm:text-4xl font-extrabold tracking-tight text-[#14281a] leading-tight mb-4">
-            This page is a ghost listing.
-          </h1>
-
-          {/* Sarcastic Copy */}
-          <p className="text-sm sm:text-base text-[#55615b] font-medium leading-relaxed max-w-lg mx-auto mb-8">
-            This page doesn&apos;t exist. Stop wasting your time here like you do hunting down dead apply links on broken career portals.
-          </p>
-
-          {/* High-Contrast Bold Action Button */}
-          <div className="flex flex-col items-center justify-center gap-3">
-            <Link
-              href="/"
-              className="group inline-flex items-center justify-center gap-2.5 rounded-full bg-[#14281a] hover:bg-[#1a3422] text-[#84d64f] hover:text-white px-8 py-3.5 text-sm font-heading font-bold tracking-tight shadow-xl shadow-[#14281a]/15 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
-            >
-              <MoveLeft className="w-4 h-4 text-[#84d64f] group-hover:text-white group-hover:-translate-x-1 transition-transform" />
-              <span>Back to Home</span>
-            </Link>
-
-            <span className="text-[0.7rem] font-mono text-neutral-400">
-              or press <kbd className="px-1.5 py-0.5 rounded bg-neutral-100 border border-neutral-300/80 text-neutral-600 font-semibold text-[0.65rem] shadow-2xs">ESC</kbd> to return
-            </span>
-          </div>
-
+        {/* High-Contrast Bold Platform Button with Magnetic Hover Accent */}
+        <div className="flex items-center justify-center">
+          <Link
+            href="/"
+            className="group relative inline-flex items-center justify-center gap-2.5 rounded-full bg-[#14281a] hover:bg-[#1a3422] text-[#84d64f] hover:text-[#95e660] px-8 py-4 text-sm font-heading font-bold tracking-tight transition-all active:scale-[0.98] shadow-lg shadow-[#14281a]/15 cursor-pointer"
+            style={{
+              transform: `translate3d(${mousePos.normX * 8}px, ${mousePos.normY * 8}px, 15px)`,
+              transition: "transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.2s",
+            }}
+          >
+            <MoveLeft className="w-4 h-4 text-[#84d64f] group-hover:-translate-x-1 transition-transform" />
+            <span>Back to Home</span>
+          </Link>
         </div>
       </main>
 
-      {/* Footer Bar */}
-      <footer className="relative z-10 w-full max-w-3xl mx-auto flex items-center justify-between text-xs font-mono text-[#79857f] pt-4">
+      {/* Bottom Status Bar */}
+      <footer className="relative z-10 w-full max-w-3xl mx-auto text-center text-xs font-mono text-[#79857f] pt-6 border-t border-[#e5e2db]">
         <span>404 // DEAD END</span>
-        <span className="text-[0.7rem]">STATUS CODE OK</span>
       </footer>
     </div>
   );
