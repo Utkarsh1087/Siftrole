@@ -110,10 +110,10 @@ export default function NotFound() {
             transition: "transform 0.15s ease-out",
           }}
         >
-          This page is a ghost listing.
+          This page does not exist.
         </h1>
 
-        {/* Sarcastic Copy */}
+        {/* Sarcastic Copy in Easy English */}
         <p
           className="text-base sm:text-xl font-medium text-[#55615b] max-w-xl mx-auto leading-relaxed mb-10"
           style={{
@@ -121,7 +121,7 @@ export default function NotFound() {
             transition: "transform 0.15s ease-out",
           }}
         >
-          This page doesn&apos;t exist. Stop wasting your time here like you do hunting down dead apply links on broken career portals.
+          Don&apos;t waste your time here like you do finding different apply links on different career pages.
         </p>
 
         {/* High-Contrast Bold Platform Button with Magnetic Hover Accent */}
