@@ -351,8 +351,8 @@ export default function AboutPage() {
               <div className="text-xs sm:text-sm font-bold text-[#55615b]">Checklist & Tracking</div>
             </div>
             <div>
-              <div className="text-[2.8rem] sm:text-[3.5rem] font-black text-[#58a826] tracking-tight">Soon</div>
-              <div className="text-xs sm:text-sm font-bold text-[#55615b]">Automated Easy Apply</div>
+              <div className="text-[2.8rem] sm:text-[3.5rem] font-black text-[#58a826] tracking-tight">AI-Match</div>
+              <div className="text-xs sm:text-sm font-bold text-[#55615b]">Resume Fit & Scoring</div>
             </div>
           </div>
         </section>

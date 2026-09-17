@@ -137,8 +137,8 @@ export default function Home() {
       a: "Yes, 100% free. You can search, filter, and jump directly to official application portals without registration fees, paywalls, or recruiter middlemen.",
     },
     {
-      q: "How does the upcoming Resume Matching work?",
-      a: "You upload your resume once, and our engine ranks open roles into High, Medium, and Low fit buckets based on your skills and graduation year. Instead of searching every day, you get notified when strong matches open.",
+      q: "How does AI Resume Matching work?",
+      a: "Upload your resume in the Sift AI drawer on the Jobs board, and our matching engine instantly scores and ranks all open roles into High, Medium, and Low fit match buckets based on your stack and graduation year.",
     },
   ];
 
