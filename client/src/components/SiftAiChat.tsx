@@ -230,55 +230,41 @@ export function SiftAiChat({
         replyText = "🔒 **Security Guardrail Active**: Sift AI is strictly restricted to assisting with verified tech roles, candidate resume matching, and platform navigation on Siftrole. Internal platform architecture, environment variables, credentials, and tokens are secure and completely inaccessible.";
       }
       // 2. PLATFORM INFORMATION & PHILOSOPHY
-      else if (lower.includes("what is siftrole") || lower.includes("how does siftrole work") || lower.includes("about siftrole") || lower.includes("tell me about siftrole")) {
-        replyText = "✨ **About Siftrole**: Siftrole is the central hub and ultimate application checklist for tech jobs and internships. We bring all big company openings into one place so you never miss an opportunity, help you track your applications, and will soon launch 1-Click Automated Easy Apply!";
-      } else if (lower.includes("easy apply") || lower.includes("1 click apply") || lower.includes("apply automated")) {
-        replyText = "🚀 **Upcoming 1-Click Easy Apply**: We are building an automated Easy Apply feature that will allow students and developers to dispatch verified applications directly to employer ATS portals with a single click. Stay tuned!";
-      } else if (lower.includes("checklist") || lower.includes("track") || lower.includes("tracker")) {
+      else if (
+        lower.includes("what is siftrole") ||
+        lower.includes("how does siftrole work") ||
+        lower.includes("about siftrole") ||
+        lower.includes("tell me about siftrole")
+      ) {
+        replyText = "✨ **About Siftrole**: Siftrole is the central hub and ultimate application checklist for tech jobs and internships. We bring verified openings from official company career streams into one place so you never miss an opportunity, track your applications, and match your resume with AI.";
+      } else if (
+        lower.includes("checklist") ||
+        lower.includes("track") ||
+        lower.includes("tracker")
+      ) {
         replyText = "📋 **The Application Checklist**: Siftrole acts as your personal job search command center. You can browse live openings from top companies, mark roles you have applied to, and keep track of your active pipeline so no opportunity slips by.";
-      } else if (lower.includes("ghost job") || lower.includes("fake job") || lower.includes("verified")) {
+      } else if (
+        lower.includes("ghost job") ||
+        lower.includes("fake job") ||
+        lower.includes("verified")
+      ) {
         replyText = "🛡️ **Zero Ghost Jobs Guarantee**: Generic job boards leave stale postings active for months. Siftrole ingests public ATS JSON APIs continuously. When a company marks a role filled or closed, it auto-expires from our feed within minutes.";
-      } else if (lower.includes("free") || lower.includes("price") || lower.includes("cost") || lower.includes("paywall")) {
+      } else if (
+        lower.includes("free") ||
+        lower.includes("price") ||
+        lower.includes("cost") ||
+        lower.includes("paywall")
+      ) {
         replyText = "💡 **100% Free for Applicants**: Siftrole is completely free for students, developers, and builders. You can browse, filter, match resumes, and apply directly on the employer's official portal with zero fees or recruiter middlemen.";
-      } else if (lower.includes("how to match") || lower.includes("upload resume") || lower.includes("resume match")) {
-        replyText = "📄 **How Resume Matching Works**: You can drop your PDF/DOCX resume directly into this chat or click the paperclip icon. Sift AI will extract your core tech skills and instantly re-rank all live jobs by % compatibility score!";
+      } else if (
+        lower.includes("how to match") ||
+        lower.includes("upload resume") ||
+        lower.includes("resume match") ||
+        lower.includes("resume score")
+      ) {
+        replyText = "📄 **How Resume Matching Works**: You can drop your PDF/DOCX resume directly into this chat or click the paperclip icon. Sift AI extracts your core tech skills and instantly re-ranks all live jobs by compatibility score.";
       }
-      // 3. TARGETED JOB & CRITERIA SEARCHES
-      else if (lower.includes("remote") || lower.includes("anywhere") || lower.includes("work from home")) {
-        foundJobs = liveListings.filter(
-          (j) => j.location.toLowerCase().includes("remote") || j.location.toLowerCase().includes("anywhere")
-        ).slice(0, 3);
-        replyText = `Found **${foundJobs.length} verified remote engineering roles** available across official feeds:`;
-      } else if (lower.includes("intern") || lower.includes("internship") || lower.includes("student") || lower.includes("2026") || lower.includes("junior") || lower.includes("entry")) {
-        foundJobs = liveListings.filter(
-          (j) =>
-            (j.employment_type && j.employment_type.toLowerCase().includes("intern")) ||
-            (j.experience_level && (j.experience_level.toLowerCase().includes("entry") || j.experience_level.toLowerCase().includes("intern") || j.experience_level.toLowerCase().includes("junior"))) ||
-            j.title.toLowerCase().includes("intern") ||
-            j.title.toLowerCase().includes("junior")
-        ).slice(0, 3);
-        if (foundJobs.length === 0) foundJobs = liveListings.slice(0, 3);
-        replyText = `Here are active early-career and entry-level engineering openings open for direct application:`;
-      } else if (lower.includes("salary") || lower.includes("high") || lower.includes("150k") || lower.includes("pay") || lower.includes("compensation")) {
-        foundJobs = liveListings.filter(
-          (j) => j.stipend_or_salary && (j.stipend_or_salary.includes("1") || j.stipend_or_salary.includes("2"))
-        ).slice(0, 3);
-        if (foundJobs.length === 0) foundJobs = liveListings.slice(0, 3);
-        replyText = `Here are verified roles with top-tier compensation brackets:`;
-      } else if (lower.includes("figma") || lower.includes("stripe") || lower.includes("spotify") || lower.includes("linear") || lower.includes("notion") || lower.includes("smartrecruiters")) {
-        const comp = ["figma", "stripe", "spotify", "linear", "notion", "smartrecruiters"].find((c) => lower.includes(c)) || "figma";
-        foundJobs = liveListings.filter((j) => j.company.toLowerCase().includes(comp)).slice(0, 3);
-        replyText = `Here are active openings directly from **${foundJobs[0]?.company || comp}**'s official career stream:`;
-      } else if (lower.includes("react") || lower.includes("python") || lower.includes("node") || lower.includes("typescript") || lower.includes("golang") || lower.includes("rust") || lower.includes("aws") || lower.includes("docker")) {
-        const skill = ["react", "python", "node", "typescript", "golang", "rust", "aws", "docker"].find((s) => lower.includes(s)) || "react";
-        foundJobs = liveListings.filter(
-          (j) =>
-            j.skills_required?.some((s) => s.toLowerCase().includes(skill)) ||
-            j.title.toLowerCase().includes(skill)
-        ).slice(0, 3);
-        replyText = `Found verified roles requiring **${skill.toUpperCase()}** in their tech stack:`;
-      }
-      // 4. OFF-TOPIC OR GENERAL JOB QUERIES
+      // 3. OFF-TOPIC GENERAL INQUIRIES
       else if (
         lower.includes("weather") ||
         lower.includes("recipe") ||
@@ -289,9 +275,135 @@ export function SiftAiChat({
         lower.includes("politics")
       ) {
         replyText = "👋 I am Sift AI, specifically trained to help you discover verified tech roles, match your resume, and navigate official company career feeds. Ask me about open engineering roles, salary brackets, or drop your resume!";
-      } else {
-        foundJobs = liveListings.slice(0, 3);
-        replyText = `Here are top active verified tech roles currently ingesting live from official company feeds:`;
+      }
+      // 4. INTELLIGENT SEARCH & QUERY MATCHING ENGINE
+      else {
+        // Strip conversational noise and extract search intent
+        const conversationalCleaned = lower
+          .replace(/can you (please )?(show|find|give|get|display) (me|be|us)?/g, "")
+          .replace(/could you (please )?(show|find|give|get|display) (me|be|us)?/g, "")
+          .replace(/please (show|find|give|get|display) (me|be|us)?/g, "")
+          .replace(/i('m| am)? (looking|searching) for/g, "")
+          .replace(/i want (to see|to find)?/g, "")
+          .replace(/show (me|be|us)?/g, "")
+          .replace(/find (me|be|us)?/g, "")
+          .replace(/search for/g, "")
+          .replace(/are there any/g, "")
+          .replace(/do you have (any)?/g, "")
+          .replace(/is there (any)?/g, "")
+          .replace(/give me/g, "")
+          .replace(/tell me about/g, "")
+          .replace(/openings? for/g, "")
+          .replace(/positions? for/g, "")
+          .replace(/jobs? for/g, "")
+          .replace(/job of/g, "")
+          .replace(/roles? for/g, "")
+          .replace(/role of/g, "")
+          .replace(/hiring for/g, "")
+          .replace(/[?,.!:;()\[\]]/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+
+        const stopWords = new Set([
+          "a", "an", "the", "in", "at", "for", "with", "on", "and", "or", "to", "of", "be", "me", "any", "some", "all", "job", "jobs", "role", "roles", "opening", "openings", "position", "positions"
+        ]);
+
+        const searchTokens = conversationalCleaned
+          .split(/\s+/)
+          .map((t) => t.trim())
+          .filter((t) => t.length > 1 && !stopWords.has(t));
+
+        const isRemoteSearch = lower.includes("remote") || lower.includes("anywhere") || lower.includes("work from home");
+        const isInternSearch = lower.includes("intern") || lower.includes("internship") || lower.includes("student") || lower.includes("2026") || lower.includes("junior") || lower.includes("entry");
+        const isHighSalarySearch = lower.includes("salary") || lower.includes("high pay") || lower.includes("highest pay") || lower.includes("150k") || lower.includes("compensation");
+
+        // Score each listing against user query tokens and criteria
+        const scoredListings = liveListings.map((job) => {
+          let score = 0;
+          const titleLower = job.title.toLowerCase();
+          const normTitleLower = (job.normalized_title || "").toLowerCase();
+          const compLower = job.company.toLowerCase();
+          const locLower = job.location.toLowerCase();
+          const skillsLower = (job.skills_required || []).map((s) => s.toLowerCase());
+          const jdLower = ((job.raw_jd_text || "") + " " + (job.job_description || "")).toLowerCase();
+          const empTypeLower = (job.employment_type || "").toLowerCase();
+          const expLevelLower = (job.experience_level || "").toLowerCase();
+
+          // Full cleaned phrase match
+          if (conversationalCleaned.length > 2) {
+            if (titleLower.includes(conversationalCleaned) || normTitleLower.includes(conversationalCleaned)) {
+              score += 120;
+            } else if (compLower.includes(conversationalCleaned)) {
+              score += 80;
+            } else if (skillsLower.some((s) => s.includes(conversationalCleaned))) {
+              score += 70;
+            }
+          }
+
+          // Individual token matches
+          for (const token of searchTokens) {
+            if (titleLower.includes(token) || normTitleLower.includes(token)) {
+              score += 45;
+            }
+            if (compLower.includes(token)) {
+              score += 50;
+            }
+            if (skillsLower.some((s) => s.includes(token))) {
+              score += 35;
+            }
+            if (locLower.includes(token)) {
+              score += 25;
+            }
+            if (empTypeLower.includes(token) || expLevelLower.includes(token)) {
+              score += 25;
+            }
+            if (jdLower.includes(token)) {
+              score += 10;
+            }
+          }
+
+          // Attribute matches
+          if (isRemoteSearch && (locLower.includes("remote") || locLower.includes("anywhere"))) {
+            score += 40;
+          }
+          if (isInternSearch && (empTypeLower.includes("intern") || expLevelLower.includes("entry") || expLevelLower.includes("junior") || titleLower.includes("intern") || titleLower.includes("junior"))) {
+            score += 40;
+          }
+          if (isHighSalarySearch && job.stipend_or_salary && (job.stipend_or_salary.includes("1") || job.stipend_or_salary.includes("2"))) {
+            score += 30;
+          }
+
+          return { job, score };
+        });
+
+        // Filter relevant matches
+        const matchesWithScores = scoredListings
+          .filter((item) => item.score >= 35)
+          .sort((a, b) => b.score - a.score);
+
+        if (matchesWithScores.length > 0) {
+          foundJobs = matchesWithScores.slice(0, 3).map((item) => item.job);
+          const displaySubject = conversationalCleaned || query;
+
+          if (isRemoteSearch && searchTokens.length <= 1) {
+            replyText = `Found **${foundJobs.length} verified remote engineering roles** available across official feeds:`;
+          } else if (isInternSearch && searchTokens.length <= 1) {
+            replyText = `Here are active early-career and entry-level engineering openings open for direct application:`;
+          } else if (isHighSalarySearch && searchTokens.length <= 1) {
+            replyText = `Here are verified roles with top-tier compensation brackets:`;
+          } else {
+            replyText = `Found **${matchesWithScores.length} active verified roles** matching **"${displaySubject}"** across official feeds:`;
+          }
+        } else {
+          // If no matching jobs were found for a specific subject
+          if (conversationalCleaned.length > 0 && searchTokens.length > 0) {
+            foundJobs = liveListings.slice(0, 3);
+            replyText = `I searched all live company career feeds for **"${conversationalCleaned}"**, but there are currently no active openings matching this role in our database.\n\nSiftrole continuously ingests verified openings from official portals. Here are the latest active technical roles available right now:`;
+          } else {
+            foundJobs = liveListings.slice(0, 3);
+            replyText = `Here are top active verified tech roles currently ingesting live from official company feeds:`;
+          }
+        }
       }
 
       const aiMsg: Message = {
@@ -303,8 +415,9 @@ export function SiftAiChat({
       };
 
       setMessages((prev) => [...prev, aiMsg]);
-    }, 700);
+    }, 650);
   };
+
 
   return (
     <div
@@ -430,6 +543,12 @@ export function SiftAiChat({
                     <Link
                       key={j.id || j.title}
                       href={`/jobs/${j.id}`}
+                      onClick={(e) => {
+                        if (onSelectListing) {
+                          e.preventDefault();
+                          onSelectListing(j);
+                        }
+                      }}
                       className="rounded-xl border border-neutral-200/90 bg-white p-2.5 hover:border-[#84d64f] hover:shadow-xs transition cursor-pointer flex items-center justify-between gap-2 block"
                     >
                       <div className="min-w-0 flex-1">
