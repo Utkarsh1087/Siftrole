@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Sparkles,
   Send,
@@ -453,12 +454,19 @@ export function SiftAiChat({
       {/* Header */}
       <div className="p-4 border-b border-neutral-100 bg-[#fbfaf8] flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-[#14281a] to-[#3c7818] text-[#84d64f] flex items-center justify-center shadow-xs">
-            <Sparkles className="w-4 h-4" />
+          <div className="h-9 w-9 rounded-xl bg-[#14281a] p-1.5 flex items-center justify-center shadow-xs shrink-0">
+            <Image
+              src="/images/siftrole-logo.png"
+              alt="Sift AI"
+              width={32}
+              height={32}
+              className="w-full h-full object-contain"
+              unoptimized
+            />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <h3 className="text-xs sm:text-sm font-black text-[#121816]">Sift AI Assistant</h3>
+              <h3 className="text-xs sm:text-sm font-black text-[#121816]">Sift AI</h3>
               <span className="inline-block h-2 w-2 rounded-full bg-[#84d64f] animate-pulse" />
             </div>
             <p className="text-[0.65rem] sm:text-[0.7rem] font-semibold text-[#55615b]">
