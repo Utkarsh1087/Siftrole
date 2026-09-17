@@ -26,6 +26,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Siftrole | Verified Tech Jobs & Internships for Builders",
   description: "Siftrole connects students and early-career builders with verified tech opportunities directly from trusted company career feeds.",
+  icons: {
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({

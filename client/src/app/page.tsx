@@ -33,6 +33,7 @@ import {
 import { CompanyLogo, getCompanyDomain } from "@/components/CompanyLogo";
 import { LiquidSilkBackground } from "@/components/LiquidSilkBackground";
 import { NewsletterSection } from "@/components/NewsletterSection";
+import { SiftroleLogoMark } from "@/components/SiftroleLogo";
 import { useAppliedJobs } from "@/lib/appliedJobs";
 import { useAuth } from "@/lib/useAuth";
 
@@ -156,7 +157,8 @@ export default function Home() {
         <header className="sticky top-4 z-50 rounded-[20px] border border-neutral-200/80 bg-white/85 backdrop-blur-md px-5 py-3 shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-all">
           <div className="flex items-center justify-between gap-4">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 group">
+            <Link href="/" className="flex items-center gap-2.5 group">
+              <SiftroleLogoMark size={32} />
               <span className="text-[1.85rem] font-black tracking-[-0.04em] text-[#121816]">
                 Sift<span className="text-[#58a826] transition-colors group-hover:text-[#4a911e]">role</span>
               </span>
@@ -719,9 +721,12 @@ export default function Home() {
           </div>
 
           {/* ======================================================== */}
-          {/* MASSIVE BOTTOM SIFTROLE WORDMARK */}
+          {/* MASSIVE BOTTOM SIFTROLE WORDMARK & GREEN LOGO EMBLEM */}
           {/* ======================================================== */}
           <div className="pt-10 pb-4 select-none overflow-hidden text-center text-[#14281a]">
+            <div className="flex justify-center mb-4">
+              <SiftroleLogoMark size={64} className="drop-shadow-[0_10px_25px_rgba(132,214,79,0.3)]" />
+            </div>
             <span className="text-[13vw] sm:text-[14vw] font-black tracking-[-0.04em] leading-none uppercase select-none text-[#14281a] inline-block">
               SIFTROLE
             </span>

@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { LiquidSilkBackground } from "@/components/LiquidSilkBackground";
 import { NewsletterSection } from "@/components/NewsletterSection";
+import { SiftroleLogoMark } from "@/components/SiftroleLogo";
 import { useAuth } from "@/lib/useAuth";
 
 export default function AboutPage() {
@@ -54,7 +55,8 @@ export default function AboutPage() {
                 <ChevronLeft className="w-4 h-4 text-[#3c7818]" /> Home
               </Link>
 
-              <Link href="/" className="flex items-center gap-2 group">
+              <Link href="/" className="flex items-center gap-2.5 group">
+                <SiftroleLogoMark size={28} />
                 <span className="text-[1.7rem] font-black tracking-[-0.04em] text-[#121816]">
                   Sift<span className="text-[#58a826] transition-colors group-hover:text-[#4a911e]">role</span>
                 </span>
@@ -393,8 +395,11 @@ export default function AboutPage() {
             </div>
           </div>
 
-          {/* SIFTROLE giant bottom wordmark */}
+          {/* SIFTROLE giant bottom wordmark with green logo emblem */}
           <div className="mt-12 select-none overflow-hidden text-center">
+            <div className="flex justify-center mb-4">
+              <SiftroleLogoMark size={64} className="drop-shadow-[0_10px_25px_rgba(132,214,79,0.3)]" />
+            </div>
             <span className="block text-[13vw] sm:text-[14vw] font-black uppercase text-[#14281a] leading-none pointer-events-none opacity-90">
               SIFTROLE
             </span>

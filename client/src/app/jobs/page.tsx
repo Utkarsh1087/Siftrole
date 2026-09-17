@@ -32,6 +32,7 @@ import { CompanyLogo, getCompanyDomain } from "@/components/CompanyLogo";
 import { LiquidSilkBackground } from "@/components/LiquidSilkBackground";
 import { NewsletterSection } from "@/components/NewsletterSection";
 import { SiftAiChat, Listing } from "@/components/SiftAiChat";
+import { SiftroleLogoMark } from "@/components/SiftroleLogo";
 import { useAppliedJobs } from "@/lib/appliedJobs";
 import { useAuth } from "@/lib/useAuth";
 
@@ -216,7 +217,8 @@ export default function JobsPage() {
                 <ChevronLeft className="w-4 h-4 text-[#3c7818]" /> Home
               </Link>
 
-              <Link href="/" className="flex items-center gap-2 group">
+              <Link href="/" className="flex items-center gap-2.5 group">
+                <SiftroleLogoMark size={28} />
                 <span className="text-[1.7rem] font-black tracking-[-0.04em] text-[#121816]">
                   Sift<span className="text-[#58a826] transition-colors group-hover:text-[#4a911e]">role</span>
                 </span>
@@ -705,9 +707,12 @@ export default function JobsPage() {
           </div>
 
           {/* ======================================================== */}
-          {/* MASSIVE BOTTOM SIFTROLE WORDMARK */}
+          {/* MASSIVE BOTTOM SIFTROLE WORDMARK & GREEN LOGO EMBLEM */}
           {/* ======================================================== */}
           <div className="pt-10 pb-4 select-none overflow-hidden text-center text-[#14281a]">
+            <div className="flex justify-center mb-4">
+              <SiftroleLogoMark size={64} className="drop-shadow-[0_10px_25px_rgba(132,214,79,0.3)]" />
+            </div>
             <span className="text-[13vw] sm:text-[14vw] font-black tracking-[-0.04em] leading-none uppercase select-none text-[#14281a] inline-block">
               SIFTROLE
             </span>

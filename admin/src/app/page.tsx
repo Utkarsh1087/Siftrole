@@ -39,6 +39,7 @@ import {
   PanelLeftOpen,
 } from "lucide-react";
 import { CompanyLogo } from "@/components/CompanyLogo";
+import { SiftroleLogoMark } from "@/components/SiftroleLogo";
 
 interface Message {
   id: string;
@@ -664,17 +665,20 @@ export default function AdminDashboard() {
           {/* Logo & Collapse Toggle */}
           <div className="flex items-center justify-between px-1 py-3 mb-4">
             {!isSidebarCollapsed ? (
-              <div className="text-xl font-black tracking-tight text-slate-900 px-1">
-                Sift<span className="text-[#083327]">role</span> <span className="text-xs font-bold text-slate-400 ml-1">Admin</span>
+              <div className="flex items-center gap-2 px-1">
+                <SiftroleLogoMark size={26} />
+                <div className="text-xl font-black tracking-tight text-slate-900">
+                  Sift<span className="text-[#083327]">role</span> <span className="text-[0.65rem] font-bold bg-[#eef8e5] text-[#3c7818] border border-[#cce8be] px-1.5 py-0.5 rounded ml-1">Admin</span>
+                </div>
               </div>
             ) : (
               <div className="w-full flex justify-center">
                 <button
                   onClick={() => setIsSidebarCollapsed(false)}
-                  className="h-9 w-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#083327] font-black text-sm flex items-center justify-center transition border border-slate-200 shadow-xs"
+                  className="h-9 w-9 rounded-xl bg-slate-50 hover:bg-[#eef8e5] flex items-center justify-center transition border border-slate-200 shadow-xs"
                   title="Expand sidebar"
                 >
-                  S
+                  <SiftroleLogoMark size={22} />
                 </button>
               </div>
             )}
