@@ -24,7 +24,8 @@ build/
 *.db
 *.sqlite
 *.sqlite-journal
-server/data/*.db
+server/data/
+
 
 # Logs & Debugging
 *.log
