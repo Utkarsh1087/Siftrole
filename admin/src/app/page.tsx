@@ -690,7 +690,7 @@ export default function AdminDashboard() {
             )}
           </div>
 
-          {/* Public Website Status & Quick Jump */}
+          {/* Public Website Quick Jump */}
           {!isSidebarCollapsed ? (
             <a
               href="http://localhost:3000"
@@ -699,13 +699,8 @@ export default function AdminDashboard() {
               className="bg-slate-50 hover:bg-[#eef8e5] border border-slate-200 hover:border-[#84d64f] rounded-xl px-3 py-2.5 mb-4 flex items-center justify-between transition group"
               title="Go to main website (localhost:3000)"
             >
-              <div className="overflow-hidden">
-                <div className="text-[0.65rem] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#84d64f] animate-pulse" /> Live Website
-                </div>
-                <div className="text-xs font-bold text-slate-900 truncate group-hover:text-[#14281a] transition mt-0.5">
-                  Go to Main Website
-                </div>
+              <div className="text-xs font-bold text-slate-900 truncate group-hover:text-[#14281a] transition">
+                Go to Main Website
               </div>
               <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#14281a] transition shrink-0 ml-2" />
             </a>
