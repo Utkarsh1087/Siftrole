@@ -48,8 +48,8 @@ function LoginForm() {
     event.preventDefault();
     setError("");
 
-    if (!agreedToTerms) {
-      setError("You must accept the Terms of Use and Privacy Policy to continue.");
+    if (isSignUp && !agreedToTerms) {
+      setError("You must accept the Terms of Use and Privacy Policy to create an account.");
       return;
     }
 
@@ -223,31 +223,33 @@ function LoginForm() {
               </div>
             ) : null}
 
-            {/* Mandatory Terms & Privacy Agreement */}
-            <div className="flex items-start gap-2.5 pt-1 text-left">
-              <input
-                type="checkbox"
-                id="terms-checkbox"
-                checked={agreedToTerms}
-                onChange={(e) => {
-                  setAgreedToTerms(e.target.checked);
-                  if (error) setError("");
-                }}
-                className="mt-1 h-4 w-4 rounded border-neutral-300 text-[#3c7818] focus:ring-[#84d64f] accent-[#3c7818] cursor-pointer"
-                required
-              />
-              <label htmlFor="terms-checkbox" className="text-[0.75rem] text-[#55615b] leading-relaxed cursor-pointer select-none">
-                I have read and agree to Siftrole&apos;s{" "}
-                <Link href="/terms" target="_blank" className="text-[#3c7818] font-bold underline hover:text-[#14281a]">
-                  Terms of Use
-                </Link>{" "}
-                and{" "}
-                <Link href="/privacy" target="_blank" className="text-[#3c7818] font-bold underline hover:text-[#14281a]">
-                  Privacy Policy
-                </Link>
-                . <span className="text-red-500 font-bold">*</span>
-              </label>
-            </div>
+            {/* Mandatory Terms & Privacy Agreement (Sign Up Only) */}
+            {isSignUp && (
+              <div className="flex items-start gap-2.5 pt-1 text-left">
+                <input
+                  type="checkbox"
+                  id="terms-checkbox"
+                  checked={agreedToTerms}
+                  onChange={(e) => {
+                    setAgreedToTerms(e.target.checked);
+                    if (error) setError("");
+                  }}
+                  className="mt-1 h-4 w-4 rounded border-neutral-300 text-[#3c7818] focus:ring-[#8cd64f] accent-[#3c7818] cursor-pointer"
+                  required
+                />
+                <label htmlFor="terms-checkbox" className="text-[0.75rem] text-[#55615b] leading-relaxed cursor-pointer select-none">
+                  I have read and agree to Siftrole&apos;s{" "}
+                  <Link href="/terms" target="_blank" className="text-[#3c7818] font-bold underline hover:text-[#14281a]">
+                    Terms of Use
+                  </Link>{" "}
+                  and{" "}
+                  <Link href="/privacy" target="_blank" className="text-[#3c7818] font-bold underline hover:text-[#14281a]">
+                    Privacy Policy
+                  </Link>
+                  . <span className="text-red-500 font-bold">*</span>
+                </label>
+              </div>
+            )}
 
             {/* Primary Action Button */}
             <button
@@ -327,18 +329,20 @@ function LoginForm() {
             </div>
           </div>
 
-          {/* Terms of Service agreement */}
-          <p className="mt-6 text-[0.72rem] text-center text-[#7b8d80] leading-relaxed">
-            By creating an account you agree to Siftrole&apos;s{" "}
-            <Link href="/terms" className="text-[#3c7818] font-semibold hover:underline">
-              Terms of Service
-            </Link>{" "}
-            and{" "}
-            <Link href="/privacy" className="text-[#3c7818] font-semibold hover:underline">
-              Privacy Policy
-            </Link>
-            .
-          </p>
+          {/* Terms of Service agreement (Sign Up Only) */}
+          {isSignUp && (
+            <p className="mt-6 text-[0.72rem] text-center text-[#7b8d80] leading-relaxed">
+              By creating an account you agree to Siftrole&apos;s{" "}
+              <Link href="/terms" className="text-[#3c7818] font-semibold hover:underline">
+                Terms of Service
+              </Link>{" "}
+              and{" "}
+              <Link href="/privacy" className="text-[#3c7818] font-semibold hover:underline">
+                Privacy Policy
+              </Link>
+              .
+            </p>
+          )}
 
           {/* Bottom Switcher */}
           <div className="mt-5 pt-5 border-t border-[#f0f4ee] text-center">
