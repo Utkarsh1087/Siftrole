@@ -683,8 +683,8 @@ export default function Home() {
               <ul className="space-y-2.5 text-xs font-semibold text-[#55615b]">
                 <li><Link href="/about" className="hover:text-[#3c7818] transition">About</Link></li>
                 <li><Link href="/jobs" className="hover:text-[#3c7818] transition">Opportunities</Link></li>
-                <li><Link href="/#faq" className="hover:text-[#3c7818] transition">FAQ</Link></li>
-                <li><Link href="/changelog" className="hover:text-[#3c7818] transition">Changelog</Link></li>
+                <li><a href="#faq" className="hover:text-[#3c7818] transition">FAQ</a></li>
+                <li><Link href="/cold-email" className="hover:text-[#3c7818] transition">Recruiter Outreach</Link></li>
               </ul>
             </div>
 

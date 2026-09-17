@@ -670,7 +670,7 @@ export default function JobsPage() {
                 <li><Link href="/about" className="hover:text-[#3c7818] transition">About</Link></li>
                 <li><Link href="/jobs" className="hover:text-[#3c7818] transition">Opportunities</Link></li>
                 <li><Link href="/#faq" className="hover:text-[#3c7818] transition">FAQ</Link></li>
-                <li><Link href="/changelog" className="hover:text-[#3c7818] transition">Changelog</Link></li>
+                <li><Link href="/cold-email" className="hover:text-[#3c7818] transition">Recruiter Outreach</Link></li>
               </ul>
             </div>
 
