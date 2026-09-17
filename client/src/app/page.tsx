@@ -33,6 +33,7 @@ import {
 import { CompanyLogo, getCompanyDomain } from "@/components/CompanyLogo";
 import { LiquidSilkBackground } from "@/components/LiquidSilkBackground";
 import { useAppliedJobs } from "@/lib/appliedJobs";
+import { useAuth } from "@/lib/useAuth";
 
 interface Listing {
   id: string;
@@ -72,6 +73,7 @@ export default function Home() {
   const [copiedLink, setCopiedLink] = useState(false);
   const [subscribedEmail, setSubscribedEmail] = useState(false);
   const { appliedJobIds, toggleApplied, isApplied } = useAppliedJobs();
+  const { isLoggedIn, isLoaded } = useAuth();
 
   const metrics = [
     { value: "100%", label: "Direct from company career feeds", caption: "Zero scraped third-party reposts" },
@@ -173,19 +175,38 @@ export default function Home() {
             </nav>
 
             {/* Right Actions */}
-            <div className="flex items-center gap-3">
-              <Link
-                href="/login"
-                className="hidden sm:inline-flex text-xs font-bold text-[#55615b] hover:text-[#121816] px-3 py-2 transition"
-              >
-                Sign In
-              </Link>
-              <Link
-                href="/jobs"
-                className="rounded-full bg-[#84d64f] hover:bg-[#75c73d] px-5 py-2.5 text-[0.9rem] font-heading font-bold text-[#14281a] shadow-md shadow-[#84d64f]/25 transition active:scale-[0.98] inline-flex items-center gap-2"
-              >
-                Browse All Roles <ArrowRight className="w-3.5 h-3.5 text-[#14281a]" />
-              </Link>
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              {isLoggedIn ? (
+                <>
+                  <Link
+                    href="/jobs"
+                    className="hidden sm:inline-flex text-xs font-bold text-[#55615b] hover:text-[#121816] px-3 py-2 transition"
+                  >
+                    Browse Roles
+                  </Link>
+                  <Link
+                    href="/dashboard"
+                    className="rounded-full bg-[#84d64f] hover:bg-[#75c73d] px-5 py-2.5 text-xs sm:text-[0.9rem] font-heading font-bold text-[#14281a] shadow-md shadow-[#84d64f]/25 transition active:scale-[0.98] inline-flex items-center gap-2"
+                  >
+                    Go to Dashboard <ArrowRight className="w-3.5 h-3.5 text-[#14281a]" />
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    className="text-xs sm:text-[0.9rem] font-bold text-[#55615b] hover:text-[#121816] px-3 py-2 transition"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    href="/login?mode=signup"
+                    className="rounded-full bg-[#84d64f] hover:bg-[#75c73d] px-4 sm:px-5 py-2.5 text-xs sm:text-[0.9rem] font-heading font-bold text-[#14281a] shadow-md shadow-[#84d64f]/25 transition active:scale-[0.98] inline-flex items-center gap-1.5"
+                  >
+                    Sign Up <ArrowRight className="w-3.5 h-3.5 text-[#14281a]" />
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </header>

@@ -26,6 +26,7 @@ import { CompanyLogo, getCompanyDomain } from "@/components/CompanyLogo";
 import { LiquidSilkBackground } from "@/components/LiquidSilkBackground";
 import { Listing } from "@/components/SiftAiChat";
 import { useAppliedJobs } from "@/lib/appliedJobs";
+import { useAuth } from "@/lib/useAuth";
 
 export default function JobDetailPage() {
   const params = useParams();
@@ -39,6 +40,7 @@ export default function JobDetailPage() {
   const [isSaved, setIsSaved] = useState(false);
   const [subscribedEmail, setSubscribedEmail] = useState(false);
   const { toggleApplied, isApplied } = useAppliedJobs();
+  const { isLoggedIn } = useAuth();
 
   useEffect(() => {
     if (!id) return;
@@ -158,19 +160,30 @@ export default function JobDetailPage() {
             </nav>
 
             {/* Right Buttons */}
-            <div className="flex items-center gap-3">
-              <Link
-                href="/login"
-                className="rounded-xl px-4 py-2 text-xs sm:text-[0.9rem] font-bold text-[#55615b] hover:text-[#121816] transition"
-              >
-                Sign In
-              </Link>
-              <Link
-                href="/dashboard"
-                className="rounded-full bg-[#84d64f] hover:bg-[#75c73d] px-4 sm:px-5 py-2.5 text-xs sm:text-[0.9rem] font-heading font-bold text-[#14281a] shadow-md shadow-[#84d64f]/25 transition active:scale-[0.98]"
-              >
-                Go to Dashboard
-              </Link>
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              {isLoggedIn ? (
+                <Link
+                  href="/dashboard"
+                  className="rounded-full bg-[#84d64f] hover:bg-[#75c73d] px-5 py-2.5 text-xs sm:text-[0.9rem] font-heading font-bold text-[#14281a] shadow-md shadow-[#84d64f]/25 transition active:scale-[0.98] inline-flex items-center gap-2"
+                >
+                  Go to Dashboard <ArrowRight className="w-3.5 h-3.5 text-[#14281a]" />
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    className="text-xs sm:text-[0.9rem] font-bold text-[#55615b] hover:text-[#121816] px-3 py-2 transition"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    href="/login?mode=signup"
+                    className="rounded-full bg-[#84d64f] hover:bg-[#75c73d] px-4 sm:px-5 py-2.5 text-xs sm:text-[0.9rem] font-heading font-bold text-[#14281a] shadow-md shadow-[#84d64f]/25 transition active:scale-[0.98] inline-flex items-center gap-1.5"
+                  >
+                    Sign Up <ArrowRight className="w-3.5 h-3.5 text-[#14281a]" />
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </header>

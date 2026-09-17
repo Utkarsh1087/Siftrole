@@ -334,6 +334,7 @@ export default function DashboardPage() {
   const handleSignOut = () => {
     localStorage.removeItem("siftrole_token");
     localStorage.removeItem("siftrole_user");
+    window.dispatchEvent(new Event("siftrole-auth-change"));
     router.push("/login");
   };
 

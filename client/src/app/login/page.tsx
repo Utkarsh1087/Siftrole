@@ -64,6 +64,7 @@ function LoginForm() {
         const data = await response.json();
         localStorage.setItem("siftrole_token", data.token);
         localStorage.setItem("siftrole_user", JSON.stringify(data.user));
+        window.dispatchEvent(new Event("siftrole-auth-change"));
         router.push("/dashboard");
         return;
       }
@@ -81,6 +82,7 @@ function LoginForm() {
 
       localStorage.setItem("siftrole_token", "mock-token-" + Date.now());
       localStorage.setItem("siftrole_user", JSON.stringify(fallbackUser));
+      window.dispatchEvent(new Event("siftrole-auth-change"));
       router.push("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Authentication error");
