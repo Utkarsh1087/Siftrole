@@ -279,7 +279,7 @@ export default function JobsPage() {
               Explore Verified Tech Roles
             </h1>
             <p className="mt-2.5 text-sm sm:text-base text-[#55615b] max-w-[680px]">
-              Browse real-time open positions parsed with AI and synced continuously across Greenhouse, Lever, Ashby, and SmartRecruiters.
+              Browse real-time open positions parsed with AI and synced continuously across official top tech company feeds.
             </p>
           </div>
         </section>

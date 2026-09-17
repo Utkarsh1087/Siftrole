@@ -147,7 +147,7 @@ export default function TermsPage() {
               </h2>
             </div>
             <p>
-              Siftrole indexes verified engineering, product, and technical roles directly from public company applicant tracking systems (such as Greenhouse, Lever, Ashby, and SmartRecruiters).
+              Siftrole indexes verified engineering, product, and technical roles directly from official company career portals.
             </p>
             <ul className="list-disc pl-5 space-y-1.5 text-xs sm:text-sm">
               <li>

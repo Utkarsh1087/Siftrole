@@ -79,7 +79,7 @@ export default function Home() {
 
   const metrics = [
     { value: "100%", label: "Direct from company career feeds", caption: "Zero scraped third-party reposts" },
-    { value: totalListingsCount > 0 ? `${totalListingsCount}+` : "1,000+", label: "Verified active tech opportunities", caption: "Synced across Greenhouse, Lever, Ashby" },
+    { value: totalListingsCount > 0 ? `${totalListingsCount}+` : "1,000+", label: "Verified active tech opportunities", caption: "Synced across official company career portals" },
     { value: "0", label: "Dead links or expired ghost postings", caption: "Auto-removed the second a role closes" },
   ];
 
@@ -126,7 +126,7 @@ export default function Home() {
   const faqs = [
     {
       q: "How does Siftrole guarantee every listing is real?",
-      a: "Every listing on Siftrole is pulled directly from a company's official career page via public ATS JSON APIs (Greenhouse, Lever, Ashby, SmartRecruiters) or verified before publishing. No scraped-from-nowhere postings, no unverified spam.",
+      a: "Every listing on Siftrole is pulled directly from a company's official career page or verified directly from official hiring feeds before publishing. No scraped-from-nowhere postings, no unverified spam.",
     },
     {
       q: "What happens when a company closes an opening?",
@@ -379,12 +379,12 @@ export default function Home() {
                   One feed, not fifty tabs.
                 </h4>
                 <p className="mt-3 text-sm leading-[1.65] text-[#55615b]">
-                  Top tech company openings across Greenhouse, Lever, Ashby, and SmartRecruiters in one clean stream.
+                  Top tech company openings across official career portals in one clean, unified stream.
                 </p>
               </div>
               <div className="mt-6 flex items-center gap-2 text-xs font-bold text-[#14281a]">
                 <ShieldCheck className="w-4 h-4 text-[#3c7818]" />
-                <span>Direct ATS sync</span>
+                <span>Direct company sync</span>
               </div>
             </div>
 
