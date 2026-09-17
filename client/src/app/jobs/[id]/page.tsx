@@ -18,12 +18,14 @@ import {
   Sparkles,
   ArrowRight,
   CheckCircle2,
+  Check,
   Clock,
   ArrowUpRight,
 } from "lucide-react";
 import { CompanyLogo, getCompanyDomain } from "@/components/CompanyLogo";
 import { LiquidSilkBackground } from "@/components/LiquidSilkBackground";
 import { Listing } from "@/components/SiftAiChat";
+import { useAppliedJobs } from "@/lib/appliedJobs";
 
 export default function JobDetailPage() {
   const params = useParams();
@@ -36,6 +38,7 @@ export default function JobDetailPage() {
   const [copiedLink, setCopiedLink] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [subscribedEmail, setSubscribedEmail] = useState(false);
+  const { toggleApplied, isApplied } = useAppliedJobs();
 
   useEffect(() => {
     if (!id) return;
@@ -245,24 +248,53 @@ export default function JobDetailPage() {
             </div>
 
             {/* Right Action CTA */}
-            <div className="flex flex-row lg:flex-col items-center lg:items-end gap-3 shrink-0 pt-4 lg:pt-0 border-t lg:border-t-0 border-neutral-100">
+            <div className="flex flex-row flex-wrap lg:flex-col items-center lg:items-end gap-3 shrink-0 pt-4 lg:pt-0 border-t lg:border-t-0 border-neutral-100">
               <a
                 href={job.apply_url}
                 target="_blank"
                 rel="noreferrer"
+                onClick={() => {
+                  if (job.id && !isApplied(job.id)) {
+                    toggleApplied(job.id);
+                  }
+                }}
                 className="w-full sm:w-auto rounded-full bg-[#84d64f] hover:bg-[#75c73d] text-[#14281a] px-8 py-4 text-sm font-heading font-extrabold shadow-[0_12px_24px_rgba(132,214,79,0.3)] transition active:scale-[0.98] inline-flex items-center justify-center gap-2"
               >
                 Apply on Official Portal
                 <ExternalLink className="w-4 h-4" />
               </a>
 
-              <button
-                onClick={handleShare}
-                className="rounded-2xl border border-neutral-200/90 bg-white hover:bg-neutral-50 text-[#121816] px-4 py-4 text-xs font-bold transition inline-flex items-center gap-2 shrink-0 cursor-pointer"
-              >
-                <Share2 className="w-4 h-4 text-[#55615b]" />
-                <span>{copiedLink ? "Copied Link!" : "Share"}</span>
-              </button>
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                {/* Mark as Applied Toggle */}
+                <button
+                  onClick={() => toggleApplied(job.id)}
+                  className={`rounded-2xl px-5 py-3.5 text-xs font-bold transition inline-flex items-center gap-2 shrink-0 cursor-pointer ${
+                    isApplied(job.id)
+                      ? "bg-[#14281a] text-[#84d64f] hover:bg-[#1f3d27] shadow-sm"
+                      : "border border-neutral-200/90 bg-white hover:bg-[#eef8e5] hover:border-[#84d64f] text-[#121816]"
+                  }`}
+                >
+                  {isApplied(job.id) ? (
+                    <>
+                      <CheckCircle2 className="w-4 h-4 text-[#84d64f]" />
+                      <span>Applied ✓</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4 text-[#79857f]" />
+                      <span>Mark as Applied</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={handleShare}
+                  className="rounded-2xl border border-neutral-200/90 bg-white hover:bg-neutral-50 text-[#121816] px-4 py-3.5 text-xs font-bold transition inline-flex items-center gap-2 shrink-0 cursor-pointer"
+                >
+                  <Share2 className="w-4 h-4 text-[#55615b]" />
+                  <span>{copiedLink ? "Copied!" : "Share"}</span>
+                </button>
+              </div>
             </div>
           </div>
         </section>

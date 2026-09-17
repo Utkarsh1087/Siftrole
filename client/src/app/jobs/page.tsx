@@ -25,10 +25,12 @@ import {
   MessageSquare,
   Zap,
   CheckCircle2,
+  Check,
 } from "lucide-react";
 import { CompanyLogo, getCompanyDomain } from "@/components/CompanyLogo";
 import { LiquidSilkBackground } from "@/components/LiquidSilkBackground";
 import { SiftAiChat, Listing } from "@/components/SiftAiChat";
+import { useAppliedJobs } from "@/lib/appliedJobs";
 
 const companyBrandStyles: Record<string, { bg: string; text: string; border: string }> = {
   Greenhouse: { bg: "bg-[#84d64f]/15", text: "text-[#3c7818]", border: "border-[#84d64f]/30" },
@@ -47,12 +49,14 @@ export default function JobsPage() {
   const [companiesList, setCompaniesList] = useState<string[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<string>("all");
   const [selectedRoleType, setSelectedRoleType] = useState<string>("all");
+  const [appliedFilter, setAppliedFilter] = useState<"all" | "unapplied" | "applied">("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isLoadingListings, setIsLoadingListings] = useState(true);
   const [selectedListingModal, setSelectedListingModal] = useState<Listing | null>(null);
   const [savedJobIds, setSavedJobIds] = useState<Set<string>>(new Set());
   const [copiedLink, setCopiedLink] = useState(false);
   const [subscribedEmail, setSubscribedEmail] = useState(false);
+  const { appliedJobIds, toggleApplied, isApplied } = useAppliedJobs();
 
   // Resume Matching State
   const [activeResumeSkills, setActiveResumeSkills] = useState<string[]>([]);
@@ -66,7 +70,7 @@ export default function JobsPage() {
   useEffect(() => {
     setCurrentPage(1);
     fetchListings();
-  }, [selectedCompany, selectedRoleType, searchQuery]);
+  }, [selectedCompany, selectedRoleType, searchQuery, appliedFilter]);
 
   const fetchListings = async () => {
     setIsLoadingListings(true);
@@ -140,13 +144,20 @@ export default function JobsPage() {
 
   // Sort and slice listings
   const processedListings = React.useMemo(() => {
-    if (activeResumeSkills.length === 0) return liveListings;
-    return [...liveListings].sort((a, b) => {
+    let list = liveListings;
+    if (appliedFilter === "unapplied") {
+      list = list.filter((job) => !appliedJobIds.has(job.id));
+    } else if (appliedFilter === "applied") {
+      list = list.filter((job) => appliedJobIds.has(job.id));
+    }
+
+    if (activeResumeSkills.length === 0) return list;
+    return [...list].sort((a, b) => {
       const scoreA = getJobMatch(a)?.score || 0;
       const scoreB = getJobMatch(b)?.score || 0;
       return scoreB - scoreA;
     });
-  }, [liveListings, activeResumeSkills]);
+  }, [liveListings, activeResumeSkills, appliedFilter, appliedJobIds]);
 
   // Calculate Pagination Slices
   const totalListings = processedListings.length;
@@ -302,11 +313,25 @@ export default function JobsPage() {
                 </select>
               </div>
 
-              {(selectedCompany !== "all" || selectedRoleType !== "all" || searchQuery.trim() || activeResumeSkills.length > 0) && (
+              {/* Applied Status Filter */}
+              <div className="relative">
+                <select
+                  value={appliedFilter}
+                  onChange={(e) => setAppliedFilter(e.target.value as "all" | "unapplied" | "applied")}
+                  className="appearance-none rounded-xl border border-neutral-200/80 bg-[#fbfaf8] px-4 py-2.5 pr-8 text-xs font-bold text-[#121816] outline-none transition focus:border-[#84d64f] focus:bg-white cursor-pointer"
+                >
+                  <option value="all">Status: All Roles</option>
+                  <option value="unapplied">Status: Not Applied Yet</option>
+                  <option value="applied">Status: Applied ({appliedJobIds.size})</option>
+                </select>
+              </div>
+
+              {(selectedCompany !== "all" || selectedRoleType !== "all" || appliedFilter !== "all" || searchQuery.trim() || activeResumeSkills.length > 0) && (
                 <button
                   onClick={() => {
                     setSelectedCompany("all");
                     setSelectedRoleType("all");
+                    setAppliedFilter("all");
                     setSearchQuery("");
                     handleClearResume();
                   }}
@@ -388,16 +413,21 @@ export default function JobsPage() {
             ) : (
               currentListings.map((job, idx) => {
                 const matchInfo = getJobMatch(job);
+                const applied = isApplied(job.id);
                 return (
                   <Link
                     key={job.id || job.raw_jd_hash || idx}
                     href={`/jobs/${job.id}`}
-                    className="block group rounded-[24px] border border-neutral-200/90 bg-white p-6 sm:p-7 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all duration-200 hover:border-[#84d64f] hover:bg-[#eef8e5] hover:shadow-md cursor-pointer relative overflow-hidden"
+                    className={`block group rounded-[24px] border p-6 sm:p-7 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all duration-200 hover:border-[#84d64f] hover:bg-[#eef8e5] hover:shadow-md cursor-pointer relative overflow-hidden ${
+                      applied
+                        ? "border-[#84d64f]/70 bg-[#f7fcf3]"
+                        : "border-neutral-200/90 bg-white"
+                    }`}
                   >
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                       {/* Left Block */}
                       <div className="flex-1 min-w-0">
-                        {/* Company Logo + Domain + Match Badge */}
+                        {/* Company Logo + Domain + Match Badge + Applied Badge */}
                         <div className="flex items-center gap-2.5 flex-wrap">
                           <CompanyLogo
                             company={job.company}
@@ -412,6 +442,13 @@ export default function JobsPage() {
                             <span className="inline-flex items-center gap-1 rounded-full bg-[#84d64f] text-[#14281a] text-[0.68rem] font-black px-2.5 py-0.5 shadow-xs">
                               <Sparkles className="w-3 h-3" />
                               {matchInfo.score}% Match
+                            </span>
+                          )}
+
+                          {applied && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-[#14281a] text-[#84d64f] text-[0.68rem] font-extrabold px-2.5 py-0.5 shadow-xs">
+                              <CheckCircle2 className="w-3 h-3 text-[#84d64f]" />
+                              Applied
                             </span>
                           )}
                         </div>
@@ -461,29 +498,55 @@ export default function JobsPage() {
                         </div>
                       </div>
 
-                      {/* Right Block: Compensation & Location */}
-                      <div className="text-left sm:text-right shrink-0 mt-2 sm:mt-0">
-                        <div className="text-lg sm:text-xl font-black text-[#121816] tracking-tight">
-                          {job.stipend_or_salary ? (
-                            job.stipend_or_salary.toLowerCase().includes("year") ||
-                            job.stipend_or_salary.toLowerCase().includes("/yr") ||
-                            job.stipend_or_salary.toLowerCase().includes("/mo") ? (
-                              job.stipend_or_salary
+                      {/* Right Block: Compensation & Location & Mark Applied Button */}
+                      <div className="flex sm:flex-col items-start sm:items-end justify-between sm:justify-start gap-3 shrink-0 mt-3 sm:mt-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-neutral-100">
+                        <div className="text-left sm:text-right">
+                          <div className="text-lg sm:text-xl font-black text-[#121816] tracking-tight">
+                            {job.stipend_or_salary ? (
+                              job.stipend_or_salary.toLowerCase().includes("year") ||
+                              job.stipend_or_salary.toLowerCase().includes("/yr") ||
+                              job.stipend_or_salary.toLowerCase().includes("/mo") ? (
+                                job.stipend_or_salary
+                              ) : (
+                                <>
+                                  {job.stipend_or_salary}
+                                  <span className="text-xs sm:text-sm font-semibold text-[#55615b]">/Yearly</span>
+                                </>
+                              )
                             ) : (
                               <>
-                                {job.stipend_or_salary}
-                                <span className="text-xs sm:text-sm font-semibold text-[#55615b]">/Yearly</span>
+                                $140K<span className="text-xs sm:text-sm font-semibold text-[#55615b]">/Yearly</span>
                               </>
-                            )
+                            )}
+                          </div>
+                          <div className="text-xs sm:text-sm font-medium text-[#55615b] mt-0.5">
+                            {job.location}
+                          </div>
+                        </div>
+
+                        {/* Mark as Applied Toggle Button */}
+                        <button
+                          type="button"
+                          onClick={(e) => toggleApplied(job.id, e)}
+                          className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all shadow-2xs cursor-pointer z-10 ${
+                            applied
+                              ? "bg-[#14281a] text-[#84d64f] hover:bg-[#1f3d27]"
+                              : "border border-neutral-300 bg-white/90 text-[#45524d] hover:border-[#84d64f] hover:text-[#14281a] hover:bg-[#eef8e5]"
+                          }`}
+                          title={applied ? "Click to unmark as applied" : "Mark as applied"}
+                        >
+                          {applied ? (
+                            <>
+                              <CheckCircle2 className="w-3.5 h-3.5 text-[#84d64f]" />
+                              <span>Applied</span>
+                            </>
                           ) : (
                             <>
-                              $140K<span className="text-xs sm:text-sm font-semibold text-[#55615b]">/Yearly</span>
+                              <Check className="w-3.5 h-3.5 text-[#79857f]" />
+                              <span>Mark Applied</span>
                             </>
                           )}
-                        </div>
-                        <div className="text-xs sm:text-sm font-medium text-[#55615b] mt-1">
-                          {job.location}
-                        </div>
+                        </button>
                       </div>
                     </div>
                   </Link>

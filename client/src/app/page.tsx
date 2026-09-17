@@ -27,9 +27,12 @@ import {
   Share2,
   Bookmark,
   FileText,
+  CheckCircle2,
+  Check,
 } from "lucide-react";
 import { CompanyLogo, getCompanyDomain } from "@/components/CompanyLogo";
 import { LiquidSilkBackground } from "@/components/LiquidSilkBackground";
+import { useAppliedJobs } from "@/lib/appliedJobs";
 
 interface Listing {
   id: string;
@@ -68,6 +71,7 @@ export default function Home() {
   const [savedJobIds, setSavedJobIds] = useState<Set<string>>(new Set());
   const [copiedLink, setCopiedLink] = useState(false);
   const [subscribedEmail, setSubscribedEmail] = useState(false);
+  const { appliedJobIds, toggleApplied, isApplied } = useAppliedJobs();
 
   const metrics = [
     { value: "100%", label: "Direct from company career feeds", caption: "Zero scraped third-party reposts" },
@@ -451,90 +455,130 @@ export default function Home() {
                 </Link>
               </div>
             ) : (
-              featuredListings.map((job, idx) => (
-                <Link
-                  key={job.id || job.raw_jd_hash || idx}
-                  href={`/jobs/${job.id}`}
-                  className="block group rounded-[24px] border border-neutral-200/90 bg-white p-6 sm:p-7 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all duration-200 hover:border-[#84d64f] hover:bg-[#eef8e5] hover:shadow-md cursor-pointer"
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                    {/* Left Block */}
-                    <div className="flex-1 min-w-0">
-                      {/* Company Logo + Domain */}
-                      <div className="flex items-center gap-2">
-                        <CompanyLogo
-                          company={job.company}
-                          size="sm"
-                          className="!h-5 !w-5 !p-0 rounded-md border-0 bg-transparent shadow-none"
-                        />
-                        <span className="text-xs sm:text-sm font-bold text-[#14281a] tracking-tight">
-                          {getCompanyDomain(job.company)}
-                        </span>
-                      </div>
+              featuredListings.map((job, idx) => {
+                const applied = isApplied(job.id);
+                return (
+                  <Link
+                    key={job.id || job.raw_jd_hash || idx}
+                    href={`/jobs/${job.id}`}
+                    className={`block group rounded-[24px] border p-6 sm:p-7 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all duration-200 hover:border-[#84d64f] hover:bg-[#eef8e5] hover:shadow-md cursor-pointer relative overflow-hidden ${
+                      applied
+                        ? "border-[#84d64f]/70 bg-[#f7fcf3]"
+                        : "border-neutral-200/90 bg-white"
+                    }`}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                      {/* Left Block */}
+                      <div className="flex-1 min-w-0">
+                        {/* Company Logo + Domain + Applied Badge */}
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          <CompanyLogo
+                            company={job.company}
+                            size="sm"
+                            className="!h-5 !w-5 !p-0 rounded-md border-0 bg-transparent shadow-none"
+                          />
+                          <span className="text-xs sm:text-sm font-bold text-[#14281a] tracking-tight">
+                            {getCompanyDomain(job.company)}
+                          </span>
 
-                      {/* Job Title */}
-                      <h3 className="text-xl sm:text-[1.35rem] font-black text-[#121816] tracking-tight mt-2 mb-3.5 group-hover:text-[#3c7818] transition-colors">
-                        {job.title}
-                      </h3>
-
-                      {/* Filter Pills */}
-                      <div className="flex flex-wrap items-center gap-2">
-                        {job.experience_level && (
-                          <span className="rounded-full border border-neutral-300/80 bg-white/70 px-4 py-1 text-xs font-semibold text-[#14281a] shadow-2xs">
-                            {job.experience_level.toLowerCase().includes("experience")
-                              ? job.experience_level
-                              : `${job.experience_level} Experience`}
-                          </span>
-                        )}
-                        {job.employment_type && (
-                          <span className="rounded-full border border-neutral-300/80 bg-white/70 px-4 py-1 text-xs font-semibold text-[#14281a] shadow-2xs">
-                            {job.employment_type}
-                          </span>
-                        )}
-                        {job.eligibility && (
-                          <span className="rounded-full border border-neutral-300/80 bg-white/70 px-4 py-1 text-xs font-semibold text-[#14281a] shadow-2xs">
-                            {job.eligibility}
-                          </span>
-                        )}
-                        {job.skills_required &&
-                          job.skills_required.slice(0, 3).map((skill) => (
-                            <span
-                              key={skill}
-                              className="rounded-full border border-neutral-300/80 bg-white/70 px-4 py-1 text-xs font-semibold text-[#14281a] shadow-2xs"
-                            >
-                              {skill}
+                          {applied && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-[#14281a] text-[#84d64f] text-[0.68rem] font-extrabold px-2.5 py-0.5 shadow-xs">
+                              <CheckCircle2 className="w-3 h-3 text-[#84d64f]" />
+                              Applied
                             </span>
-                          ))}
-                      </div>
-                    </div>
+                          )}
+                        </div>
 
-                    {/* Right Block: Compensation & Location */}
-                    <div className="text-left sm:text-right shrink-0 mt-2 sm:mt-0">
-                      <div className="text-lg sm:text-xl font-black text-[#121816] tracking-tight">
-                        {job.stipend_or_salary ? (
-                          job.stipend_or_salary.toLowerCase().includes("year") ||
-                          job.stipend_or_salary.toLowerCase().includes("/yr") ||
-                          job.stipend_or_salary.toLowerCase().includes("/mo") ? (
-                            job.stipend_or_salary
+                        {/* Job Title */}
+                        <h3 className="text-xl sm:text-[1.35rem] font-black text-[#121816] tracking-tight mt-2 mb-3.5 group-hover:text-[#3c7818] transition-colors">
+                          {job.title}
+                        </h3>
+
+                        {/* Filter Pills */}
+                        <div className="flex flex-wrap items-center gap-2">
+                          {job.experience_level && (
+                            <span className="rounded-full border border-neutral-300/80 bg-white/70 px-4 py-1 text-xs font-semibold text-[#14281a] shadow-2xs">
+                              {job.experience_level.toLowerCase().includes("experience")
+                                ? job.experience_level
+                                : `${job.experience_level} Experience`}
+                            </span>
+                          )}
+                          {job.employment_type && (
+                            <span className="rounded-full border border-neutral-300/80 bg-white/70 px-4 py-1 text-xs font-semibold text-[#14281a] shadow-2xs">
+                              {job.employment_type}
+                            </span>
+                          )}
+                          {job.eligibility && (
+                            <span className="rounded-full border border-neutral-300/80 bg-white/70 px-4 py-1 text-xs font-semibold text-[#14281a] shadow-2xs">
+                              {job.eligibility}
+                            </span>
+                          )}
+                          {job.skills_required &&
+                            job.skills_required.slice(0, 3).map((skill) => (
+                              <span
+                                key={skill}
+                                className="rounded-full border border-neutral-300/80 bg-white/70 px-4 py-1 text-xs font-semibold text-[#14281a] shadow-2xs"
+                              >
+                                {skill}
+                              </span>
+                            ))}
+                        </div>
+                      </div>
+
+                      {/* Right Block: Compensation & Location & Mark Applied Button */}
+                      <div className="flex sm:flex-col items-start sm:items-end justify-between sm:justify-start gap-3 shrink-0 mt-3 sm:mt-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-neutral-100">
+                        <div className="text-left sm:text-right">
+                          <div className="text-lg sm:text-xl font-black text-[#121816] tracking-tight">
+                            {job.stipend_or_salary ? (
+                              job.stipend_or_salary.toLowerCase().includes("year") ||
+                              job.stipend_or_salary.toLowerCase().includes("/yr") ||
+                              job.stipend_or_salary.toLowerCase().includes("/mo") ? (
+                                job.stipend_or_salary
+                              ) : (
+                                <>
+                                  {job.stipend_or_salary}
+                                  <span className="text-xs sm:text-sm font-semibold text-[#55615b]">/Yearly</span>
+                                </>
+                              )
+                            ) : (
+                              <>
+                                $140K<span className="text-xs sm:text-sm font-semibold text-[#55615b]">/Yearly</span>
+                              </>
+                            )}
+                          </div>
+                          <div className="text-xs sm:text-sm font-medium text-[#55615b] mt-0.5">
+                            {job.location}
+                          </div>
+                        </div>
+
+                        {/* Mark as Applied Toggle Button */}
+                        <button
+                          type="button"
+                          onClick={(e) => toggleApplied(job.id, e)}
+                          className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all shadow-2xs cursor-pointer z-10 ${
+                            applied
+                              ? "bg-[#14281a] text-[#84d64f] hover:bg-[#1f3d27]"
+                              : "border border-neutral-300 bg-white/90 text-[#45524d] hover:border-[#84d64f] hover:text-[#14281a] hover:bg-[#eef8e5]"
+                          }`}
+                          title={applied ? "Click to unmark as applied" : "Mark as applied"}
+                        >
+                          {applied ? (
+                            <>
+                              <CheckCircle2 className="w-3.5 h-3.5 text-[#84d64f]" />
+                              <span>Applied</span>
+                            </>
                           ) : (
                             <>
-                              {job.stipend_or_salary}
-                              <span className="text-xs sm:text-sm font-semibold text-[#55615b]">/Yearly</span>
+                              <Check className="w-3.5 h-3.5 text-[#79857f]" />
+                              <span>Mark Applied</span>
                             </>
-                          )
-                        ) : (
-                          <>
-                            $140K<span className="text-xs sm:text-sm font-semibold text-[#55615b]">/Yearly</span>
-                          </>
-                        )}
-                      </div>
-                      <div className="text-xs sm:text-sm font-medium text-[#55615b] mt-1">
-                        {job.location}
+                          )}
+                        </button>
                       </div>
                     </div>
-                  </div>
-                </Link>
-              ))
+                  </Link>
+                );
+              })
             )}
           </div>
 
