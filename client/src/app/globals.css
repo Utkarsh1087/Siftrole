@@ -1,0 +1,114 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f8f7f5;
+  --foreground: #121816;
+  --muted: #55615b;
+  --panel: #ffffff;
+  --panel-muted: #f3f2ee;
+  --panel-strong: #e9e6df;
+  --line: #e5e2db;
+  --green: #84d64f;
+  --green-hover: #75c73d;
+  --green-dark: #14281a;
+  --green-accent: #84d64f;
+  --green-emerald: #7bc838;
+  --green-light: #eef8e5;
+  --pink: #ffd5df;
+  --pink-text: #dc2855;
+  --black: #0d1411;
+  --white: #ffffff;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--green);
+  --color-primary-hover: var(--green-hover);
+  --color-primary-dark: var(--green-dark);
+  --font-sans: var(--font-sans);
+  --font-heading: var(--font-heading);
+  --font-mono: var(--font-geist-mono);
+}
+
+.font-heading {
+  font-family: var(--font-heading), var(--font-sans), sans-serif;
+}
+
+.s__code {
+  font-size: clamp(3.5rem, 14vw, 12.5rem);
+  font-weight: 600;
+  line-height: 0.95;
+  letter-spacing: -0.035em;
+  position: relative;
+  top: -0.05em;
+  margin-bottom: -0.135em;
+  z-index: 3;
+  text-align: center;
+  user-select: none;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 6rem;
+}
+
+html.lenis, html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading), var(--font-sans), sans-serif;
+  letter-spacing: -0.025em;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: rgba(132, 214, 79, 0.35);
+  color: #14281a;
+}
+
+details summary::-webkit-details-marker {
+  display: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

@@ -1,0 +1,11 @@
+{
+  "name": "siftrole",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:client": "npm --prefix client run dev",
+    "dev:admin": "npm --prefix admin run dev",
+    "build:client": "npm --prefix client run build",
+    "build:admin": "npm --prefix admin run build"
+  }
+}

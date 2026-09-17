@@ -1,0 +1,126 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AtsType {
+  GREENHOUSE
+  LEVER
+  ASHBY
+  SMARTRECRUITERS
+  MANUAL
+}
+
+enum UserRole {
+  STUDENT
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+model User {
+  id              String      @id @default(cuid())
+  email           String      @unique
+  name            String
+  role            UserRole    @default(STUDENT)
+  status          UserStatus  @default(ACTIVE)
+  graduation_year Int?
+  skills          String[]    @default([])
+  resume_url      String?
+  created_at      DateTime    @default(now())
+  updated_at      DateTime    @updatedAt
+
+  @@map("users")
+}
+
+model Company {
+  id              String    @id @default(cuid())
+  name            String
+  career_page_url String
+  ats_type        AtsType
+  ats_identifier  String
+  verified        Boolean   @default(false)
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+  listings        Listing[]
+
+  @@map("companies")
+}
+
+model Listing {
+  id                String    @id @default(cuid())
+  company_id        String
+  company_rel       Company   @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  title             String
+  company           String
+  location          String
+  employment_type   String?
+  eligibility       String?
+  stipend_or_salary String?
+  deadline          DateTime?
+  skills_required   String[]  @default([])
+  experience_level  String?
+  apply_url         String
+  source            String    @default("scraped")
+  status            String    @default("active")
+  raw_jd_hash       String
+  raw_jd_text       String?
+  normalized_key    String
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+
+  @@index([status, deadline])
+  @@index([company_id])
+  @@index([raw_jd_hash])
+  @@index([normalized_key])
+  @@map("listings")
+}
+
+model ExtractionLog {
+  id                String    @id @default(cuid())
+  raw_jd_snippet    String
+  extracted_json    Json
+  model_used        String
+  tokens_used       Int?
+  extraction_status String    @default("success")
+  created_at        DateTime  @default(now())
+
+  @@map("extraction_logs")
+}
+
+model AnalyticsEvent {
+  id             String    @id @default(cuid())
+  event_type     String    // 'page_view', 'section_view', 'button_click', 'apply_click', 'search'
+  section_name   String?   // 'hero', 'features', 'job_feed', 'faq', 'cta'
+  target_element String?   // 'apply_button', 'explore_roles_cta', 'company_filter', etc.
+  duration_ms    Int?      // duration spent in ms
+  session_id     String?
+  user_agent     String?
+  metadata       Json?
+  created_at     DateTime  @default(now())
+
+  @@index([event_type, created_at])
+  @@index([section_name])
+  @@map("analytics_events")
+}
+
+model DailyMetric {
+  id                 String    @id @default(cuid())
+  date               DateTime  @unique @default(now())
+  unique_visits      Int       @default(0)
+  total_clicks       Int       @default(0)
+  section_durations  Json?     // e.g. { "hero": 42000, "job_feed": 95000, ... }
+  button_clicks      Json?     // e.g. { "apply_button": 320, "explore_roles": 145, ... }
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @updatedAt
+
+  @@map("daily_metrics")
+}
