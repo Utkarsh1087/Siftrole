@@ -18,10 +18,20 @@ import {
   Building2,
   Users,
   CheckCircle2,
+  CheckSquare2,
+  Square,
   Zap,
 } from "lucide-react";
 import { CompanyLogo } from "@/components/CompanyLogo";
-import { HR_CONTACTS_DATA, HRContact, FREE_CONTACTS_LIMIT, isProUser } from "@/lib/hrContacts";
+import {
+  HR_CONTACTS_DATA,
+  HRContact,
+  FREE_CONTACTS_LIMIT,
+  isProUser,
+  getMailedContactIds,
+  toggleMailedContactId,
+  markContactAsMailed,
+} from "@/lib/hrContacts";
 import { ColdMailModal } from "@/components/ColdMailModal";
 import { ProUpgradeModal } from "@/components/ProUpgradeModal";
 import { useAuth } from "@/lib/useAuth";
@@ -30,26 +40,37 @@ export default function ColdEmailPage() {
   const [contacts, setContacts] = useState<HRContact[]>(HR_CONTACTS_DATA);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
+  const [mailedFilter, setMailedFilter] = useState<"all" | "unmailed" | "mailed">("all");
   const [selectedContactForAi, setSelectedContactForAi] = useState<HRContact | null>(null);
   const [isPro, setIsPro] = useState(false);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [copiedEmailId, setCopiedEmailId] = useState<string | null>(null);
+  const [mailedContactIds, setMailedContactIds] = useState<Set<string>>(new Set());
 
   const { isLoggedIn } = useAuth();
 
   useEffect(() => {
     setIsPro(isProUser());
+    setMailedContactIds(getMailedContactIds());
 
     const handleProChange = () => {
       setIsPro(isProUser());
     };
 
+    const handleMailedChange = () => {
+      setMailedContactIds(getMailedContactIds());
+    };
+
     window.addEventListener("siftrole-pro-change", handleProChange);
+    window.addEventListener("siftrole-mailed-change", handleMailedChange);
     window.addEventListener("storage", handleProChange);
+    window.addEventListener("storage", handleMailedChange);
 
     return () => {
       window.removeEventListener("siftrole-pro-change", handleProChange);
+      window.removeEventListener("siftrole-mailed-change", handleMailedChange);
       window.removeEventListener("storage", handleProChange);
+      window.removeEventListener("storage", handleMailedChange);
     };
   }, []);
 
@@ -60,6 +81,13 @@ export default function ColdEmailPage() {
       setCopiedEmailId(contact.id);
       setTimeout(() => setCopiedEmailId(null), 2000);
     }
+  };
+
+  const handleToggleMailed = (contactId: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    toggleMailedContactId(contactId);
   };
 
   const filteredContacts = useMemo(() => {
@@ -74,9 +102,16 @@ export default function ColdEmailPage() {
       const matchesDept =
         selectedDepartment === "all" || c.department === selectedDepartment;
 
-      return matchesSearch && matchesDept;
+      let matchesMailed = true;
+      if (mailedFilter === "unmailed") {
+        matchesMailed = !mailedContactIds.has(c.id);
+      } else if (mailedFilter === "mailed") {
+        matchesMailed = mailedContactIds.has(c.id);
+      }
+
+      return matchesSearch && matchesDept && matchesMailed;
     });
-  }, [contacts, searchQuery, selectedDepartment]);
+  }, [contacts, searchQuery, selectedDepartment, mailedFilter, mailedContactIds]);
 
   return (
     <main className="min-h-screen bg-[#f8f7f5] text-[#121816] font-sans antialiased selection:bg-[#84d64f]/30 selection:text-[#14281a]">
@@ -163,7 +198,7 @@ export default function ColdEmailPage() {
                 Direct HR Outreach Hub
               </h1>
               <p className="mt-2.5 text-sm sm:text-base text-[#55615b] max-w-[680px]">
-                Connect directly with technical recruiters and university talent leads. Generate punchy, human-sounding cold emails with AI in one click.
+                Connect directly with technical recruiters and university talent leads. Generate punchy, human-sounding cold emails with AI in one click and track sent applications.
               </p>
             </div>
 
@@ -210,9 +245,11 @@ export default function ColdEmailPage() {
             <div className="text-[0.7rem] text-[#55615b]">Short, human-form AI emails vs generic cover letters</div>
           </div>
           <div className="rounded-[22px] border border-neutral-200/80 bg-white p-5 shadow-sm">
-            <div className="text-2xl sm:text-3xl font-black text-[#121816]">100%</div>
-            <div className="text-xs font-bold text-[#14281a] mt-1">Verified Work Inboxes</div>
-            <div className="text-[0.7rem] text-[#55615b]">Zero dead emails or generic info@ mailboxes</div>
+            <div className="text-2xl sm:text-3xl font-black text-[#121816]">
+              {mailedContactIds.size} Mailed
+            </div>
+            <div className="text-xs font-bold text-[#14281a] mt-1">Your Outreach Progress</div>
+            <div className="text-[0.7rem] text-[#55615b]">Real-time tracking of sent recruiter emails</div>
           </div>
         </section>
 
@@ -233,8 +270,9 @@ export default function ColdEmailPage() {
               />
             </div>
 
-            {/* Department Select */}
+            {/* Department & Status Selects */}
             <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+              {/* Department */}
               <select
                 value={selectedDepartment}
                 onChange={(e) => setSelectedDepartment(e.target.value)}
@@ -247,11 +285,23 @@ export default function ColdEmailPage() {
                 <option value="Product & Design">Product & Design</option>
               </select>
 
-              {(searchQuery.trim() || selectedDepartment !== "all") && (
+              {/* Status (Mailed vs Unmailed) */}
+              <select
+                value={mailedFilter}
+                onChange={(e) => setMailedFilter(e.target.value as "all" | "unmailed" | "mailed")}
+                className="appearance-none rounded-xl border border-neutral-200/80 bg-[#fbfaf8] px-4 py-2.5 pr-8 text-xs font-bold text-[#121816] outline-none transition focus:border-[#84d64f] focus:bg-white cursor-pointer"
+              >
+                <option value="all">Status: All Contacts</option>
+                <option value="unmailed">Status: Not Mailed Yet</option>
+                <option value="mailed">Status: Mailed ({mailedContactIds.size})</option>
+              </select>
+
+              {(searchQuery.trim() || selectedDepartment !== "all" || mailedFilter !== "all") && (
                 <button
                   onClick={() => {
                     setSearchQuery("");
                     setSelectedDepartment("all");
+                    setMailedFilter("all");
                   }}
                   className="rounded-xl bg-neutral-100 hover:bg-neutral-200 text-[#121816] px-3 py-2.5 text-xs font-bold transition cursor-pointer"
                 >
@@ -268,16 +318,21 @@ export default function ColdEmailPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           {filteredContacts.map((contact, index) => {
             const isLocked = !isPro && index >= FREE_CONTACTS_LIMIT;
+            const isMailed = mailedContactIds.has(contact.id);
 
             return (
               <div
                 key={contact.id}
-                className={`rounded-[24px] border border-neutral-200/90 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all relative overflow-hidden flex flex-col justify-between ${
-                  isLocked ? "bg-[#fbfaf8]" : "hover:border-[#84d64f] hover:shadow-md"
+                className={`rounded-[24px] border p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all relative overflow-hidden flex flex-col justify-between ${
+                  isLocked
+                    ? "bg-[#fbfaf8] border-neutral-200/90"
+                    : isMailed
+                    ? "border-[#84d64f]/70 bg-[#f7fcf3] hover:shadow-md"
+                    : "border-neutral-200/90 bg-white hover:border-[#84d64f] hover:shadow-md"
                 }`}
               >
                 <div>
-                  {/* Top Row: Company Logo + Title + Status */}
+                  {/* Top Row: Company Logo + Title + Status + Mailed Toggle */}
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <CompanyLogo company={contact.company} size="md" />
@@ -296,9 +351,37 @@ export default function ColdEmailPage() {
                       </div>
                     </div>
 
-                    <span className="text-[0.7rem] font-bold text-[#55615b] bg-[#f8f7f5] px-2.5 py-1 rounded-lg border border-neutral-200/60 shrink-0">
-                      {contact.department}
-                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {/* Interactive Mailed Checkbox Button */}
+                      {!isLocked && (
+                        <button
+                          type="button"
+                          onClick={(e) => handleToggleMailed(contact.id, e)}
+                          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition-all cursor-pointer ${
+                            isMailed
+                              ? "bg-[#14281a] text-[#84d64f] shadow-xs hover:bg-[#1f3d27]"
+                              : "border border-neutral-300 bg-white text-[#55615b] hover:border-[#84d64f] hover:text-[#14281a] hover:bg-[#eef8e5]"
+                          }`}
+                          title={isMailed ? "Click to unmark as mailed" : "Mark as mailed"}
+                        >
+                          {isMailed ? (
+                            <>
+                              <CheckCircle2 className="w-3.5 h-3.5 text-[#84d64f]" />
+                              <span>Mailed</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="w-3.5 h-3.5 rounded border border-neutral-400 bg-white inline-block" />
+                              <span>Mark Mailed</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+
+                      <span className="text-[0.7rem] font-bold text-[#55615b] bg-[#f8f7f5] px-2.5 py-1 rounded-lg border border-neutral-200/60 shrink-0">
+                        {contact.department}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Role Title & Location */}
@@ -358,6 +441,7 @@ export default function ColdEmailPage() {
 
                       <a
                         href={`mailto:${contact.email}?subject=${encodeURIComponent(`Quick question re: ${contact.hiring_for[0]} at ${contact.company}`)}`}
+                        onClick={() => markContactAsMailed(contact.id)}
                         className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-300 hover:border-[#84d64f] hover:bg-[#eef8e5] text-[#121816] px-3.5 py-2 text-xs font-bold transition cursor-pointer"
                       >
                         <Send className="w-3.5 h-3.5 text-[#3c7818]" />

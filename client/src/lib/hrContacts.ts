@@ -276,3 +276,48 @@ export function unlockProAccess(): void {
     window.dispatchEvent(new Event("siftrole-pro-change"));
   } catch {}
 }
+
+export function getMailedContactIds(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = localStorage.getItem("siftrole_mailed_hr_ids");
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw);
+    return new Set(Array.isArray(parsed) ? parsed : []);
+  } catch {
+    return new Set();
+  }
+}
+
+export function toggleMailedContactId(id: string): boolean {
+  if (typeof window === "undefined" || !id) return false;
+  try {
+    const current = getMailedContactIds();
+    let isMailed = false;
+    if (current.has(id)) {
+      current.delete(id);
+      isMailed = false;
+    } else {
+      current.add(id);
+      isMailed = true;
+    }
+    localStorage.setItem("siftrole_mailed_hr_ids", JSON.stringify(Array.from(current)));
+    window.dispatchEvent(new Event("siftrole-mailed-change"));
+    return isMailed;
+  } catch {
+    return false;
+  }
+}
+
+export function markContactAsMailed(id: string): void {
+  if (typeof window === "undefined" || !id) return;
+  try {
+    const current = getMailedContactIds();
+    if (!current.has(id)) {
+      current.add(id);
+      localStorage.setItem("siftrole_mailed_hr_ids", JSON.stringify(Array.from(current)));
+      window.dispatchEvent(new Event("siftrole-mailed-change"));
+    }
+  } catch {}
+}
+

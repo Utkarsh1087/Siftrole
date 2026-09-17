@@ -15,7 +15,7 @@ import {
   FileCode,
   Zap,
 } from "lucide-react";
-import { HRContact } from "@/lib/hrContacts";
+import { HRContact, markContactAsMailed } from "@/lib/hrContacts";
 import { CompanyLogo } from "@/components/CompanyLogo";
 
 interface ColdMailModalProps {
@@ -96,6 +96,9 @@ export function ColdMailModal({ contact, onClose }: ColdMailModalProps) {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(textToCopy);
       setCopied(true);
+      if (contact?.id) {
+        markContactAsMailed(contact.id);
+      }
       setTimeout(() => setCopied(false), 2000);
     }
   };
@@ -254,6 +257,11 @@ export function ColdMailModal({ contact, onClose }: ColdMailModalProps) {
               mailtoUrl ||
               `mailto:${contact.email}?subject=${encodeURIComponent(generatedSubject)}&body=${encodeURIComponent(generatedBody)}`
             }
+            onClick={() => {
+              if (contact?.id) {
+                markContactAsMailed(contact.id);
+              }
+            }}
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#84d64f] hover:bg-[#75c73d] text-[#14281a] px-7 py-3 text-xs sm:text-sm font-heading font-extrabold shadow-md shadow-[#84d64f]/25 transition active:scale-[0.98] cursor-pointer"
           >
             <Send className="w-4 h-4" />
