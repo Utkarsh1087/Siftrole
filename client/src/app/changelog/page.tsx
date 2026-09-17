@@ -4,6 +4,9 @@ import React from "react";
 import Link from "next/link";
 import { ArrowLeft, Sparkles, CheckCircle2, Zap, ShieldCheck } from "lucide-react";
 
+import Image from "next/image";
+import { SiftroleLogoMark } from "@/components/SiftroleLogo";
+
 export default function ChangelogPage() {
   const releases = [
     {
@@ -86,6 +89,23 @@ export default function ChangelogPage() {
               </ul>
             </div>
           ))}
+        </div>
+
+        {/* Footer brand mark with adjacent logo */}
+        <div className="pt-12 pb-4 select-none overflow-hidden flex items-center justify-center gap-3 sm:gap-4 text-[#14281a] border-t border-neutral-200/70">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 flex items-center justify-center">
+            <Image
+              src="/images/siftrole-logo.png"
+              alt="Siftrole Logo"
+              width={96}
+              height={96}
+              className="w-full h-full object-contain drop-shadow-sm"
+              unoptimized
+            />
+          </div>
+          <span className="text-2xl sm:text-3xl font-black tracking-[-0.04em] uppercase text-[#14281a]">
+            SIFT<span className="text-[#58a826]">ROLE</span>
+          </span>
         </div>
       </div>
     </main>

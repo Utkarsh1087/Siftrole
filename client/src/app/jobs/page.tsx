@@ -707,13 +707,20 @@ export default function JobsPage() {
           </div>
 
           {/* ======================================================== */}
-          {/* MASSIVE BOTTOM SIFTROLE WORDMARK & GREEN LOGO EMBLEM */}
+          {/* MASSIVE BOTTOM SIFTROLE WORDMARK WITH ADJACENT LOGO */}
           {/* ======================================================== */}
-          <div className="pt-10 pb-4 select-none overflow-hidden text-center text-[#14281a]">
-            <div className="flex justify-center mb-4">
-              <SiftroleLogoMark size={64} className="drop-shadow-[0_10px_25px_rgba(132,214,79,0.3)]" />
+          <div className="pt-10 pb-4 select-none overflow-hidden flex items-center justify-center gap-3 sm:gap-6 text-[#14281a]">
+            <div className="w-[10vw] h-[10vw] max-w-[130px] max-h-[130px] min-w-[40px] min-h-[40px] shrink-0 flex items-center justify-center">
+              <Image
+                src="/images/siftrole-logo.png"
+                alt="Siftrole Logo"
+                width={260}
+                height={260}
+                className="w-full h-full object-contain drop-shadow-[0_10px_25px_rgba(132,214,79,0.35)]"
+                unoptimized
+              />
             </div>
-            <span className="text-[13vw] sm:text-[14vw] font-black tracking-[-0.04em] leading-none uppercase select-none text-[#14281a] inline-block">
+            <span className="text-[12vw] sm:text-[13vw] font-black tracking-[-0.04em] leading-none uppercase select-none text-[#14281a] inline-block">
               SIFTROLE
             </span>
           </div>

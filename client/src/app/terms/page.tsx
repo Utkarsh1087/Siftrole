@@ -53,6 +53,20 @@ export default function TermsPage() {
             <ShieldCheck className="w-4 h-4 text-[#3c7818]" /> Last updated: September 2026
           </div>
         </div>
+
+        {/* Footer brand mark with adjacent logo */}
+        <div className="pt-8 pb-4 select-none overflow-hidden flex items-center justify-center gap-3 sm:gap-4 text-[#14281a] border-t border-neutral-200/70">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 flex items-center justify-center">
+            <img
+              src="/images/siftrole-logo.png"
+              alt="Siftrole Logo"
+              className="w-full h-full object-contain drop-shadow-sm"
+            />
+          </div>
+          <span className="text-2xl sm:text-3xl font-black tracking-[-0.04em] uppercase text-[#14281a]">
+            SIFT<span className="text-[#58a826]">ROLE</span>
+          </span>
+        </div>
       </div>
     </main>
   );
