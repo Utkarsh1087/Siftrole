@@ -103,7 +103,7 @@ export default function TermsPage() {
                   <Ban className="w-4 h-4 shrink-0" /> Automated Scraping & Bot Attacks
                 </div>
                 <p className="text-[0.78rem] text-red-900/80 leading-normal">
-                  You may not use bots, automated scripts, crawlers, or scrapers to extract data, exhaust server bandwidth, or overwhelm platform endpoints.
+                  You must not use bots, automated scripts, crawlers, or scrapers to extract data, exhaust server bandwidth, or overwhelm platform endpoints.
                 </p>
               </div>
 
