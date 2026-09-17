@@ -116,17 +116,20 @@ function LoginForm() {
   }
 
   return (
-    <main className="min-h-screen w-full grid lg:grid-cols-[1.1fr_0.9fr] bg-white font-sans selection:bg-[#8cd64f]/30">
-      {/* Left Column: Full-Screen 3D Workspace Scene */}
-      <div className="relative hidden lg:flex flex-col justify-between p-10 xl:p-14 bg-[#d1e8bf] overflow-hidden min-h-screen">
-        {/* 3D Render Image */}
-        <Image
-          src="/images/auth_3d_workspace.jpg"
-          alt="Siftrole 3D Workspace"
-          fill
-          priority
-          className="object-cover object-center pointer-events-none"
-        />
+    <main className="h-screen w-full grid lg:grid-cols-[1.1fr_0.9fr] bg-white font-sans selection:bg-[#8cd64f]/30 overflow-hidden">
+      {/* Left Column: Fixed-Dimension 3D Workspace Scene */}
+      <div className="relative hidden lg:flex flex-col justify-between p-10 xl:p-14 bg-[#d1e8bf] overflow-hidden h-full max-h-screen select-none">
+        {/* 3D Render Image strictly fixed */}
+        <div className="absolute inset-0 w-full h-full">
+          <Image
+            src="/images/auth_3d_workspace.jpg"
+            alt="Siftrole 3D Workspace"
+            fill
+            sizes="55vw"
+            priority
+            className="object-cover object-center pointer-events-none select-none"
+          />
+        </div>
 
         {/* Subtle Gradient overlay for contrast */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#162a1e]/35 via-transparent to-black/10 pointer-events-none" />
@@ -140,12 +143,10 @@ function LoginForm() {
             <ChevronLeft className="w-3.5 h-3.5 text-[#589c2c]" /> Back to Home
           </Link>
         </div>
-
-
       </div>
 
-      {/* Right Column: Full-Screen Clean Auth Form */}
-      <div className="flex flex-col justify-between p-6 sm:p-10 lg:p-12 xl:p-16 bg-white min-h-screen overflow-y-auto">
+      {/* Right Column: Clean Auth Form with internal scroll isolation */}
+      <div className="flex flex-col justify-between p-6 sm:p-10 lg:p-12 xl:p-16 bg-white h-full max-h-screen overflow-y-auto no-scrollbar">
         
         {/* Mobile top navigation */}
         <div className="flex items-center justify-between lg:hidden mb-6">
