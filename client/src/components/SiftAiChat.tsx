@@ -225,34 +225,95 @@ export function SiftAiChat({
       let replyText = "";
       let foundJobs: Listing[] = [];
 
-      // 1. SECURITY & SENSITIVE DATA GUARDRAIL
-      const sensitiveKeywords = [
-        "env",
-        "api_key",
-        "apikey",
-        "secret",
-        "password",
-        "database",
-        "connection_string",
-        "postgres",
-        "prisma",
-        "token",
-        "credential",
-        "system prompt",
-        "ignore previous",
-        "ignore all instructions",
-        "jailbreak",
-        "leak",
-        "admin password",
-        "ssh",
-        "root",
-        "private key",
+      // 1. MULTI-LAYER SECURITY, ANTI-JAILBREAK & ADMIN PROTECTION GUARDRAIL
+      const injectionRegexes = [
+        /ignore (all |previous |prior |above |system )*(instructions|rules|prompts|directions|guidelines)/i,
+        /(system|developer|hidden|initial|root|base) prompt/i,
+        /(enter|enable|switch to|activate) (developer|debug|god|unrestricted|dan|jailbreak|root|admin) mode/i,
+        /you are now (an unrestricted|a liberated|jailbroken|dan|in developer mode)/i,
+        /pretend (you are|to be|there are no) (admin|root|unrestricted|filters|guardrails)/i,
+        /act as (an? )?(unrestricted|jailbroken|admin|developer|evil|dan)/i,
+        /forget (all |everything |your )*(rules|instructions|constraints)/i,
+        /bypass (all |the )*(filters?|guardrails?|rules?|restrictions?|safety)/i,
+        /override (all |system |security |safety )*(rules|guardrails|filters|prompts)/i,
+        /(show|print|reveal|output|dump|leak|repeat|display) (your )?(system|hidden|initial|internal|source) (prompt|instructions|code)/i,
+        /execute (command|shell|script|sql|code|bash|sh|cmd)/i,
+        /sudo |su -|chmod |rm -rf|cat \/etc/i,
       ];
 
-      const isSensitiveAttempt = sensitiveKeywords.some((kw) => lower.includes(kw));
+      const sensitiveKeywords = [
+        "admin password",
+        "admin login",
+        "admin portal",
+        "admin panel",
+        "admin dashboard",
+        "admin token",
+        "admin credential",
+        "admin access",
+        "admin key",
+        "admin secret",
+        "admin endpoint",
+        "admin side",
+        "admin route",
+        "admin api",
+        "access admin",
+        "login as admin",
+        "become admin",
+        "grant admin",
+        "internal api",
+        "api_key",
+        "apikey",
+        "api key",
+        "groq_api_key",
+        "groq key",
+        "gemini_api_key",
+        "openai_key",
+        "jwt_secret",
+        "session_secret",
+        "auth_secret",
+        "database_url",
+        "connection_string",
+        "postgres://",
+        "postgresql://",
+        "mongodb://",
+        "mongodb+srv",
+        "prisma schema",
+        "dump database",
+        "user table",
+        "all users",
+        "user passwords",
+        "user emails",
+        "candidate passwords",
+        "select * from",
+        "drop table",
+        "union select",
+        "process.env",
+        ".env",
+        "dotenv",
+        "private_key",
+        "private key",
+        "secret_key",
+        "secret key",
+        "id_rsa",
+        "ssh_key",
+        "ssh key",
+        "bearer token",
+        "auth token",
+        "refresh token",
+        "internal logs",
+        "audit logs",
+        "server logs",
+        "backend code",
+        "server architecture",
+        "jailbreak",
+        "dan mode",
+      ];
 
-      if (isSensitiveAttempt) {
-        replyText = "🔒 **Security Guardrail Active**: Sift AI is strictly restricted to assisting with verified tech roles, candidate resume matching, and platform navigation on Siftrole. Internal platform architecture, environment variables, credentials, and tokens are secure and completely inaccessible.";
+      const isRegexThreat = injectionRegexes.some((rx) => rx.test(query));
+      const isKeywordThreat = sensitiveKeywords.some((kw) => lower.includes(kw));
+
+      if (isRegexThreat || isKeywordThreat) {
+        replyText = "🔒 **Security Guardrail Active**: Sift AI is strictly restricted to assisting candidates with verified tech openings, application tracking, and resume matching. Access to administrative systems, credentials, internal architecture, source code, and environment variables is strictly forbidden and monitored.";
       }
       // 2. PLATFORM INFORMATION & PHILOSOPHY
       else if (
