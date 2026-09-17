@@ -71,6 +71,28 @@ const COMMON_TECH_SKILLS = [
   "Figma", "FastAPI", "Django", "Vue", "Angular", "Express", "GCP", "Azure"
 ];
 
+function renderFormattedMessage(text: string, isUser: boolean) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return (
+    <span className="leading-relaxed whitespace-pre-line">
+      {parts.map((part, i) => {
+        if (part.startsWith("**") && part.endsWith("**")) {
+          const content = part.slice(2, -2);
+          return (
+            <strong
+              key={i}
+              className={`font-black ${isUser ? "text-white" : "text-[#121816]"}`}
+            >
+              {content}
+            </strong>
+          );
+        }
+        return <React.Fragment key={i}>{part}</React.Fragment>;
+      })}
+    </span>
+  );
+}
+
 export function SiftAiChat({
   liveListings,
   onSelectListing,
@@ -520,7 +542,7 @@ export function SiftAiChat({
                   : "bg-[#f4f3f0] text-[#121816] rounded-bl-xs border border-neutral-200/60"
               }`}
             >
-              <p className="leading-relaxed whitespace-pre-line">{m.text}</p>
+              <div>{renderFormattedMessage(m.text, m.sender === "user")}</div>
 
               {/* Extracted Skills Pill Cloud */}
               {m.extractedSkills && (
