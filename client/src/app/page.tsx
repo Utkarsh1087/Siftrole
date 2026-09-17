@@ -78,7 +78,7 @@ export default function Home() {
 
   const metrics = [
     { value: "100%", label: "Direct from company career feeds", caption: "Zero scraped third-party reposts" },
-    { value: "990+", label: "Verified active tech opportunities", caption: "Synced across Greenhouse, Lever, Ashby" },
+    { value: totalListingsCount > 0 ? `${totalListingsCount}+` : "1,000+", label: "Verified active tech opportunities", caption: "Synced across Greenhouse, Lever, Ashby" },
     { value: "0", label: "Dead links or expired ghost postings", caption: "Auto-removed the second a role closes" },
   ];
 
@@ -680,21 +680,22 @@ export default function Home() {
               </h4>
               <ul className="space-y-2.5 text-xs font-semibold text-[#55615b]">
                 <li><Link href="/about" className="hover:text-[#3c7818] transition">About</Link></li>
-                <li><Link href="/jobs" className="hover:text-[#3c7818] transition">Career</Link></li>
-                <li><Link href="/#faq" className="hover:text-[#3c7818] transition">Contact</Link></li>
-                <li><Link href="/jobs" className="hover:text-[#3c7818] transition">Blog</Link></li>
+                <li><Link href="/jobs" className="hover:text-[#3c7818] transition">Opportunities</Link></li>
+                <li><Link href="/#faq" className="hover:text-[#3c7818] transition">FAQ</Link></li>
+                <li><Link href="/changelog" className="hover:text-[#3c7818] transition">Changelog</Link></li>
               </ul>
             </div>
 
             {/* Col: Support */}
             <div>
               <h4 className="text-xs font-black text-[#121816] mb-4">
-                Support
+                Legal & Support
               </h4>
               <ul className="space-y-2.5 text-xs font-semibold text-[#55615b]">
-                <li><Link href="/dashboard" className="hover:text-[#3c7818] transition">License</Link></li>
-                <li><Link href="/#about" className="hover:text-[#3c7818] transition">Style Guide</Link></li>
-                <li><Link href="/jobs" className="hover:text-[#3c7818] transition">Changelog</Link></li>
+                <li><Link href="/privacy" className="hover:text-[#3c7818] transition">Privacy Policy</Link></li>
+                <li><Link href="/terms" className="hover:text-[#3c7818] transition">Terms of Service</Link></li>
+                <li><Link href="/cold-email" className="hover:text-[#3c7818] transition">Recruiter Network</Link></li>
+                <li><Link href="/dashboard" className="hover:text-[#3c7818] transition">Member Dashboard</Link></li>
               </ul>
             </div>
 

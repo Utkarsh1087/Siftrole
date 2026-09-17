@@ -1005,7 +1005,9 @@ export default function AdminDashboard() {
                   <div className="flex justify-between items-start">
                     <div>
                       <span className="text-[0.7rem] font-bold uppercase tracking-wider text-[#083327]">Active Job Links</span>
-                      <div className="text-3xl font-black mt-1 text-[#083327] tracking-tight">99.4%</div>
+                      <div className="text-3xl font-black mt-1 text-[#083327] tracking-tight">
+                        {stats.total > 0 ? `${((stats.active / stats.total) * 100).toFixed(1)}%` : "100%"}
+                      </div>
                     </div>
                     <div className="flex gap-1 items-end h-8">
                       <span className="w-1.5 h-5 bg-emerald-200 rounded-full" />

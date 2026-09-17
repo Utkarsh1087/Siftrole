@@ -296,11 +296,11 @@ function LoginForm() {
           {/* Terms of Service agreement */}
           <p className="mt-6 text-[0.72rem] text-center text-[#7b8d80] leading-relaxed">
             By creating an account you agree to Siftrole&apos;s{" "}
-            <Link href="/about" className="text-[#3c7818] font-semibold hover:underline">
-              Terms of Services
+            <Link href="/terms" className="text-[#3c7818] font-semibold hover:underline">
+              Terms of Service
             </Link>{" "}
             and{" "}
-            <Link href="/about" className="text-[#3c7818] font-semibold hover:underline">
+            <Link href="/privacy" className="text-[#3c7818] font-semibold hover:underline">
               Privacy Policy
             </Link>
             .
