@@ -53,6 +53,7 @@ interface Message {
   totalMatchesCount?: number;
   filterQuery?: string;
   extractedSkills?: string[];
+  requiresAuth?: boolean;
 }
 
 interface SiftAiChatProps {
@@ -64,6 +65,7 @@ interface SiftAiChatProps {
   uploadedResumeName: string | null;
   onApplyResumeSkills: (skills: string[], fileName: string) => void;
   onClearResume: () => void;
+  isLoggedIn?: boolean;
 }
 
 const COMMON_TECH_SKILLS = [
@@ -104,6 +106,7 @@ export function SiftAiChat({
   uploadedResumeName,
   onApplyResumeSkills,
   onClearResume,
+  isLoggedIn = false,
 }: SiftAiChatProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -150,6 +153,31 @@ export function SiftAiChat({
     const fileName = file.name;
     const lowerName = fileName.toLowerCase();
 
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      sender: "user",
+      text: `📄 Uploaded Resume: ${fileName}`,
+      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    };
+
+    setMessages((prev) => [...prev, userMsg]);
+    setIsTyping(true);
+
+    if (!isLoggedIn) {
+      setTimeout(() => {
+        setIsTyping(false);
+        const aiMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          sender: "ai",
+          text: "🔒 **Account Registration Required**: You must sign in or create a free account to upload your resume, extract skills, and unlock real-time match scores.",
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          requiresAuth: true,
+        };
+        setMessages((prev) => [...prev, aiMsg]);
+      }, 500);
+      return;
+    }
+
     // Simulate intelligent resume text reading / skill extraction
     let detectedSkills: string[] = [];
     if (lowerName.includes("frontend") || lowerName.includes("react")) {
@@ -179,16 +207,6 @@ export function SiftAiChat({
       .slice(0, 3)
       .map((item) => item.job);
 
-    const userMsg: Message = {
-      id: Date.now().toString(),
-      sender: "user",
-      text: `📄 Uploaded Resume: ${fileName}`,
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    };
-
-    setMessages((prev) => [...prev, userMsg]);
-    setIsTyping(true);
-
     setTimeout(() => {
       setIsTyping(false);
       const aiMsg: Message = {
@@ -217,6 +235,21 @@ export function SiftAiChat({
     setMessages((prev) => [...prev, userMsg]);
     if (!textToSend) setInputVal("");
     setIsTyping(true);
+
+    if (!isLoggedIn) {
+      setTimeout(() => {
+        setIsTyping(false);
+        const aiMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          sender: "ai",
+          text: "🔒 **Account Registration Required**: You must sign in or create a free account to chat with Sift AI, search verified roles, and get tailored recommendations.",
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          requiresAuth: true,
+        };
+        setMessages((prev) => [...prev, aiMsg]);
+      }, 500);
+      return;
+    }
 
     const lower = query.toLowerCase();
 
@@ -704,6 +737,19 @@ export function SiftAiChat({
                       <ArrowRight className="w-3.5 h-3.5 text-[#3c7818] group-hover:text-[#14281a] group-hover:translate-x-0.5 transition-transform" />
                     </button>
                   )}
+                </div>
+              )}
+
+              {/* Account Registration Action Button */}
+              {m.requiresAuth && (
+                <div className="mt-3 pt-2.5 border-t border-neutral-300/60">
+                  <Link
+                    href="/login?mode=signup"
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#84d64f] hover:bg-[#75c73d] px-3.5 py-2 text-xs font-black text-[#14281a] shadow-xs transition active:scale-[0.98] cursor-pointer"
+                  >
+                    <span>Create Free Account / Sign In</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-[#14281a]" />
+                  </Link>
                 </div>
               )}
             </div>

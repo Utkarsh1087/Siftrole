@@ -21,12 +21,14 @@ function LoginForm() {
   const [name, setName] = useState("Alex Morgan");
   const [email, setEmail] = useState("student@demo.com");
   const [password, setPassword] = useState("password123");
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const fillDemo = (demoType: "student" | "admin" | "recruiter") => {
     setIsSignUp(false);
     setError("");
+    setAgreedToTerms(true);
     if (demoType === "student") {
       setName("Alex Morgan");
       setEmail("student@demo.com");
@@ -44,8 +46,14 @@ function LoginForm() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setLoading(true);
     setError("");
+
+    if (!agreedToTerms) {
+      setError("You must accept the Terms of Use and Privacy Policy to continue.");
+      return;
+    }
+
+    setLoading(true);
 
     try {
       const endpoint = isSignUp
@@ -214,6 +222,32 @@ function LoginForm() {
                 {error}
               </div>
             ) : null}
+
+            {/* Mandatory Terms & Privacy Agreement */}
+            <div className="flex items-start gap-2.5 pt-1 text-left">
+              <input
+                type="checkbox"
+                id="terms-checkbox"
+                checked={agreedToTerms}
+                onChange={(e) => {
+                  setAgreedToTerms(e.target.checked);
+                  if (error) setError("");
+                }}
+                className="mt-1 h-4 w-4 rounded border-neutral-300 text-[#3c7818] focus:ring-[#84d64f] accent-[#3c7818] cursor-pointer"
+                required
+              />
+              <label htmlFor="terms-checkbox" className="text-[0.75rem] text-[#55615b] leading-relaxed cursor-pointer select-none">
+                I have read and agree to Siftrole&apos;s{" "}
+                <Link href="/terms" target="_blank" className="text-[#3c7818] font-bold underline hover:text-[#14281a]">
+                  Terms of Use
+                </Link>{" "}
+                and{" "}
+                <Link href="/privacy" target="_blank" className="text-[#3c7818] font-bold underline hover:text-[#14281a]">
+                  Privacy Policy
+                </Link>
+                . <span className="text-red-500 font-bold">*</span>
+              </label>
+            </div>
 
             {/* Primary Action Button */}
             <button

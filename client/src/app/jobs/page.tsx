@@ -27,6 +27,7 @@ import {
   CheckCircle2,
   Check,
   ChevronDown,
+  Lock,
 } from "lucide-react";
 import { CompanyLogo, getCompanyDomain } from "@/components/CompanyLogo";
 import { LiquidSilkBackground } from "@/components/LiquidSilkBackground";
@@ -62,6 +63,7 @@ export default function JobsPage() {
   const [subscribedEmail, setSubscribedEmail] = useState(false);
   const { appliedJobIds, toggleApplied, isApplied } = useAppliedJobs();
   const { isLoggedIn } = useAuth();
+  const [showAuthGateModal, setShowAuthGateModal] = useState(false);
 
   // Resume Matching State
   const [activeResumeSkills, setActiveResumeSkills] = useState<string[]>([]);
@@ -172,6 +174,10 @@ export default function JobsPage() {
   const currentListings = processedListings.slice(startIndex, endIndex);
 
   const handlePageChange = (newPage: number) => {
+    if (!isLoggedIn && newPage > 1) {
+      setShowAuthGateModal(true);
+      return;
+    }
     if (newPage >= 1 && newPage <= totalPages) {
       setCurrentPage(newPage);
       window.scrollTo({ top: 180, behavior: "smooth" });
@@ -571,6 +577,39 @@ export default function JobsPage() {
             )}
 
             {/* ======================================================== */}
+            {/* ACCOUNT REGISTRATION GATE FOR >10 JOBS */}
+            {/* ======================================================== */}
+            {!isLoggedIn && totalListings > 10 && (
+              <div className="mt-8 rounded-[26px] border border-[#84d64f]/40 bg-gradient-to-br from-[#14281a] via-[#1a3322] to-[#14281a] p-6 sm:p-8 text-white shadow-xl text-center relative overflow-hidden">
+                <div className="relative z-10 max-w-lg mx-auto space-y-3">
+                  <div className="inline-flex items-center gap-2 rounded-full bg-[#84d64f]/20 border border-[#84d64f]/30 px-3.5 py-1 text-xs font-black text-[#84d64f] uppercase tracking-wider">
+                    <Lock className="w-3.5 h-3.5" /> Free Account Required
+                  </div>
+                  <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                    Discover All {totalListings}+ Verified Roles
+                  </h3>
+                  <p className="text-xs sm:text-sm text-[#eef8e5]/80 leading-relaxed">
+                    You have viewed 10 free verified openings. Register a free account to unlock full multi-page browsing, AI resume fit scoring, and application pipeline tracking.
+                  </p>
+                  <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+                    <Link
+                      href="/login?mode=signup"
+                      className="rounded-full bg-[#84d64f] hover:bg-[#75c73d] text-[#14281a] font-heading font-black text-xs sm:text-sm px-6 py-3 shadow-md shadow-black/20 transition active:scale-[0.98] inline-flex items-center gap-1.5 cursor-pointer"
+                    >
+                      Sign Up Free <ArrowRight className="w-4 h-4" />
+                    </Link>
+                    <Link
+                      href="/login"
+                      className="rounded-full border border-white/20 bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm px-5 py-3 transition cursor-pointer"
+                    >
+                      Sign In
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ======================================================== */}
             {/* PAGINATION CONTROLS BAR */}
             {/* ======================================================== */}
             {!isLoadingListings && totalListings > 0 && totalPages > 1 && (
@@ -640,6 +679,7 @@ export default function JobsPage() {
               uploadedResumeName={uploadedResumeName}
               onApplyResumeSkills={handleApplyResumeSkills}
               onClearResume={handleClearResume}
+              isLoggedIn={isLoggedIn}
             />
           </div>
         </div>
@@ -846,6 +886,55 @@ export default function JobsPage() {
                 Apply on Official Portal
                 <ExternalLink className="w-4 h-4" />
               </a>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ======================================================== */}
+      {/* AUTH GATE MODAL FOR DISCOVERING > 10 JOBS */}
+      {/* ======================================================== */}
+      {showAuthGateModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setShowAuthGateModal(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-[32px] border border-neutral-200/90 bg-white p-6 sm:p-8 shadow-2xl relative animate-in zoom-in-95 duration-200 text-center space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowAuthGateModal(false)}
+              className="absolute right-5 top-5 h-8 w-8 rounded-full bg-neutral-100 hover:bg-neutral-200 flex items-center justify-center text-[#55615b] transition cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="h-14 w-14 rounded-2xl bg-[#eef8e5] text-[#3c7818] border border-[#cce8be] flex items-center justify-center mx-auto shadow-xs">
+              <Lock className="w-7 h-7" />
+            </div>
+
+            <div>
+              <h3 className="text-xl sm:text-2xl font-black text-[#121816] tracking-tight">
+                Unlock All {totalListings}+ Verified Roles
+              </h3>
+              <p className="text-xs sm:text-sm text-[#55615b] mt-2 leading-relaxed">
+                Free account registration is required to discover openings past the first 10 roles, save your checklist, and use Sift AI matching.
+              </p>
+            </div>
+
+            <div className="pt-3 space-y-2.5">
+              <Link
+                href="/login?mode=signup"
+                className="w-full rounded-full bg-[#84d64f] hover:bg-[#75c73d] text-[#14281a] font-heading font-black text-sm py-3.5 shadow-md shadow-black/10 transition active:scale-[0.98] inline-flex items-center justify-center gap-2 cursor-pointer block"
+              >
+                Create Free Account <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link
+                href="/login"
+                className="w-full rounded-full border border-neutral-200/90 bg-[#fbfaf8] hover:bg-neutral-100 text-[#121816] font-bold text-xs py-3 transition cursor-pointer inline-flex items-center justify-center block"
+              >
+                Already have an account? Sign in
+              </Link>
             </div>
           </div>
         </div>
