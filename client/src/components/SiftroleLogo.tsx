@@ -6,7 +6,7 @@ import Link from "next/link";
 
 interface SiftroleLogoProps {
   size?: "sm" | "md" | "lg" | "xl" | "massive" | number;
-  variant?: "mark-only" | "with-text" | "footer-emblem";
+  variant?: "mark-only" | "with-text" | "wordmark-o" | "footer-emblem";
   className?: string;
   priority?: boolean;
 }
@@ -38,6 +38,50 @@ export function SiftroleLogoMark({
   );
 }
 
+export function SiftroleWordmark({
+  className = "",
+  uppercase = true,
+}: {
+  className?: string;
+  uppercase?: boolean;
+}) {
+  if (uppercase) {
+    return (
+      <span className={`inline-flex items-center select-none font-black tracking-[-0.04em] uppercase leading-none ${className}`}>
+        <span>SIFTR</span>
+        <span className="inline-flex items-center justify-center w-[0.84em] h-[0.84em] mx-[0.04em] relative shrink-0">
+          <Image
+            src="/images/siftrole-logo.png"
+            alt="O"
+            width={380}
+            height={380}
+            className="w-full h-full object-contain drop-shadow-[0_10px_25px_rgba(132,214,79,0.35)]"
+            unoptimized
+          />
+        </span>
+        <span>LE</span>
+      </span>
+    );
+  }
+
+  return (
+    <span className={`inline-flex items-center select-none font-black tracking-[-0.04em] leading-none ${className}`}>
+      <span>Siftr</span>
+      <span className="inline-flex items-center justify-center w-[0.84em] h-[0.84em] mx-[0.04em] relative shrink-0">
+        <Image
+          src="/images/siftrole-logo.png"
+          alt="o"
+          width={128}
+          height={128}
+          className="w-full h-full object-contain drop-shadow-xs"
+          unoptimized
+        />
+      </span>
+      <span>le</span>
+    </span>
+  );
+}
+
 export function SiftroleLogo({
   size = "md",
   variant = "with-text",
@@ -56,13 +100,18 @@ export function SiftroleLogo({
     return <SiftroleLogoMark size={pixelSize} className={className} priority={priority} />;
   }
 
+  if (variant === "wordmark-o") {
+    return (
+      <Link href="/" className={`inline-flex items-center group ${className}`}>
+        <SiftroleWordmark className="text-xl sm:text-2xl text-[#121816]" uppercase={false} />
+      </Link>
+    );
+  }
+
   if (variant === "footer-emblem") {
     return (
-      <div className={`flex items-center justify-center gap-3.5 ${className}`}>
-        <SiftroleLogoMark size={pixelSize} priority={priority} />
-        <span className="text-[2.2rem] sm:text-[2.8rem] font-black tracking-[-0.04em] uppercase text-[#14281a]">
-          SIFT<span className="text-[#58a826]">ROLE</span>
-        </span>
+      <div className={`flex items-center justify-center ${className}`}>
+        <SiftroleWordmark className="text-[12vw] sm:text-[13vw] text-[#14281a]" uppercase={true} />
       </div>
     );
   }

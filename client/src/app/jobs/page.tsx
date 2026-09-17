@@ -707,22 +707,21 @@ export default function JobsPage() {
           </div>
 
           {/* ======================================================== */}
-          {/* MASSIVE BOTTOM SIFTROLE WORDMARK WITH ADJACENT LOGO */}
+          {/* MASSIVE BOTTOM SIFTR[O]LE WORDMARK WITH EMBEDDED LOGO */}
           {/* ======================================================== */}
-          <div className="pt-10 pb-4 select-none overflow-hidden flex items-center justify-center gap-3 sm:gap-7 text-[#14281a]">
-            <div className="w-[12vw] h-[12vw] sm:w-[13vw] sm:h-[13vw] max-w-[210px] max-h-[210px] min-w-[56px] min-h-[56px] shrink-0 flex items-center justify-center">
+          <div className="pt-10 pb-4 select-none overflow-hidden flex items-center justify-center font-black uppercase text-[#14281a] leading-none tracking-[-0.04em]">
+            <span className="text-[12vw] sm:text-[13vw]">SIFTR</span>
+            <span className="inline-flex items-center justify-center w-[10.5vw] h-[10.5vw] sm:w-[11.5vw] sm:h-[11.5vw] max-w-[170px] max-h-[170px] min-w-[44px] min-h-[44px] mx-[0.05em] relative shrink-0">
               <Image
                 src="/images/siftrole-logo.png"
-                alt="Siftrole Logo"
+                alt="O"
                 width={380}
                 height={380}
                 className="w-full h-full object-contain drop-shadow-[0_12px_32px_rgba(132,214,79,0.38)]"
                 unoptimized
               />
-            </div>
-            <span className="text-[12vw] sm:text-[13vw] font-black tracking-[-0.04em] leading-none uppercase select-none text-[#14281a] inline-block">
-              SIFTROLE
             </span>
+            <span className="text-[12vw] sm:text-[13vw]">LE</span>
           </div>
         </footer>
 

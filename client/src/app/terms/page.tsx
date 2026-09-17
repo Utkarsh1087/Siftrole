@@ -54,18 +54,17 @@ export default function TermsPage() {
           </div>
         </div>
 
-        {/* Footer brand mark with adjacent logo */}
-        <div className="pt-8 pb-4 select-none overflow-hidden flex items-center justify-center gap-3 sm:gap-4 text-[#14281a] border-t border-neutral-200/70">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 flex items-center justify-center">
+        {/* Footer brand mark with logo as letter O */}
+        <div className="pt-8 pb-4 select-none overflow-hidden flex items-center justify-center font-black uppercase text-[#14281a] leading-none tracking-[-0.04em] text-2xl sm:text-3xl border-t border-neutral-200/70">
+          <span>SIFTR</span>
+          <span className="inline-flex items-center justify-center w-[0.84em] h-[0.84em] mx-[0.04em] relative shrink-0">
             <img
               src="/images/siftrole-logo.png"
-              alt="Siftrole Logo"
+              alt="O"
               className="w-full h-full object-contain drop-shadow-sm"
             />
-          </div>
-          <span className="text-2xl sm:text-3xl font-black tracking-[-0.04em] uppercase text-[#14281a]">
-            SIFT<span className="text-[#58a826]">ROLE</span>
           </span>
+          <span>LE</span>
         </div>
       </div>
     </main>
