@@ -441,3 +441,4 @@ export function markContactAsMailed(id: string): void {
   } catch {}
 }
 
+export const RECRUITER_CONTACTS = HR_CONTACTS_DATA;
