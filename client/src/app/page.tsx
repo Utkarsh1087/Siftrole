@@ -491,8 +491,8 @@ export default function Home() {
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                       {/* Left Block */}
                       <div className="flex-1 min-w-0">
-                        {/* Company Logo + Domain + Applied Badge */}
-                        <div className="flex items-center gap-2.5 flex-wrap">
+                        {/* Company Logo + Domain */}
+                        <div className="flex items-center gap-2">
                           <CompanyLogo
                             company={job.company}
                             size="sm"
@@ -501,13 +501,6 @@ export default function Home() {
                           <span className="text-xs sm:text-sm font-bold text-[#14281a] tracking-tight">
                             {getCompanyDomain(job.company)}
                           </span>
-
-                          {applied && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-[#14281a] text-[#84d64f] text-[0.68rem] font-extrabold px-2.5 py-0.5 shadow-xs">
-                              <CheckCircle2 className="w-3 h-3 text-[#84d64f]" />
-                              Applied
-                            </span>
-                          )}
                         </div>
 
                         {/* Job Title */}

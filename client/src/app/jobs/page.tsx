@@ -440,7 +440,7 @@ export default function JobsPage() {
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                       {/* Left Block */}
                       <div className="flex-1 min-w-0">
-                        {/* Company Logo + Domain + Match Badge + Applied Badge */}
+                        {/* Company Logo + Domain + Match Badge */}
                         <div className="flex items-center gap-2.5 flex-wrap">
                           <CompanyLogo
                             company={job.company}
@@ -455,13 +455,6 @@ export default function JobsPage() {
                             <span className="inline-flex items-center gap-1 rounded-full bg-[#84d64f] text-[#14281a] text-[0.68rem] font-black px-2.5 py-0.5 shadow-xs">
                               <Sparkles className="w-3 h-3" />
                               {matchInfo.score}% Match
-                            </span>
-                          )}
-
-                          {applied && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-[#14281a] text-[#84d64f] text-[0.68rem] font-extrabold px-2.5 py-0.5 shadow-xs">
-                              <CheckCircle2 className="w-3 h-3 text-[#84d64f]" />
-                              Applied
                             </span>
                           )}
                         </div>
