@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   ExternalLink,
   ChevronLeft,
+  ChevronRight,
   Copy,
   Check,
   Lock,
@@ -47,6 +48,10 @@ export default function ColdEmailPage() {
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [copiedEmailId, setCopiedEmailId] = useState<string | null>(null);
   const [mailedContactIds, setMailedContactIds] = useState<Set<string>>(new Set());
+
+  // Pagination state
+  const PAGE_SIZE = 6;
+  const [currentPage, setCurrentPage] = useState(1);
 
   const { isLoggedIn } = useAuth();
 
@@ -113,6 +118,46 @@ export default function ColdEmailPage() {
       return matchesSearch && matchesDept && matchesMailed;
     });
   }, [contacts, searchQuery, selectedDepartment, mailedFilter, mailedContactIds]);
+
+  // Reset page to 1 whenever filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedDepartment, mailedFilter]);
+
+  const totalPages = Math.ceil(filteredContacts.length / PAGE_SIZE) || 1;
+  const startIndex = (currentPage - 1) * PAGE_SIZE;
+  const endIndex = Math.min(startIndex + PAGE_SIZE, filteredContacts.length);
+
+  const paginatedContacts = useMemo(() => {
+    return filteredContacts.slice(startIndex, endIndex);
+  }, [filteredContacts, startIndex, endIndex]);
+
+  const handlePageChange = (page: number) => {
+    if (page < 1 || page > totalPages) return;
+    setCurrentPage(page);
+    const el = document.getElementById("hr-contacts-heading");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  const getPaginationPages = () => {
+    const pages: (number | string)[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (currentPage > 3) pages.push("...");
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(totalPages - 1, currentPage + 1);
+      for (let i = start; i <= end; i++) pages.push(i);
+      if (currentPage < totalPages - 2) pages.push("...");
+      pages.push(totalPages);
+    }
+    return pages;
+  };
 
   return (
     <main className="min-h-screen bg-[#f8f7f5] text-[#121816] font-sans antialiased selection:bg-[#84d64f]/30 selection:text-[#14281a]">
@@ -322,179 +367,260 @@ export default function ColdEmailPage() {
         {/* ======================================================== */}
         {/* RECRUITER CONTACTS GRID */}
         {/* ======================================================== */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-          {filteredContacts.map((contact, index) => {
-            const isLocked = !isPro && index >= FREE_CONTACTS_LIMIT;
-            const isMailed = mailedContactIds.has(contact.id);
-
-            return (
-              <div
-                key={contact.id}
-                className={`rounded-[24px] border p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all relative overflow-hidden flex flex-col justify-between ${
-                  isLocked
-                    ? "bg-[#fbfaf8] border-neutral-200/90"
-                    : isMailed
-                    ? "border-[#84d64f]/70 bg-[#f7fcf3] hover:shadow-md"
-                    : "border-neutral-200/90 bg-white hover:border-[#84d64f] hover:shadow-md"
-                }`}
+        <div id="hr-contacts-heading" className="scroll-mt-24">
+          {filteredContacts.length === 0 ? (
+            <div className="rounded-[24px] border border-dashed border-neutral-300 bg-white p-12 text-center">
+              <div className="h-12 w-12 rounded-full bg-neutral-100 flex items-center justify-center mx-auto text-[#55615b] mb-3">
+                <Search className="w-6 h-6" />
+              </div>
+              <h3 className="text-base font-black text-[#121816]">No matching HR contacts found</h3>
+              <p className="text-xs text-[#55615b] mt-1 max-w-sm mx-auto">
+                Try searching for a different company name, department, or keyword to find verified recruiter leads.
+              </p>
+              <button
+                onClick={() => {
+                  setSearchQuery("");
+                  setSelectedDepartment("all");
+                  setMailedFilter("all");
+                }}
+                className="mt-4 rounded-xl bg-[#14281a] text-[#84d64f] px-4 py-2 text-xs font-bold shadow-xs cursor-pointer hover:bg-[#1f3d27] transition"
               >
-                <div>
-                  {/* Top Row: Company Logo + Title + Status + Mailed Toggle */}
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <CompanyLogo company={contact.company} size="md" />
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-extrabold uppercase tracking-wider text-[#3c7818]">
-                            {contact.company}
-                          </span>
-                          <span className="rounded-full bg-[#eef8e5] border border-[#cce8be] text-[#14281a] text-[0.65rem] font-bold px-2 py-0.5 inline-flex items-center gap-1">
-                            <ShieldCheck className="w-3 h-3 text-[#3c7818]" /> Verified HR
+                Clear all filters
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+              {paginatedContacts.map((contact, index) => {
+                const globalIndex = startIndex + index;
+                const isLocked = !isPro && globalIndex >= FREE_CONTACTS_LIMIT;
+                const isMailed = mailedContactIds.has(contact.id);
+
+                return (
+                  <div
+                    key={contact.id}
+                    className={`rounded-[24px] border p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all relative overflow-hidden flex flex-col justify-between ${
+                      isLocked
+                        ? "bg-[#fbfaf8] border-neutral-200/90"
+                        : isMailed
+                        ? "border-[#84d64f]/70 bg-[#f7fcf3] hover:shadow-md"
+                        : "border-neutral-200/90 bg-white hover:border-[#84d64f] hover:shadow-md"
+                    }`}
+                  >
+                    <div>
+                      {/* Top Row: Company Logo + Title + Status + Mailed Toggle */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <CompanyLogo company={contact.company} size="md" />
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-extrabold uppercase tracking-wider text-[#3c7818]">
+                                {contact.company}
+                              </span>
+                              <span className="rounded-full bg-[#eef8e5] border border-[#cce8be] text-[#14281a] text-[0.65rem] font-bold px-2 py-0.5 inline-flex items-center gap-1">
+                                <ShieldCheck className="w-3 h-3 text-[#3c7818]" /> Verified HR
+                              </span>
+                            </div>
+                            <h3 className="text-lg font-black text-[#121816] mt-0.5">
+                              {isLocked ? `${contact.name.split(" ")[0]} ••••••` : contact.name}
+                            </h3>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          {/* Interactive Mailed Checkbox Button */}
+                          {!isLocked && (
+                            <button
+                              type="button"
+                              onClick={(e) => handleToggleMailed(contact.id, e)}
+                              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition-all cursor-pointer ${
+                                isMailed
+                                  ? "bg-[#14281a] text-[#84d64f] shadow-xs hover:bg-[#1f3d27]"
+                                  : "border border-neutral-300 bg-white text-[#55615b] hover:border-[#84d64f] hover:text-[#14281a] hover:bg-[#eef8e5]"
+                              }`}
+                              title={isMailed ? "Click to unmark as mailed" : "Mark as mailed"}
+                            >
+                              {isMailed ? (
+                                <>
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-[#84d64f]" />
+                                  <span>Mailed</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="w-3.5 h-3.5 rounded border border-neutral-400 bg-white inline-block" />
+                                  <span>Mark Mailed</span>
+                                </>
+                              )}
+                            </button>
+                          )}
+
+                          <span className="text-[0.7rem] font-bold text-[#55615b] bg-[#f8f7f5] px-2.5 py-1 rounded-lg border border-neutral-200/60 shrink-0">
+                            {contact.department}
                           </span>
                         </div>
-                        <h3 className="text-lg font-black text-[#121816] mt-0.5">
-                          {isLocked ? `${contact.name.split(" ")[0]} ••••••` : contact.name}
-                        </h3>
+                      </div>
+
+                      {/* Role Title & Location */}
+                      <div className="mt-3">
+                        <p className="text-xs font-semibold text-[#121816]">{contact.title}</p>
+                        <p className="text-[0.75rem] text-[#55615b] mt-0.5">{contact.location}</p>
+                      </div>
+
+                      {/* Hiring For Tags */}
+                      <div className="mt-4 flex flex-wrap gap-1.5">
+                        {contact.hiring_for.map((tag) => (
+                          <span
+                            key={tag}
+                            className="rounded-full border border-neutral-200 bg-[#f8f7f5] px-3 py-0.5 text-[0.7rem] font-semibold text-[#14281a]"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+
+                      {/* Email Row */}
+                      <div className="mt-4 p-3 rounded-xl bg-[#f8f7f5] border border-neutral-200/80 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#14281a] truncate">
+                          <Mail className="w-3.5 h-3.5 text-[#3c7818] shrink-0" />
+                          <span className="truncate">
+                            {isLocked ? "••••••••••••@company.com" : contact.email}
+                          </span>
+                        </div>
+
+                        {!isLocked && (
+                          <button
+                            onClick={(e) => handleCopyEmail(contact, e)}
+                            className="p-1.5 rounded-lg hover:bg-neutral-200 text-[#55615b] transition cursor-pointer shrink-0"
+                            title="Copy email"
+                          >
+                            {copiedEmailId === contact.id ? (
+                              <Check className="w-3.5 h-3.5 text-[#3c7818]" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        )}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      {/* Interactive Mailed Checkbox Button */}
-                      {!isLocked && (
-                        <button
-                          type="button"
-                          onClick={(e) => handleToggleMailed(contact.id, e)}
-                          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition-all cursor-pointer ${
-                            isMailed
-                              ? "bg-[#14281a] text-[#84d64f] shadow-xs hover:bg-[#1f3d27]"
-                              : "border border-neutral-300 bg-white text-[#55615b] hover:border-[#84d64f] hover:text-[#14281a] hover:bg-[#eef8e5]"
-                          }`}
-                          title={isMailed ? "Click to unmark as mailed" : "Mark as mailed"}
-                        >
-                          {isMailed ? (
-                            <>
-                              <CheckCircle2 className="w-3.5 h-3.5 text-[#84d64f]" />
-                              <span>Mailed</span>
-                            </>
-                          ) : (
-                            <>
-                              <span className="w-3.5 h-3.5 rounded border border-neutral-400 bg-white inline-block" />
-                              <span>Mark Mailed</span>
-                            </>
-                          )}
-                        </button>
+                    {/* Bottom Action Bar */}
+                    <div className="mt-5 pt-4 border-t border-neutral-100 flex items-center justify-between gap-2">
+                      {!isLocked ? (
+                        <>
+                          <button
+                            onClick={() => setSelectedContactForAi(contact)}
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-[#84d64f] hover:bg-[#75c73d] text-[#14281a] px-4 py-2 text-xs font-bold transition shadow-xs cursor-pointer active:scale-[0.98]"
+                          >
+                            <Sparkles className="w-3.5 h-3.5" />
+                            <span>Draft AI Mail</span>
+                          </button>
+
+                          <a
+                            href={`mailto:${contact.email}?subject=${encodeURIComponent(`Quick question re: ${contact.hiring_for[0]} at ${contact.company}`)}`}
+                            onClick={() => markContactAsMailed(contact.id)}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-300 hover:border-[#84d64f] hover:bg-[#eef8e5] text-[#121816] px-3.5 py-2 text-xs font-bold transition cursor-pointer"
+                          >
+                            <Send className="w-3.5 h-3.5 text-[#3c7818]" />
+                            <span>Direct Mail</span>
+                          </a>
+                        </>
+                      ) : (
+                        <div className="w-full flex items-center justify-between gap-3">
+                          <span className="text-[0.75rem] font-bold text-[#55615b] inline-flex items-center gap-1.5">
+                            <Lock className="w-3.5 h-3.5 text-amber-600" />
+                            <span>Pro Contact #{globalIndex + 1}</span>
+                          </span>
+
+                          <button
+                            onClick={() => setIsUpgradeModalOpen(true)}
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-[#14281a] hover:bg-[#1f3d27] text-[#84d64f] px-4 py-2 text-xs font-bold transition shadow-xs cursor-pointer"
+                          >
+                            <Sparkles className="w-3.5 h-3.5" />
+                            <span>Unlock Full Contact</span>
+                          </button>
+                        </div>
                       )}
-
-                      <span className="text-[0.7rem] font-bold text-[#55615b] bg-[#f8f7f5] px-2.5 py-1 rounded-lg border border-neutral-200/60 shrink-0">
-                        {contact.department}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Role Title & Location */}
-                  <div className="mt-3">
-                    <p className="text-xs font-semibold text-[#121816]">{contact.title}</p>
-                    <p className="text-[0.75rem] text-[#55615b] mt-0.5">{contact.location}</p>
-                  </div>
-
-                  {/* Hiring For Tags */}
-                  <div className="mt-4 flex flex-wrap gap-1.5">
-                    {contact.hiring_for.map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-full border border-neutral-200 bg-[#f8f7f5] px-3 py-0.5 text-[0.7rem] font-semibold text-[#14281a]"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-
-                  {/* Email Row */}
-                  <div className="mt-4 p-3 rounded-xl bg-[#f8f7f5] border border-neutral-200/80 flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#14281a] truncate">
-                      <Mail className="w-3.5 h-3.5 text-[#3c7818] shrink-0" />
-                      <span className="truncate">
-                        {isLocked ? "••••••••••••@company.com" : contact.email}
-                      </span>
                     </div>
 
-                    {!isLocked && (
-                      <button
-                        onClick={(e) => handleCopyEmail(contact, e)}
-                        className="p-1.5 rounded-lg hover:bg-neutral-200 text-[#55615b] transition cursor-pointer shrink-0"
-                        title="Copy email"
-                      >
-                        {copiedEmailId === contact.id ? (
-                          <Check className="w-3.5 h-3.5 text-[#3c7818]" />
-                        ) : (
-                          <Copy className="w-3.5 h-3.5" />
-                        )}
-                      </button>
+                    {/* Paywall Blur Overlay for Locked Contacts */}
+                    {isLocked && (
+                      <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px] pointer-events-none flex items-center justify-center p-4">
+                        <div className="bg-[#14281a]/90 text-white rounded-2xl p-4 shadow-xl border border-[#84d64f]/40 text-center pointer-events-auto max-w-[280px]">
+                          <Lock className="w-5 h-5 text-[#84d64f] mx-auto mb-1.5" />
+                          <h4 className="text-xs font-black text-white">Pro Contact Locked</h4>
+                          <p className="text-[0.68rem] text-[#eef8e5]/80 mt-1">
+                            Upgrade to unlock this recruiter and 500+ other verified hiring leads.
+                          </p>
+                          <button
+                            onClick={() => setIsUpgradeModalOpen(true)}
+                            className="mt-3 w-full rounded-xl bg-[#84d64f] hover:bg-[#75c73d] text-[#14281a] py-2 text-xs font-bold shadow-sm cursor-pointer"
+                          >
+                            Unlock for ₹49 only
+                          </button>
+                        </div>
+                      </div>
                     )}
                   </div>
-                </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
-                {/* Bottom Action Bar */}
-                <div className="mt-5 pt-4 border-t border-neutral-100 flex items-center justify-between gap-2">
-                  {!isLocked ? (
-                    <>
-                      <button
-                        onClick={() => setSelectedContactForAi(contact)}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-[#84d64f] hover:bg-[#75c73d] text-[#14281a] px-4 py-2 text-xs font-bold transition shadow-xs cursor-pointer active:scale-[0.98]"
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>Draft AI Mail</span>
-                      </button>
+        {/* ======================================================== */}
+        {/* PAGINATION CONTROLS BAR */}
+        {/* ======================================================== */}
+        {filteredContacts.length > 0 && totalPages > 1 && (
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-[22px] border border-neutral-200/80 bg-white p-4 sm:px-6 shadow-sm">
+            {/* Status counter */}
+            <div className="text-xs font-semibold text-[#55615b]">
+              Showing <span className="font-extrabold text-[#121816]">{startIndex + 1} to {endIndex}</span> of{" "}
+              <span className="font-extrabold text-[#121816]">{filteredContacts.length}</span> verified tech recruiter contacts
+            </div>
 
-                      <a
-                        href={`mailto:${contact.email}?subject=${encodeURIComponent(`Quick question re: ${contact.hiring_for[0]} at ${contact.company}`)}`}
-                        onClick={() => markContactAsMailed(contact.id)}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-300 hover:border-[#84d64f] hover:bg-[#eef8e5] text-[#121816] px-3.5 py-2 text-xs font-bold transition cursor-pointer"
-                      >
-                        <Send className="w-3.5 h-3.5 text-[#3c7818]" />
-                        <span>Direct Mail</span>
-                      </a>
-                    </>
+            {/* Pagination Controls */}
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200/90 bg-white px-3.5 py-2 text-xs font-bold text-[#121816] shadow-2xs hover:bg-neutral-50 hover:border-[#84d64f] transition disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:border-neutral-200 disabled:hover:bg-white cursor-pointer"
+              >
+                <ChevronLeft className="w-4 h-4 text-[#3c7818]" />
+                <span className="hidden sm:inline">Previous</span>
+              </button>
+
+              <div className="flex items-center gap-1">
+                {getPaginationPages().map((page, i) =>
+                  typeof page === "number" ? (
+                    <button
+                      key={i}
+                      onClick={() => handlePageChange(page)}
+                      className={`h-9 w-9 rounded-xl text-xs font-black transition-all flex items-center justify-center cursor-pointer ${
+                        currentPage === page
+                          ? "bg-[#14281a] text-white shadow-sm scale-105"
+                          : "bg-white border border-neutral-200/90 text-[#55615b] hover:border-[#84d64f] hover:text-[#14281a] shadow-2xs"
+                      }`}
+                    >
+                      {page}
+                    </button>
                   ) : (
-                    <div className="w-full flex items-center justify-between gap-3">
-                      <span className="text-[0.75rem] font-bold text-[#55615b] inline-flex items-center gap-1.5">
-                        <Lock className="w-3.5 h-3.5 text-amber-600" />
-                        <span>Pro Contact #{index + 1}</span>
-                      </span>
-
-                      <button
-                        onClick={() => setIsUpgradeModalOpen(true)}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-[#14281a] hover:bg-[#1f3d27] text-[#84d64f] px-4 py-2 text-xs font-bold transition shadow-xs cursor-pointer"
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>Unlock Full Contact</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Paywall Blur Overlay for Locked Contacts */}
-                {isLocked && (
-                  <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px] pointer-events-none flex items-center justify-center p-4">
-                    <div className="bg-[#14281a]/90 text-white rounded-2xl p-4 shadow-xl border border-[#84d64f]/40 text-center pointer-events-auto max-w-[280px]">
-                      <Lock className="w-5 h-5 text-[#84d64f] mx-auto mb-1.5" />
-                      <h4 className="text-xs font-black text-white">Pro Contact Locked</h4>
-                      <p className="text-[0.68rem] text-[#eef8e5]/80 mt-1">
-                        Upgrade to unlock this recruiter and 500+ other verified hiring leads.
-                      </p>
-                      <button
-                        onClick={() => setIsUpgradeModalOpen(true)}
-                        className="mt-3 w-full rounded-xl bg-[#84d64f] hover:bg-[#75c73d] text-[#14281a] py-2 text-xs font-bold shadow-sm cursor-pointer"
-                      >
-                        Unlock for ₹49 only
-                      </button>
-                    </div>
-                  </div>
+                    <span key={i} className="h-9 w-6 flex items-center justify-center text-xs font-bold text-[#79857f] select-none">
+                      {page}
+                    </span>
+                  )
                 )}
               </div>
-            );
-          })}
-        </div>
+
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200/90 bg-white px-3.5 py-2 text-xs font-bold text-[#121816] shadow-2xs hover:bg-neutral-50 hover:border-[#84d64f] transition disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:border-neutral-200 disabled:hover:bg-white cursor-pointer"
+              >
+                <span className="hidden sm:inline">Next</span>
+                <ChevronRight className="w-4 h-4 text-[#3c7818]" />
+              </button>
+            </div>
+          </div>
+        )}
 
       </div>
 
