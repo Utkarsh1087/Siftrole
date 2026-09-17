@@ -25,10 +25,26 @@ function LoginForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  React.useEffect(() => {
+    setIsSignUp(modeParam === "signup");
+  }, [modeParam]);
+
+  const toggleMode = (signUp: boolean) => {
+    setIsSignUp(signUp);
+    setError("");
+    if (typeof window !== "undefined") {
+      const url = signUp ? "/login?mode=signup" : "/login";
+      window.history.replaceState(null, "", url);
+    }
+  };
+
   const fillDemo = (demoType: "student" | "admin" | "recruiter") => {
     setIsSignUp(false);
     setError("");
     setAgreedToTerms(true);
+    if (typeof window !== "undefined") {
+      window.history.replaceState(null, "", "/login");
+    }
     if (demoType === "student") {
       setName("Alex Morgan");
       setEmail("student@demo.com");
@@ -158,11 +174,11 @@ function LoginForm() {
             </Link>
           </div>
 
-          <div className="text-center mt-3 lg:mt-6">
-            <h1 className="font-heading text-2xl sm:text-3xl font-bold text-[#162a1e] tracking-tight">
+          <div className="text-center mt-3 lg:mt-6 transition-all duration-300">
+            <h1 className="font-heading text-2xl sm:text-3xl font-bold text-[#162a1e] tracking-tight transition-opacity duration-200">
               {isSignUp ? "Create account" : "Welcome back"}
             </h1>
-            <p className="mt-2 text-xs sm:text-sm text-[#718276] font-normal">
+            <p className="mt-2 text-xs sm:text-sm text-[#718276] font-normal transition-opacity duration-200">
               {isSignUp
                 ? "Start tracking verified roles with smart AI match scores."
                 : "Sign in to access your saved roles and checklist."}
@@ -171,18 +187,25 @@ function LoginForm() {
 
           {/* Form Section */}
           <form onSubmit={handleSubmit} className="mt-7 space-y-4">
-            {isSignUp && (
-              <div>
+            {/* Full Name field with smooth height/opacity expander */}
+            <div
+              className={`grid transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                isSignUp
+                  ? "grid-rows-[1fr] opacity-100 mb-4"
+                  : "grid-rows-[0fr] opacity-0 mb-0 pointer-events-none"
+              }`}
+            >
+              <div className="overflow-hidden">
                 <input
                   type="text"
-                  required
+                  required={isSignUp}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Full name"
                   className="w-full rounded-full border border-[#e2e8df] bg-[#fafcfa] px-5 py-3.5 text-xs sm:text-sm font-medium text-[#162a1e] placeholder:text-[#9aa99c] outline-none transition focus:border-[#8cd64f] focus:bg-white focus:ring-3 focus:ring-[#8cd64f]/20"
                 />
               </div>
-            )}
+            </div>
 
             <div>
               <input
@@ -223,33 +246,41 @@ function LoginForm() {
               </div>
             ) : null}
 
-            {/* Mandatory Terms & Privacy Agreement (Sign Up Only) */}
-            {isSignUp && (
-              <div className="flex items-start gap-2.5 pt-1 text-left">
-                <input
-                  type="checkbox"
-                  id="terms-checkbox"
-                  checked={agreedToTerms}
-                  onChange={(e) => {
-                    setAgreedToTerms(e.target.checked);
-                    if (error) setError("");
-                  }}
-                  className="mt-1 h-4 w-4 rounded border-neutral-300 text-[#3c7818] focus:ring-[#8cd64f] accent-[#3c7818] cursor-pointer"
-                  required
-                />
-                <label htmlFor="terms-checkbox" className="text-[0.75rem] text-[#55615b] leading-relaxed cursor-pointer select-none">
-                  I have read and agree to Siftrole&apos;s{" "}
-                  <Link href="/terms" target="_blank" className="text-[#3c7818] font-bold underline hover:text-[#14281a]">
-                    Terms of Use
-                  </Link>{" "}
-                  and{" "}
-                  <Link href="/privacy" target="_blank" className="text-[#3c7818] font-bold underline hover:text-[#14281a]">
-                    Privacy Policy
-                  </Link>
-                  . <span className="text-red-500 font-bold">*</span>
-                </label>
+            {/* Mandatory Terms & Privacy Agreement (Sign Up Only with smooth expander) */}
+            <div
+              className={`grid transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                isSignUp
+                  ? "grid-rows-[1fr] opacity-100 pt-1"
+                  : "grid-rows-[0fr] opacity-0 pt-0 pointer-events-none"
+              }`}
+            >
+              <div className="overflow-hidden">
+                <div className="flex items-start gap-2.5 pt-1 text-left">
+                  <input
+                    type="checkbox"
+                    id="terms-checkbox"
+                    checked={agreedToTerms}
+                    onChange={(e) => {
+                      setAgreedToTerms(e.target.checked);
+                      if (error) setError("");
+                    }}
+                    className="mt-1 h-4 w-4 rounded border-neutral-300 text-[#3c7818] focus:ring-[#8cd64f] accent-[#3c7818] cursor-pointer"
+                    required={isSignUp}
+                  />
+                  <label htmlFor="terms-checkbox" className="text-[0.75rem] text-[#55615b] leading-relaxed cursor-pointer select-none">
+                    I have read and agree to Siftrole&apos;s{" "}
+                    <Link href="/terms" target="_blank" className="text-[#3c7818] font-bold underline hover:text-[#14281a]">
+                      Terms of Use
+                    </Link>{" "}
+                    and{" "}
+                    <Link href="/privacy" target="_blank" className="text-[#3c7818] font-bold underline hover:text-[#14281a]">
+                      Privacy Policy
+                    </Link>
+                    . <span className="text-red-500 font-bold">*</span>
+                  </label>
+                </div>
               </div>
-            )}
+            </div>
 
             {/* Primary Action Button */}
             <button
@@ -267,7 +298,7 @@ function LoginForm() {
 
           {/* Social / Alternative Divider */}
           <div className="mt-6 text-center">
-            <p className="text-[0.78rem] font-medium text-[#849688]">
+            <p className="text-[0.78rem] font-medium text-[#849688] transition-opacity duration-200">
               {isSignUp ? "or sign up with" : "or sign in with"}
             </p>
 
@@ -329,20 +360,28 @@ function LoginForm() {
             </div>
           </div>
 
-          {/* Terms of Service agreement (Sign Up Only) */}
-          {isSignUp && (
-            <p className="mt-6 text-[0.72rem] text-center text-[#7b8d80] leading-relaxed">
-              By creating an account you agree to Siftrole&apos;s{" "}
-              <Link href="/terms" className="text-[#3c7818] font-semibold hover:underline">
-                Terms of Service
-              </Link>{" "}
-              and{" "}
-              <Link href="/privacy" className="text-[#3c7818] font-semibold hover:underline">
-                Privacy Policy
-              </Link>
-              .
-            </p>
-          )}
+          {/* Terms of Service agreement (Sign Up Only with smooth expander) */}
+          <div
+            className={`grid transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+              isSignUp
+                ? "grid-rows-[1fr] opacity-100 mt-5"
+                : "grid-rows-[0fr] opacity-0 mt-0 pointer-events-none"
+            }`}
+          >
+            <div className="overflow-hidden">
+              <p className="text-[0.72rem] text-center text-[#7b8d80] leading-relaxed">
+                By creating an account you agree to Siftrole&apos;s{" "}
+                <Link href="/terms" className="text-[#3c7818] font-semibold hover:underline">
+                  Terms of Service
+                </Link>{" "}
+                and{" "}
+                <Link href="/privacy" className="text-[#3c7818] font-semibold hover:underline">
+                  Privacy Policy
+                </Link>
+                .
+              </p>
+            </div>
+          </div>
 
           {/* Bottom Switcher */}
           <div className="mt-5 pt-5 border-t border-[#f0f4ee] text-center">
@@ -352,10 +391,7 @@ function LoginForm() {
                   Have an account?{" "}
                   <button
                     type="button"
-                    onClick={() => {
-                      setIsSignUp(false);
-                      setError("");
-                    }}
+                    onClick={() => toggleMode(false)}
                     className="font-bold text-[#3c7818] hover:text-[#2d5d11] hover:underline transition cursor-pointer"
                   >
                     Log in
@@ -366,10 +402,7 @@ function LoginForm() {
                   Don&apos;t have an account?{" "}
                   <button
                     type="button"
-                    onClick={() => {
-                      setIsSignUp(true);
-                      setError("");
-                    }}
+                    onClick={() => toggleMode(true)}
                     className="font-bold text-[#3c7818] hover:text-[#2d5d11] hover:underline transition cursor-pointer"
                   >
                     Sign up
