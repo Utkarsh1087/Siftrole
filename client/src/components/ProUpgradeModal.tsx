@@ -96,9 +96,9 @@ export function ProUpgradeModal({ isOpen, onClose, onSuccess }: ProUpgradeModalP
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-black text-white">$19</span>
-                  <span className="text-xs font-bold text-[#84d64f]">one-time lifetime</span>
-                  <span className="text-xs line-through text-neutral-400">$49</span>
+                  <span className="text-3xl font-black text-white">₹49</span>
+                  <span className="text-xs font-bold text-[#84d64f]">only (lifetime access)</span>
+                  <span className="text-xs line-through text-neutral-400">₹499</span>
                 </div>
                 <div className="text-[0.7rem] text-neutral-300 mt-0.5">30-day money-back guarantee</div>
               </div>
@@ -115,7 +115,7 @@ export function ProUpgradeModal({ isOpen, onClose, onSuccess }: ProUpgradeModalP
                   </>
                 ) : (
                   <>
-                    <span>Unlock Full Directory Now</span>
+                    <span>Unlock Full Directory for ₹49</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}

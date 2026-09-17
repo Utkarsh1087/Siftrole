@@ -221,7 +221,7 @@ export default function ColdEmailPage() {
                   <div className="text-left">
                     <div className="text-xs font-black text-white flex items-center gap-1.5">
                       <span>Unlock 500+ Recruiter Contacts</span>
-                      <span className="bg-[#84d64f] text-[#14281a] text-[0.65rem] px-2 py-0.5 rounded-full">$19 Pass</span>
+                      <span className="bg-[#84d64f] text-[#14281a] text-[0.65rem] px-2 py-0.5 rounded-full">₹49 Only</span>
                     </div>
                     <div className="text-[0.7rem] text-[#eef8e5]/80">First 10 contacts are free for registered builders</div>
                   </div>
@@ -486,7 +486,7 @@ export default function ColdEmailPage() {
                         onClick={() => setIsUpgradeModalOpen(true)}
                         className="mt-3 w-full rounded-xl bg-[#84d64f] hover:bg-[#75c73d] text-[#14281a] py-2 text-xs font-bold shadow-sm cursor-pointer"
                       >
-                        Unlock for $19
+                        Unlock for ₹49 only
                       </button>
                     </div>
                   </div>
