@@ -84,12 +84,17 @@ function LoginForm() {
         body: JSON.stringify(payload),
       }).catch(() => null);
 
+      const targetRedirect = (typeof window !== "undefined" && sessionStorage.getItem("siftrole_redirect_after_auth")) || "/dashboard";
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("siftrole_redirect_after_auth");
+      }
+
       if (response && response.ok) {
         const data = await response.json();
         localStorage.setItem("siftrole_token", data.token);
         localStorage.setItem("siftrole_user", JSON.stringify(data.user));
         window.dispatchEvent(new Event("siftrole-auth-change"));
-        router.push("/dashboard");
+        router.push(targetRedirect);
         return;
       }
 
@@ -107,7 +112,7 @@ function LoginForm() {
       localStorage.setItem("siftrole_token", "mock-token-" + Date.now());
       localStorage.setItem("siftrole_user", JSON.stringify(fallbackUser));
       window.dispatchEvent(new Event("siftrole-auth-change"));
-      router.push("/dashboard");
+      router.push(targetRedirect);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Authentication error");
     } finally {

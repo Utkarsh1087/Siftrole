@@ -28,6 +28,7 @@ import {
   Check,
   ChevronDown,
   Lock,
+  RotateCcw,
 } from "lucide-react";
 import { CompanyLogo, getCompanyDomain } from "@/components/CompanyLogo";
 import { LiquidSilkBackground } from "@/components/LiquidSilkBackground";
@@ -54,18 +55,18 @@ export default function JobsPage() {
   const [companiesList, setCompaniesList] = useState<string[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<string>("all");
   const [selectedRoleType, setSelectedRoleType] = useState<string>("all");
-  const [appliedFilter, setAppliedFilter] = useState<"all" | "unapplied" | "applied">("all");
+  const [appliedFilter, setAppliedFilter] = useState<"all" | "saved" | "unapplied" | "applied">("all");
+  const [quickPill, setQuickPill] = useState<"all" | "internships" | "newgrad" | "remote" | "highmatch">("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isLoadingListings, setIsLoadingListings] = useState(true);
   const [selectedListingModal, setSelectedListingModal] = useState<Listing | null>(null);
-  const [savedJobIds, setSavedJobIds] = useState<Set<string>>(new Set());
   const [copiedLink, setCopiedLink] = useState(false);
-  const [subscribedEmail, setSubscribedEmail] = useState(false);
-  const { appliedJobIds, toggleApplied, isApplied } = useAppliedJobs();
+  const [appliedToastJob, setAppliedToastJob] = useState<Listing | null>(null);
+  const { appliedJobIds, savedJobIds, toggleApplied, toggleSaved, isApplied, isSaved } = useAppliedJobs();
   const { isLoggedIn } = useAuth();
   const [showAuthGateModal, setShowAuthGateModal] = useState(false);
 
-  // Resume Matching State
+  // Resume Matching State with Local Storage persistence
   const [activeResumeSkills, setActiveResumeSkills] = useState<string[]>([]);
   const [uploadedResumeName, setUploadedResumeName] = useState<string | null>(null);
   const [mobileChatOpen, setMobileChatOpen] = useState(false);
@@ -74,10 +75,27 @@ export default function JobsPage() {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const pageSize = 10;
 
+  // Load persistent resume skills on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const savedSkills = localStorage.getItem("siftrole_resume_skills");
+        const savedName = localStorage.getItem("siftrole_resume_filename");
+        if (savedSkills) {
+          const parsed = JSON.parse(savedSkills);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setActiveResumeSkills(parsed);
+            setUploadedResumeName(savedName || "My Resume.pdf");
+          }
+        }
+      } catch {}
+    }
+  }, []);
+
   useEffect(() => {
     setCurrentPage(1);
     fetchListings();
-  }, [selectedCompany, selectedRoleType, searchQuery, appliedFilter]);
+  }, [selectedCompany, selectedRoleType, searchQuery, appliedFilter, quickPill]);
 
   const fetchListings = async () => {
     setIsLoadingListings(true);
@@ -105,22 +123,24 @@ export default function JobsPage() {
   const handleApplyResumeSkills = (skills: string[], fileName: string) => {
     setActiveResumeSkills(skills);
     setUploadedResumeName(fileName);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("siftrole_resume_skills", JSON.stringify(skills));
+        localStorage.setItem("siftrole_resume_filename", fileName);
+      } catch {}
+    }
     setCurrentPage(1);
   };
 
   const handleClearResume = () => {
     setActiveResumeSkills([]);
     setUploadedResumeName(null);
-  };
-
-  const toggleSaveJob = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setSavedJobIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem("siftrole_resume_skills");
+        localStorage.removeItem("siftrole_resume_filename");
+      } catch {}
+    }
   };
 
   const handleShare = (job: Listing, e: React.MouseEvent) => {
@@ -132,12 +152,22 @@ export default function JobsPage() {
     }
   };
 
-  // Helper to compute match score for a job
+  const handleApplyClick = (job: Listing) => {
+    setAppliedToastJob(job);
+    setTimeout(() => {
+      setAppliedToastJob((curr) => (curr?.id === job.id ? null : curr));
+    }, 7000);
+  };
+
+  // Helper to compute match score and skill breakdown for a job
   const getJobMatch = (job: Listing) => {
     if (activeResumeSkills.length === 0) return null;
     const jobSkills = job.skills_required || [];
     const matched = jobSkills.filter((s) =>
       activeResumeSkills.some((rs) => rs.toLowerCase() === s.toLowerCase())
+    );
+    const missing = jobSkills.filter(
+      (s) => !activeResumeSkills.some((rs) => rs.toLowerCase() === s.toLowerCase())
     );
     const ratio = jobSkills.length > 0 ? matched.length / jobSkills.length : 0.5;
     const score = Math.round(58 + ratio * 40);
@@ -146,25 +176,51 @@ export default function JobsPage() {
       matchedCount: matched.length,
       totalCount: jobSkills.length,
       matchedSkills: matched,
+      missingSkills: missing,
     };
   };
 
-  // Sort and slice listings
+  // Sort and filter listings
   const processedListings = React.useMemo(() => {
     let list = liveListings;
-    if (appliedFilter === "unapplied") {
+
+    // Filter by Application Status
+    if (appliedFilter === "saved") {
+      list = list.filter((job) => savedJobIds.has(job.id));
+    } else if (appliedFilter === "unapplied") {
       list = list.filter((job) => !appliedJobIds.has(job.id));
     } else if (appliedFilter === "applied") {
       list = list.filter((job) => appliedJobIds.has(job.id));
     }
 
+    // Filter by Quick Early-Career Pills
+    if (quickPill === "internships") {
+      list = list.filter(
+        (job) =>
+          (job.employment_type && job.employment_type.toLowerCase().includes("intern")) ||
+          (job.title && job.title.toLowerCase().includes("intern")) ||
+          (job.eligibility && job.eligibility.toLowerCase().includes("student"))
+      );
+    } else if (quickPill === "newgrad") {
+      list = list.filter(
+        (job) =>
+          (job.experience_level && (job.experience_level.toLowerCase().includes("entry") || job.experience_level.toLowerCase().includes("0-2") || job.experience_level.toLowerCase().includes("grad"))) ||
+          (job.title && (job.title.toLowerCase().includes("grad") || job.title.toLowerCase().includes("junior") || job.title.toLowerCase().includes("associate")))
+      );
+    } else if (quickPill === "remote") {
+      list = list.filter((job) => job.location && job.location.toLowerCase().includes("remote"));
+    } else if (quickPill === "highmatch" && activeResumeSkills.length > 0) {
+      list = list.filter((job) => (getJobMatch(job)?.score || 0) >= 80);
+    }
+
+    // Sort by Match Score if resume is uploaded
     if (activeResumeSkills.length === 0) return list;
     return [...list].sort((a, b) => {
       const scoreA = getJobMatch(a)?.score || 0;
       const scoreB = getJobMatch(b)?.score || 0;
       return scoreB - scoreA;
     });
-  }, [liveListings, activeResumeSkills, appliedFilter, appliedJobIds]);
+  }, [liveListings, activeResumeSkills, appliedFilter, quickPill, appliedJobIds, savedJobIds]);
 
   // Calculate Pagination Slices
   const totalListings = processedListings.length;
@@ -175,6 +231,9 @@ export default function JobsPage() {
 
   const handlePageChange = (newPage: number) => {
     if (!isLoggedIn && newPage > 1) {
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("siftrole_redirect_after_auth", window.location.pathname + window.location.search);
+      }
       setShowAuthGateModal(true);
       return;
     }
@@ -200,6 +259,23 @@ export default function JobsPage() {
     return pages;
   };
 
+  const handleResetAllFilters = () => {
+    setSelectedCompany("all");
+    setSelectedRoleType("all");
+    setAppliedFilter("all");
+    setQuickPill("all");
+    setSearchQuery("");
+    handleClearResume();
+  };
+
+  const hasActiveFilters =
+    selectedCompany !== "all" ||
+    selectedRoleType !== "all" ||
+    appliedFilter !== "all" ||
+    quickPill !== "all" ||
+    searchQuery.trim().length > 0 ||
+    activeResumeSkills.length > 0;
+
   return (
     <main className="min-h-screen bg-[#f8f7f5] text-[#121816] font-sans antialiased selection:bg-[#84d64f]/30 selection:text-[#14281a]">
       {/* Ambient background glow */}
@@ -218,33 +294,23 @@ export default function JobsPage() {
             <div className="flex items-center gap-4">
               <Link
                 href="/"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-100 hover:bg-neutral-200 px-3.5 py-2 text-xs font-bold text-[#121816] transition"
+                className="inline-flex items-center gap-2 group text-[#14281a]"
               >
-                <ChevronLeft className="w-4 h-4 text-[#3c7818]" /> Home
-              </Link>
-
-              <Link href="/" className="flex items-center gap-2.5 group">
-                <SiftroleLogoMark size={28} />
-                <span className="text-[1.7rem] font-black tracking-[-0.04em] text-[#121816]">
-                  Sift<span className="text-[#58a826] transition-colors group-hover:text-[#4a911e]">role</span>
+                <div className="h-9 w-9 rounded-xl bg-[#14281a] p-1.5 flex items-center justify-center text-[#84d64f] shadow-xs group-hover:scale-105 transition-transform">
+                  <SiftroleLogoMark className="w-full h-full" />
+                </div>
+                <span className="font-heading text-lg font-bold tracking-tight">
+                  sift<span className="text-[#3c7818]">role</span>
                 </span>
               </Link>
             </div>
 
-            {/* Nav Links */}
-            <nav className="hidden md:flex items-center gap-8 text-[0.95rem] font-semibold text-[#55615b]">
-              <Link href="/jobs" className="text-[#3c7818] font-bold hover:text-[#58a826] transition-colors">
-                All Jobs
-              </Link>
-              <Link href="/cold-email" className="hover:text-[#121816] transition-colors">
-                HR Outreach
-              </Link>
-              <Link href="/about" className="hover:text-[#121816] transition-colors">
-                About
-              </Link>
-              <Link href="/#faq" className="hover:text-[#121816] transition-colors">
-                FAQ
-              </Link>
+            {/* Navigation links */}
+            <nav className="hidden md:flex items-center gap-6 text-xs font-semibold text-[#55615b]">
+              <Link href="/" className="hover:text-[#14281a] transition">Home</Link>
+              <Link href="/jobs" className="text-[#3c7818] font-bold">Opportunities</Link>
+              <Link href="/cold-email" className="hover:text-[#14281a] transition">Outreach</Link>
+              <Link href="/about" className="hover:text-[#14281a] transition">About</Link>
             </nav>
 
             {/* Right Buttons */}
@@ -291,9 +357,9 @@ export default function JobsPage() {
         </section>
 
         {/* ======================================================== */}
-        {/* INTERACTIVE SEARCH & FILTERS */}
+        {/* INTERACTIVE SEARCH & PRIMARY FILTERS */}
         {/* ======================================================== */}
-        <section className="my-6">
+        <section id="jobs-filter-section" className="my-6 space-y-3">
           <div className="rounded-[22px] border border-neutral-200/80 bg-white p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
             {/* Search Input */}
             <div className="relative w-full md:w-[420px]">
@@ -308,7 +374,7 @@ export default function JobsPage() {
             </div>
 
             {/* Filter Dropdowns */}
-            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+            <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
               {/* Company Select */}
               <div className="relative">
                 <select
@@ -341,35 +407,95 @@ export default function JobsPage() {
                 <ChevronDown className="w-3.5 h-3.5 text-[#55615b] pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" />
               </div>
 
-              {/* Applied Status Filter */}
+              {/* Application & Bookmark Status Filter */}
               <div className="relative">
                 <select
                   value={appliedFilter}
-                  onChange={(e) => setAppliedFilter(e.target.value as "all" | "unapplied" | "applied")}
+                  onChange={(e) => setAppliedFilter(e.target.value as "all" | "saved" | "unapplied" | "applied")}
                   className="appearance-none rounded-xl border border-neutral-200/90 bg-white hover:bg-[#fbfaf8] hover:border-neutral-300 pl-3.5 pr-8 py-2.5 text-xs font-bold text-[#121816] shadow-2xs outline-none transition focus:border-[#84d64f] focus:ring-2 focus:ring-[#84d64f]/20 cursor-pointer"
                 >
                   <option value="all">Status: All Roles</option>
+                  <option value="saved">Status: Saved Shortlist ({savedJobIds.size})</option>
                   <option value="unapplied">Status: Not Applied Yet</option>
                   <option value="applied">Status: Applied ({appliedJobIds.size})</option>
                 </select>
                 <ChevronDown className="w-3.5 h-3.5 text-[#55615b] pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" />
               </div>
 
-              {(selectedCompany !== "all" || selectedRoleType !== "all" || appliedFilter !== "all" || searchQuery.trim() || activeResumeSkills.length > 0) && (
+              {hasActiveFilters && (
                 <button
-                  onClick={() => {
-                    setSelectedCompany("all");
-                    setSelectedRoleType("all");
-                    setAppliedFilter("all");
-                    setSearchQuery("");
-                    handleClearResume();
-                  }}
-                  className="rounded-xl bg-neutral-100 hover:bg-neutral-200 text-[#121816] px-3 py-2.5 text-xs font-bold transition cursor-pointer"
+                  onClick={handleResetAllFilters}
+                  className="rounded-xl bg-neutral-100 hover:bg-neutral-200 text-[#121816] px-3 py-2.5 text-xs font-bold transition cursor-pointer inline-flex items-center gap-1.5"
+                  title="Reset all search queries and active filters"
                 >
-                  Reset
+                  <RotateCcw className="w-3.5 h-3.5 text-[#55615b]" />
+                  <span>Reset</span>
                 </button>
               )}
             </div>
+          </div>
+
+          {/* Quick Early-Career Pill Chips */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+            <span className="text-[0.72rem] font-bold text-[#79857f] uppercase tracking-wider shrink-0 mr-1">
+              Quick Filter:
+            </span>
+            <button
+              onClick={() => setQuickPill("all")}
+              className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition shrink-0 cursor-pointer ${
+                quickPill === "all"
+                  ? "bg-[#14281a] text-[#84d64f] shadow-xs"
+                  : "bg-white border border-neutral-200 text-[#55615b] hover:border-[#84d64f] hover:text-[#14281a]"
+              }`}
+            >
+              All Openings
+            </button>
+            <button
+              onClick={() => setQuickPill("internships")}
+              className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition shrink-0 cursor-pointer inline-flex items-center gap-1.5 ${
+                quickPill === "internships"
+                  ? "bg-[#14281a] text-[#84d64f] shadow-xs"
+                  : "bg-white border border-neutral-200 text-[#55615b] hover:border-[#84d64f] hover:text-[#14281a]"
+              }`}
+            >
+              <GraduationCap className="w-3.5 h-3.5" />
+              Internships (Summer 2026)
+            </button>
+            <button
+              onClick={() => setQuickPill("newgrad")}
+              className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition shrink-0 cursor-pointer inline-flex items-center gap-1.5 ${
+                quickPill === "newgrad"
+                  ? "bg-[#14281a] text-[#84d64f] shadow-xs"
+                  : "bg-white border border-neutral-200 text-[#55615b] hover:border-[#84d64f] hover:text-[#14281a]"
+              }`}
+            >
+              <Zap className="w-3.5 h-3.5" />
+              New Grad (2026)
+            </button>
+            <button
+              onClick={() => setQuickPill("remote")}
+              className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition shrink-0 cursor-pointer inline-flex items-center gap-1.5 ${
+                quickPill === "remote"
+                  ? "bg-[#14281a] text-[#84d64f] shadow-xs"
+                  : "bg-white border border-neutral-200 text-[#55615b] hover:border-[#84d64f] hover:text-[#14281a]"
+              }`}
+            >
+              <MapPin className="w-3.5 h-3.5" />
+              Remote Only
+            </button>
+            {activeResumeSkills.length > 0 && (
+              <button
+                onClick={() => setQuickPill("highmatch")}
+                className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition shrink-0 cursor-pointer inline-flex items-center gap-1.5 ${
+                  quickPill === "highmatch"
+                    ? "bg-[#84d64f] text-[#14281a] shadow-xs"
+                    : "bg-[#eef8e5] border border-[#cce8be] text-[#2c6114] hover:bg-[#84d64f] hover:text-[#14281a]"
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                High Fit (80%+)
+              </button>
+            )}
           </div>
         </section>
 
@@ -428,26 +554,22 @@ export default function JobsPage() {
                   Try clearing your filters or searching with different keywords.
                 </p>
                 <button
-                  onClick={() => {
-                    setSelectedCompany("all");
-                    setSelectedRoleType("all");
-                    setSearchQuery("");
-                    handleClearResume();
-                  }}
-                  className="mt-4 rounded-full bg-[#84d64f] hover:bg-[#75c73d] text-[#14281a] text-xs font-bold px-5 py-2.5 shadow-sm transition cursor-pointer"
+                  onClick={handleResetAllFilters}
+                  className="mt-4 rounded-full bg-[#84d64f] hover:bg-[#75c73d] text-[#14281a] text-xs font-bold px-5 py-2.5 shadow-sm transition cursor-pointer inline-flex items-center gap-1.5"
                 >
-                  Clear All Filters
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  Reset All Filters
                 </button>
               </div>
             ) : (
               currentListings.map((job, idx) => {
                 const matchInfo = getJobMatch(job);
                 const applied = isApplied(job.id);
+                const saved = isSaved(job.id);
                 return (
-                  <Link
+                  <div
                     key={job.id || job.raw_jd_hash || idx}
-                    href={`/jobs/${job.id}`}
-                    className={`block group rounded-[24px] border p-6 sm:p-7 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all duration-200 hover:border-[#84d64f] hover:bg-[#eef8e5] hover:shadow-md cursor-pointer relative overflow-hidden ${
+                    className={`block group rounded-[24px] border p-6 sm:p-7 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all duration-200 hover:border-[#84d64f] hover:bg-[#f7fcf4] hover:shadow-md relative overflow-hidden ${
                       applied
                         ? "border-[#84d64f]/70 bg-[#f7fcf3]"
                         : "border-neutral-200/90 bg-white"
@@ -470,57 +592,73 @@ export default function JobsPage() {
                           {matchInfo && (
                             <span className="inline-flex items-center gap-1 rounded-full bg-[#84d64f] text-[#14281a] text-[0.68rem] font-black px-2.5 py-0.5 shadow-xs">
                               <Sparkles className="w-3 h-3" />
-                              {matchInfo.score}% Match
+                              {matchInfo.score}% Match ({matchInfo.matchedCount}/{matchInfo.totalCount} Skills)
                             </span>
                           )}
                         </div>
 
                         {/* Job Title */}
-                        <h3 className="text-xl sm:text-[1.35rem] font-black text-[#121816] tracking-tight mt-2 mb-3.5 group-hover:text-[#14281a] transition-colors">
+                        <h3
+                          onClick={() => setSelectedListingModal(job)}
+                          className="text-xl sm:text-[1.35rem] font-black text-[#121816] tracking-tight mt-2 mb-3.5 group-hover:text-[#14281a] transition-colors cursor-pointer hover:underline"
+                        >
                           {job.title}
                         </h3>
 
-                        {/* Filter Pills */}
-                        <div className="flex flex-wrap items-center gap-2">
+                        {/* Experience / Type Pills */}
+                        <div className="flex flex-wrap items-center gap-2 mb-3">
                           {job.experience_level && (
-                            <span className="rounded-full border border-neutral-300/80 bg-white/70 px-4 py-1 text-xs font-semibold text-[#14281a] shadow-2xs">
+                            <span className="rounded-full border border-neutral-300/80 bg-white/70 px-3.5 py-0.5 text-xs font-semibold text-[#14281a] shadow-2xs">
                               {job.experience_level.toLowerCase().includes("experience")
                                 ? job.experience_level
                                 : `${job.experience_level} Experience`}
                             </span>
                           )}
                           {job.employment_type && (
-                            <span className="rounded-full border border-neutral-300/80 bg-white/70 px-4 py-1 text-xs font-semibold text-[#14281a] shadow-2xs">
+                            <span className="rounded-full border border-neutral-300/80 bg-white/70 px-3.5 py-0.5 text-xs font-semibold text-[#14281a] shadow-2xs">
                               {job.employment_type}
                             </span>
                           )}
                           {job.eligibility && (
-                            <span className="rounded-full border border-neutral-300/80 bg-white/70 px-4 py-1 text-xs font-semibold text-[#14281a] shadow-2xs">
+                            <span className="rounded-full border border-neutral-300/80 bg-white/70 px-3.5 py-0.5 text-xs font-semibold text-[#14281a] shadow-2xs">
                               {job.eligibility}
                             </span>
                           )}
-                          {job.skills_required &&
-                            job.skills_required.slice(0, 4).map((skill) => {
+                        </div>
+
+                        {/* Skills Breakdown Tags: Matched vs Missing */}
+                        {job.skills_required && job.skills_required.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                            {job.skills_required.slice(0, 6).map((skill) => {
                               const isMatched = activeResumeSkills.some(
                                 (rs) => rs.toLowerCase() === skill.toLowerCase()
                               );
                               return (
                                 <span
                                   key={skill}
-                                  className={`rounded-full border px-4 py-1 text-xs font-semibold shadow-2xs ${
+                                  className={`rounded-lg px-2.5 py-0.5 text-[0.72rem] font-bold border transition-colors ${
                                     isMatched
-                                      ? "border-[#84d64f] bg-[#d7f3be] text-[#14281a] font-extrabold"
-                                      : "border-neutral-300/80 bg-white/70 text-[#14281a]"
+                                      ? "bg-[#d7f3be] text-[#1e480d] border-[#84d64f] inline-flex items-center gap-1"
+                                      : activeResumeSkills.length > 0
+                                      ? "bg-amber-500/10 text-amber-900 border-amber-200/80"
+                                      : "bg-neutral-100 text-[#49544f] border-neutral-200/80"
                                   }`}
                                 >
+                                  {isMatched && <Check className="w-2.5 h-2.5 text-[#1e480d]" />}
                                   {skill}
                                 </span>
                               );
                             })}
-                        </div>
+                            {job.skills_required.length > 6 && (
+                              <span className="text-[0.68rem] text-[#79857f] font-semibold">
+                                +{job.skills_required.length - 6} more
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
 
-                      {/* Right Block: Compensation & Location & Mark Applied Button */}
+                      {/* Right Block: Compensation & Location & Bookmark / Applied Actions */}
                       <div className="flex sm:flex-col items-start sm:items-end justify-between sm:justify-start gap-3 shrink-0 mt-3 sm:mt-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-neutral-100">
                         <div className="text-left sm:text-right">
                           <div className="text-lg sm:text-xl font-black text-[#121816] tracking-tight">
@@ -546,32 +684,47 @@ export default function JobsPage() {
                           </div>
                         </div>
 
-                        {/* Mark as Applied Toggle Button */}
-                        <button
-                          type="button"
-                          onClick={(e) => toggleApplied(job.id, e)}
-                          className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all shadow-2xs cursor-pointer z-10 ${
-                            applied
-                              ? "bg-[#14281a] text-[#84d64f] hover:bg-[#1f3d27]"
-                              : "border border-neutral-300 bg-white/90 text-[#45524d] hover:border-[#84d64f] hover:text-[#14281a] hover:bg-[#eef8e5]"
-                          }`}
-                          title={applied ? "Click to unmark as applied" : "Mark as applied"}
-                        >
-                          {applied ? (
-                            <>
-                              <CheckCircle2 className="w-3.5 h-3.5 text-[#84d64f]" />
-                              <span>Applied</span>
-                            </>
-                          ) : (
-                            <>
-                              <Check className="w-3.5 h-3.5 text-[#79857f]" />
-                              <span>Mark Applied</span>
-                            </>
-                          )}
-                        </button>
+                        {/* Action Buttons: Save & Mark Applied */}
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={(e) => toggleSaved(job, e)}
+                            className={`p-2 rounded-xl border transition-all cursor-pointer shadow-2xs ${
+                              saved
+                                ? "bg-[#14281a] text-[#84d64f] border-[#14281a]"
+                                : "bg-white border-neutral-300 text-[#79857f] hover:text-[#14281a] hover:border-[#84d64f]"
+                            }`}
+                            title={saved ? "Saved to shortlist (Click to remove)" : "Save to shortlist"}
+                          >
+                            <Bookmark className={`w-3.5 h-3.5 ${saved ? "fill-[#84d64f]" : ""}`} />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => toggleApplied(job, e)}
+                            className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all shadow-2xs cursor-pointer ${
+                              applied
+                                ? "bg-[#14281a] text-[#84d64f] hover:bg-[#1f3d27]"
+                                : "border border-neutral-300 bg-white/90 text-[#45524d] hover:border-[#84d64f] hover:text-[#14281a] hover:bg-[#eef8e5]"
+                            }`}
+                            title={applied ? "Click to unmark as applied" : "Mark as applied"}
+                          >
+                            {applied ? (
+                              <>
+                                <CheckCircle2 className="w-3.5 h-3.5 text-[#84d64f]" />
+                                <span>Applied</span>
+                              </>
+                            ) : (
+                              <>
+                                <Check className="w-3.5 h-3.5 text-[#79857f]" />
+                                <span>Mark Applied</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </Link>
+                  </div>
                 );
               })
             )}
@@ -594,7 +747,7 @@ export default function JobsPage() {
                   <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
                     <Link
                       href="/login?mode=signup"
-                      className="rounded-full bg-[#84d64f] hover:bg-[#75c73d] text-[#14281a] font-heading font-black text-xs sm:text-sm px-6 py-3 shadow-md shadow-black/20 transition active:scale-[0.98] inline-flex items-center gap-1.5 cursor-pointer"
+                      className="rounded-full bg-[#84d64f] hover:bg-[#7ec942] text-[#14261b] font-heading font-black text-xs sm:text-sm px-6 py-3 shadow-md shadow-black/20 transition active:scale-[0.98] inline-flex items-center gap-1.5 cursor-pointer"
                     >
                       Sign Up Free <ArrowRight className="w-4 h-4" />
                     </Link>
@@ -825,12 +978,63 @@ export default function JobsPage() {
               )}
             </div>
 
+            {/* Resume Match Breakdown if uploaded */}
+            {activeResumeSkills.length > 0 && (() => {
+              const modalMatch = getJobMatch(selectedListingModal);
+              if (!modalMatch) return null;
+              return (
+                <div className="mt-6 rounded-2xl border border-[#84d64f]/40 bg-[#f4faee] p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-[#3c7818]" />
+                      <span className="text-xs font-black text-[#14281a]">
+                        AI Compatibility Score: {modalMatch.score}%
+                      </span>
+                    </div>
+                    <span className="text-[0.68rem] font-bold text-[#2d6113]">
+                      {modalMatch.matchedCount} of {modalMatch.totalCount} Skills Matched
+                    </span>
+                  </div>
+
+                  {modalMatch.matchedSkills.length > 0 && (
+                    <div className="mt-3">
+                      <span className="text-[0.68rem] font-bold uppercase tracking-wider text-[#2d6113] block mb-1.5">
+                        Matching Skills on Your Resume:
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {modalMatch.matchedSkills.map((s) => (
+                          <span key={s} className="rounded-lg bg-[#d7f3be] text-[#1e480d] border border-[#84d64f] px-2.5 py-0.5 text-xs font-bold inline-flex items-center gap-1">
+                            <Check className="w-3 h-3 text-[#1e480d]" /> {s}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {modalMatch.missingSkills.length > 0 && (
+                    <div className="mt-3">
+                      <span className="text-[0.68rem] font-bold uppercase tracking-wider text-amber-800 block mb-1.5">
+                        Skills to Highlight or Add:
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {modalMatch.missingSkills.map((s) => (
+                          <span key={s} className="rounded-lg bg-amber-500/10 text-amber-900 border border-amber-200/80 px-2.5 py-0.5 text-xs font-medium">
+                            {s}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
             {/* Full JD Description */}
             <div className="mt-6">
               <h4 className="font-extrabold text-xs uppercase tracking-wider text-[#79857f] mb-2.5">
                 Role Summary & Details
               </h4>
-              <div className="prose prose-sm text-[#55615b] leading-relaxed max-h-[300px] overflow-y-auto pr-2">
+              <div className="prose prose-sm text-[#55615b] leading-relaxed max-h-[260px] overflow-y-auto pr-2">
                 {selectedListingModal.raw_jd_text ? (
                   <p className="whitespace-pre-line text-xs">
                     {selectedListingModal.raw_jd_text}
@@ -838,13 +1042,13 @@ export default function JobsPage() {
                 ) : (
                   <div className="space-y-3 text-xs">
                     <p>
-                      This role is actively listed and verified on {selectedListingModal.company}'s official careers ATS portal.
+                      This role is actively listed and verified on {selectedListingModal.company}&apos;s official careers ATS portal.
                     </p>
                     <p>
                       Location: {selectedListingModal.location}. Employment Type: {selectedListingModal.employment_type || "Direct Hire"}.
                     </p>
                     <p>
-                      Click "Apply Directly on Official Portal" below to submit your application directly on the employer's portal with zero third-party intermediaries.
+                      Click &quot;Apply on Official Portal&quot; below to submit your application directly on the employer&apos;s portal with zero third-party intermediaries.
                     </p>
                   </div>
                 )}
@@ -881,7 +1085,8 @@ export default function JobsPage() {
                 href={selectedListingModal.apply_url}
                 target="_blank"
                 rel="noreferrer"
-                className="flex-1 text-center rounded-full bg-[#84d64f] hover:bg-[#75c73d] text-[#14281a] py-3.5 font-heading font-extrabold text-sm shadow-[0_8px_20px_rgba(132,214,79,0.25)] transition inline-flex items-center justify-center gap-2"
+                onClick={() => handleApplyClick(selectedListingModal)}
+                className="flex-1 text-center rounded-full bg-[#84d64f] hover:bg-[#7ec942] text-[#14261b] py-3.5 font-heading font-extrabold text-sm shadow-[0_8px_20px_rgba(132,214,79,0.25)] transition inline-flex items-center justify-center gap-2 cursor-pointer"
               >
                 Apply on Official Portal
                 <ExternalLink className="w-4 h-4" />
@@ -890,6 +1095,49 @@ export default function JobsPage() {
           </div>
         </div>
       )}
+
+      {/* ======================================================== */}
+      {/* QUICK TRACKING TOAST ON APPLY */}
+      {/* ======================================================== */}
+      {appliedToastJob && (
+        <div className="fixed bottom-6 right-6 z-50 max-w-sm rounded-2xl bg-[#14281a] border border-[#84d64f]/40 p-4 text-white shadow-2xl animate-in slide-in-from-bottom-5 duration-300">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-1.5 text-xs font-bold text-[#84d64f]">
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Opened {appliedToastJob.company} Application</span>
+              </div>
+              <p className="text-xs text-[#eef8e5]/90 mt-1">
+                Did you submit? Mark it to update your Dashboard tracker.
+              </p>
+            </div>
+            <button
+              onClick={() => setAppliedToastJob(null)}
+              className="text-white/60 hover:text-white transition cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="mt-3 flex items-center gap-2">
+            <button
+              onClick={() => {
+                toggleApplied(appliedToastJob);
+                setAppliedToastJob(null);
+              }}
+              className="flex-1 rounded-xl bg-[#84d64f] hover:bg-[#7ec942] text-[#14261b] py-2 text-xs font-black transition cursor-pointer"
+            >
+              Mark as Applied
+            </button>
+            <button
+              onClick={() => setAppliedToastJob(null)}
+              className="rounded-xl border border-white/20 hover:bg-white/10 px-3 py-2 text-xs font-semibold text-white/80 transition cursor-pointer"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ======================================================== */}
       {/* AUTH GATE MODAL FOR DISCOVERING > 10 JOBS */}
       {/* ======================================================== */}
@@ -925,7 +1173,7 @@ export default function JobsPage() {
             <div className="pt-3 space-y-2.5">
               <Link
                 href="/login?mode=signup"
-                className="w-full rounded-full bg-[#84d64f] hover:bg-[#75c73d] text-[#14281a] font-heading font-black text-sm py-3.5 shadow-md shadow-black/10 transition active:scale-[0.98] inline-flex items-center justify-center gap-2 cursor-pointer block"
+                className="w-full rounded-full bg-[#84d64f] hover:bg-[#7ec942] text-[#14261b] font-heading font-black text-sm py-3.5 shadow-md shadow-black/10 transition active:scale-[0.98] inline-flex items-center justify-center gap-2 cursor-pointer block"
               >
                 Create Free Account <ArrowRight className="w-4 h-4" />
               </Link>

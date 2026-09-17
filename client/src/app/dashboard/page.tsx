@@ -242,21 +242,44 @@ export default function DashboardPage() {
 
     // Load initial applications
     fetchApplications();
+
+    const handleTrackerSync = () => {
+      fetchApplications();
+    };
+
+    window.addEventListener("siftrole-tracker-change", handleTrackerSync);
+    window.addEventListener("storage", handleTrackerSync);
+
+    return () => {
+      window.removeEventListener("siftrole-tracker-change", handleTrackerSync);
+      window.removeEventListener("storage", handleTrackerSync);
+    };
   }, [router]);
 
   const fetchApplications = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/applications").catch(() => null);
-      if (res && res.ok) {
-        const data = await res.json();
-        if (data.applications && Array.isArray(data.applications)) {
-          setApplications(data.applications);
-          return;
-        }
+      // Read local custom tracked apps first
+      let localApps: TrackedApplication[] = [];
+      if (typeof window !== "undefined") {
+        try {
+          const raw = localStorage.getItem("siftrole_tracked_applications");
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) localApps = parsed;
+          }
+        } catch {}
       }
-      // Fallback to sample data
-      setApplications(INITIAL_TRACKED_APPS);
+
+      // Merge local user-added apps with sample defaults
+      const combined = [...localApps];
+      INITIAL_TRACKED_APPS.forEach((initialApp) => {
+        if (!combined.some((a) => a.id === initialApp.id || (a.listing_id && a.listing_id === initialApp.listing_id))) {
+          combined.push(initialApp);
+        }
+      });
+
+      setApplications(combined);
     } catch {
       setApplications(INITIAL_TRACKED_APPS);
     } finally {
@@ -264,10 +287,29 @@ export default function DashboardPage() {
     }
   };
 
+  const syncToLocal = (updated: TrackedApplication[]) => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("siftrole_tracked_applications", JSON.stringify(updated));
+        
+        // Also sync applied and saved ID sets
+        const appliedIds = updated.filter((a) => a.status === "applied" || a.status === "interviewing" || a.status === "offered").map((a) => a.listing_id || a.id);
+        const savedIds = updated.filter((a) => a.status === "saved").map((a) => a.listing_id || a.id);
+        localStorage.setItem("siftrole_applied_job_ids", JSON.stringify(appliedIds));
+        localStorage.setItem("siftrole_saved_job_ids", JSON.stringify(savedIds));
+        
+        window.dispatchEvent(new CustomEvent("siftrole-applied-change"));
+        window.dispatchEvent(new CustomEvent("siftrole-saved-change"));
+      } catch {}
+    }
+  };
+
   const handleStatusChange = async (id: string, newStatus: ApplicationStage) => {
-    setApplications((prev) =>
-      prev.map((app) => (app.id === id ? { ...app, status: newStatus } : app))
-    );
+    setApplications((prev) => {
+      const updated = prev.map((app) => (app.id === id ? { ...app, status: newStatus } : app));
+      syncToLocal(updated);
+      return updated;
+    });
 
     try {
       await fetch("/api/applications", {
@@ -281,7 +323,11 @@ export default function DashboardPage() {
   };
 
   const handleDelete = async (id: string) => {
-    setApplications((prev) => prev.filter((app) => app.id !== id));
+    setApplications((prev) => {
+      const updated = prev.filter((app) => app.id !== id);
+      syncToLocal(updated);
+      return updated;
+    });
     try {
       await fetch(`/api/applications?id=${id}`, {
         method: "DELETE",
@@ -303,6 +349,26 @@ export default function DashboardPage() {
       stipend_or_salary: newSalary || "$140K/Yearly",
       apply_url: newApplyUrl || "https://siftrole.com/jobs",
       status: newStatus,
+      applied_date: "Just now",
+      notes: newNotes || "Created from dashboard tracker",
+      next_step: "Prepare application materials",
+      match_score: 90,
+    };
+
+    setApplications((prev) => {
+      const updated = [newApp, ...prev];
+      syncToLocal(updated);
+      return updated;
+    });
+
+    setIsAddModalOpen(false);
+    setNewCompany("");
+    setNewTitle("");
+    setNewLocation("");
+    setNewSalary("");
+    setNewApplyUrl("");
+    setNewNotes("");
+    setNewStatus("saved");
       applied_date: "Just now",
       match_score: 88,
       notes: newNotes,
