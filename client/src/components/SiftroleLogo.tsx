@@ -49,7 +49,7 @@ export function SiftroleWordmark({
     return (
       <span className={`inline-flex items-center select-none font-black tracking-[-0.04em] uppercase leading-none ${className}`}>
         <span>SIFTR</span>
-        <span className="inline-flex items-center justify-center w-[0.84em] h-[0.84em] mx-[0.04em] relative shrink-0">
+        <span className="inline-flex items-center justify-center w-[0.98em] h-[0.98em] mx-[0.02em] relative shrink-0">
           <Image
             src="/images/siftrole-logo.png"
             alt="O"
@@ -67,7 +67,7 @@ export function SiftroleWordmark({
   return (
     <span className={`inline-flex items-center select-none font-black tracking-[-0.04em] leading-none ${className}`}>
       <span>Siftr</span>
-      <span className="inline-flex items-center justify-center w-[0.84em] h-[0.84em] mx-[0.04em] relative shrink-0">
+      <span className="inline-flex items-center justify-center w-[0.96em] h-[0.96em] mx-[0.02em] relative shrink-0">
         <Image
           src="/images/siftrole-logo.png"
           alt="o"

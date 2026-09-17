@@ -724,18 +724,18 @@ export default function Home() {
           {/* MASSIVE BOTTOM SIFTR[O]LE WORDMARK WITH EMBEDDED LOGO */}
           {/* ======================================================== */}
           <div className="pt-10 pb-4 select-none overflow-hidden flex items-center justify-center font-black uppercase text-[#14281a] leading-none tracking-[-0.04em]">
-            <span className="text-[12vw] sm:text-[13vw]">SIFTR</span>
-            <span className="inline-flex items-center justify-center w-[10.5vw] h-[10.5vw] sm:w-[11.5vw] sm:h-[11.5vw] max-w-[170px] max-h-[170px] min-w-[44px] min-h-[44px] mx-[0.05em] relative shrink-0">
+            <span className="text-[12.5vw] sm:text-[13.5vw]">SIFTR</span>
+            <span className="inline-flex items-center justify-center w-[12.5vw] h-[12.5vw] sm:w-[13.5vw] sm:h-[13.5vw] max-w-[240px] max-h-[240px] min-w-[52px] min-h-[52px] mx-[0.02em] relative shrink-0">
               <Image
                 src="/images/siftrole-logo.png"
                 alt="O"
-                width={380}
-                height={380}
+                width={400}
+                height={400}
                 className="w-full h-full object-contain drop-shadow-[0_12px_32px_rgba(132,214,79,0.38)]"
                 unoptimized
               />
             </span>
-            <span className="text-[12vw] sm:text-[13vw]">LE</span>
+            <span className="text-[12.5vw] sm:text-[13.5vw]">LE</span>
           </div>
         </footer>
 
