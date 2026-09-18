@@ -113,22 +113,56 @@ async function runBackgroundScraper() {
   } else {
     console.log('[Background Scraper] Job feeds are up to date.');
   }
+
+  return { success: true, stagedCount };
+}
+
+let isScrapingInProgress = false;
+let lastScrapedAt = null;
+
+async function triggerAdminScraper() {
+  if (isScrapingInProgress) {
+    return { status: 'already_running', message: 'Scraper job is currently in progress.' };
+  }
+
+  isScrapingInProgress = true;
+  try {
+    const result = await runBackgroundScraper();
+    lastScrapedAt = new Date().toISOString();
+    return { status: 'completed', lastScrapedAt, result };
+  } catch (err) {
+    console.error('[Admin Scraper Trigger Error]:', err);
+    return { status: 'error', error: err.message };
+  } finally {
+    isScrapingInProgress = false;
+  }
+}
+
+function getScraperStatus() {
+  return {
+    isScrapingInProgress,
+    lastScrapedAt,
+    schedule: 'Once per day (24 hours)',
+  };
 }
 
 // Export for scheduled intervals and manual triggers
-function initScraperScheduler(intervalMs = 30 * 60 * 1000) {
-  // Run initial scan after 5 seconds
-  setTimeout(() => {
-    runBackgroundScraper().catch((err) => console.error('[Background Scraper Error]:', err));
-  }, 5000);
+// Default: Once every 24 hours (24 * 60 * 60 * 1000 ms)
+const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
 
-  // Run on recurring interval
+function initScraperScheduler(intervalMs = TWENTY_FOUR_HOURS) {
+  console.log('[Background Scraper] Scheduler initialized: Scanning once every 24 hours.');
+
+  // Run on recurring 24-hour interval
   setInterval(() => {
-    runBackgroundScraper().catch((err) => console.error('[Background Scraper Error]:', err));
+    console.log('[Background Scraper] Running daily scheduled ATS feed scan...');
+    triggerAdminScraper().catch((err) => console.error('[Background Scraper Error]:', err));
   }, intervalMs);
 }
 
 module.exports = {
   runBackgroundScraper,
+  triggerAdminScraper,
+  getScraperStatus,
   initScraperScheduler,
 };

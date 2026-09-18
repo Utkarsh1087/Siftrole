@@ -1,5 +1,5 @@
 import { AtsAdapter, NormalizedListing } from "./types";
-import { computeRawJdHash, computeNormalizedKey, extractSkillsFromText, stripHtml } from "../sync/dedup";
+import { computeRawJdHash, computeNormalizedKey, extractSkillsFromText } from "../sync/dedup";
 
 interface SmartRecruitersPosting {
   id: string;

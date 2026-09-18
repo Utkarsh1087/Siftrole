@@ -29,7 +29,7 @@ export function getStoredUser(): AuthUser | null {
     const raw = localStorage.getItem("siftrole_user");
     if (!raw) return null;
     return JSON.parse(raw);
-  } catch (e) {
+  } catch {
     return null;
   }
 }

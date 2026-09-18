@@ -183,7 +183,7 @@ export function ColdMailModal({ contact, onClose }: ColdMailModalProps) {
         data-lenis-prevent="true"
         tabIndex={0}
         onWheel={(e) => e.stopPropagation()}
-        className="bg-white rounded-[28px] max-w-[760px] w-full max-h-[90vh] overflow-y-auto overscroll-contain border border-neutral-200 shadow-2xl p-6 sm:p-8 relative focus:outline-none"
+        className="bg-white rounded-[28px] max-w-[760px] w-full max-h-[90vh] overflow-y-auto overscroll-contain border border-neutral-200 shadow-2xl p-6 sm:p-8 relative focus:outline-none scrollbar-thin"
         style={{ overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}
       >
         
@@ -301,12 +301,12 @@ export function ColdMailModal({ contact, onClose }: ColdMailModalProps) {
               </span>
             </div>
             <textarea
-              rows={8}
+              rows={7}
               data-lenis-prevent="true"
               onWheel={(e) => e.stopPropagation()}
               value={generatedBody}
               onChange={(e) => setGeneratedBody(e.target.value)}
-              className="w-full rounded-xl border border-neutral-300 bg-[#fdfdfd] p-3.5 text-xs font-mono leading-relaxed text-[#24302a] outline-none focus:border-[#84d64f] overscroll-contain"
+              className="w-full rounded-xl border border-neutral-300 bg-[#fdfdfd] p-3.5 text-xs font-mono leading-relaxed text-[#24302a] outline-none focus:border-[#84d64f] overscroll-contain resize-none"
               style={{ overscrollBehavior: "contain" }}
             />
           </div>

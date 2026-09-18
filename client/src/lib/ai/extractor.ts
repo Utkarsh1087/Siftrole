@@ -287,7 +287,7 @@ export async function extractJobFromRawText(
         extraction_status: "success",
       },
     });
-  } catch (logErr) {
+  } catch {
     // Non-blocking log error
   }
 

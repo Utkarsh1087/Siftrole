@@ -28,4 +28,21 @@ router.get('/recruiter-submissions', requireAdmin, (req, res) => {
   res.json({ submissions: listRecruiterSubmissions() });
 });
 
+// Admin-triggered scraper run on demand
+router.post('/scrape/trigger', requireAdmin, async (req, res) => {
+  try {
+    const { triggerAdminScraper } = require('../scraperCron');
+    const outcome = await triggerAdminScraper();
+    return res.json({ success: true, ...outcome });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin scraper status
+router.get('/scrape/status', requireAdmin, (req, res) => {
+  const { getScraperStatus } = require('../scraperCron');
+  return res.json({ success: true, ...getScraperStatus() });
+});
+
 module.exports = router;
