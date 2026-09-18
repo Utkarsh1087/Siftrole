@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 import { CompanyLogo } from "@/components/CompanyLogo";
 import { SiftroleLogoMark } from "@/components/SiftroleLogo";
+import { NewsletterBroadcastView } from "@/components/NewsletterBroadcastView";
 
 interface Message {
   id: string;
@@ -83,7 +84,7 @@ interface UserItem {
 }
 
 export default function AdminDashboard() {
-  const [activeNav, setActiveNav] = useState<"dashboard" | "review_queue" | "companies" | "users" | "ai_extractor" | "analytics" | "reports">("dashboard");
+  const [activeNav, setActiveNav] = useState<"dashboard" | "review_queue" | "companies" | "users" | "ai_extractor" | "analytics" | "reports" | "newsletter">("dashboard");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Global Header Stats
@@ -881,6 +882,29 @@ export default function AdminDashboard() {
                 </span>
               )}
             </button>
+
+            {/* 7. Newsletter Broadcasts */}
+            <button
+              onClick={() => setActiveNav("newsletter")}
+              title="Newsletter & Job Alerts Broadcast"
+              className={`w-full flex items-center ${
+                isSidebarCollapsed ? "justify-center px-0 py-2.5" : "justify-between px-3 py-2.5"
+              } rounded-xl text-xs font-bold transition ${
+                activeNav === "newsletter"
+                  ? "bg-[#14281a] text-[#84d64f] shadow-xs"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Send className={`w-4 h-4 shrink-0 ${activeNav === "newsletter" ? "text-[#84d64f]" : "text-slate-500"}`} />
+                {!isSidebarCollapsed && <span>Newsletter Alerts</span>}
+              </div>
+              {!isSidebarCollapsed && (
+                <span className={`text-[0.65rem] font-extrabold px-1.5 py-0.5 rounded ${activeNav === "newsletter" ? "bg-[#84d64f] text-[#14281a]" : "bg-emerald-50 text-emerald-800 border border-emerald-200"}`}>
+                  Email
+                </span>
+              )}
+            </button>
           </nav>
         </div>
 
@@ -935,6 +959,7 @@ export default function AdminDashboard() {
                   {activeNav === "ai_extractor" && "Add Job with AI"}
                   {activeNav === "analytics" && "Website Analytics & AI Tips"}
                   {activeNav === "reports" && "Activity Logs"}
+                  {activeNav === "newsletter" && "Newsletter & Job Alert Broadcasts"}
                 </h1>
                 <p className="text-xs text-slate-500 mt-0.5">
                   {activeNav === "dashboard" && "Overview of live jobs, applications, and system status"}
@@ -944,6 +969,7 @@ export default function AdminDashboard() {
                   {activeNav === "ai_extractor" && "Paste any job posting to extract details into clean fields"}
                   {activeNav === "analytics" && "See user activity and simple AI suggestions to improve the website"}
                   {activeNav === "reports" && "History of recent job syncs and extractions"}
+                  {activeNav === "newsletter" && "Select verified tech openings and dispatch email digests directly to active subscribers via Resend"}
                 </p>
               </div>
             </div>
@@ -2477,6 +2503,13 @@ export default function AdminDashboard() {
                 </div>
               )}
             </div>
+          )}
+
+          {/* ======================================================== */}
+          {/* TAB 7: NEWSLETTER BROADCASTS */}
+          {/* ======================================================== */}
+          {activeNav === "newsletter" && (
+            <NewsletterBroadcastView />
           )}
 
         </div>

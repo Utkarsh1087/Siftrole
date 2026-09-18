@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -10,11 +10,13 @@ import {
   Sparkles,
   ChevronLeft,
 } from "lucide-react";
+import { useAuth } from "@/lib/useAuth";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const modeParam = searchParams.get("mode");
+  const { isLoggedIn, isLoaded } = useAuth();
 
   const [isSignUp, setIsSignUp] = useState(modeParam === "signup");
   const [showPassword, setShowPassword] = useState(false);
@@ -24,6 +26,12 @@ function LoginForm() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isLoaded && isLoggedIn) {
+      router.replace("/jobs");
+    }
+  }, [isLoaded, isLoggedIn, router]);
 
   React.useEffect(() => {
     setIsSignUp(modeParam === "signup");
@@ -84,7 +92,7 @@ function LoginForm() {
         body: JSON.stringify(payload),
       }).catch(() => null);
 
-      const targetRedirect = (typeof window !== "undefined" && sessionStorage.getItem("siftrole_redirect_after_auth")) || "/dashboard";
+      const targetRedirect = (typeof window !== "undefined" && sessionStorage.getItem("siftrole_redirect_after_auth")) || "/jobs";
       if (typeof window !== "undefined") {
         sessionStorage.removeItem("siftrole_redirect_after_auth");
       }
@@ -101,11 +109,11 @@ function LoginForm() {
       // Fallback local session if backend server is not running
       const fallbackUser = {
         id: "demo-" + Date.now(),
-        name: name || (email.split("@")[0] ? email.split("@")[0] : "Student"),
+        name: name || (email.split("@")[0] ? email.split("@")[0] : "Candidate"),
         email: email,
         role: email.includes("admin") ? "admin" : "student",
-        grad_year: 2026,
-        degree: "Computer Science",
+        grad_year: null,
+        degree: null,
         profile_status: "Active",
       };
 

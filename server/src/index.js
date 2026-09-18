@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
@@ -5,7 +6,8 @@ const authRoutes = require('./routes/auth');
 const listingsRoutes = require('./routes/listings');
 const adminRoutes = require('./routes/admin');
 const newsletterRoutes = require('./routes/newsletter');
-const { getUserById, listApplicationsByStudent, listNotificationsByStudent } = require('./store');
+const profileRoutes = require('./routes/profile');
+const { getUserById, listApplicationsByStudent, listNotificationsByStudent, getUserProfile } = require('./store');
 const { generalApiLimiter, authLimiter } = require('./middleware/rateLimiter');
 
 const app = express();
@@ -62,23 +64,18 @@ app.use('/api/admin', authRequired, adminOnly, adminRoutes);
 
 app.use('/api/newsletter', newsletterRoutes);
 
-app.get('/api/profile', authRequired, (req, res) => {
-  const user = getUserById(req.user.id);
-  if (!user) {
+// Candidate Profile management routes
+app.use('/api/user/profile', profileRoutes);
+app.use('/api/profile', profileRoutes);
+
+app.get('/api/student-profile', authRequired, (req, res) => {
+  const profile = getUserProfile(req.user.id);
+  if (!profile) {
     return res.status(404).json({ error: 'User not found.' });
   }
 
   return res.json({
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      grad_year: user.grad_year,
-      degree: user.degree,
-      resume_url: user.resume_url,
-      profile_status: user.profile_status,
-    },
+    user: profile,
     applications: listApplicationsByStudent(req.user.id),
   });
 });

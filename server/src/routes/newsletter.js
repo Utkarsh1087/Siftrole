@@ -36,14 +36,6 @@ router.post('/subscribe', async (req, res) => {
   const cleanEmail = email.trim().toLowerCase();
   const existing = getNewsletterSubscriberByEmail(cleanEmail);
 
-  if (existing && existing.is_verified) {
-    return res.json({
-      success: true,
-      alreadyVerified: true,
-      message: 'This email is already verified and actively subscribed to job radar alerts.',
-    });
-  }
-
   const id = existing?.id || `sub_${crypto.randomUUID()}`;
   const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
   const verificationToken = crypto.randomBytes(32).toString('hex');
@@ -142,9 +134,19 @@ router.get('/verify-link', async (req, res) => {
     return res.status(400).json({ error: 'Verification token is required.' });
   }
 
-  const subscriber = getNewsletterSubscriberByToken(token.toString());
+  let subscriber = getNewsletterSubscriberByToken(token.toString());
 
   if (!subscriber) {
+    if (email && isValidEmail(email.toString())) {
+      const existingUser = getNewsletterSubscriberByEmail(email.toString().trim().toLowerCase());
+      if (existingUser && existingUser.is_verified) {
+        return res.json({
+          success: true,
+          email: existingUser.email,
+          message: 'Your email is already verified and actively subscribed to job radar alerts!',
+        });
+      }
+    }
     return res.status(404).json({ error: 'Invalid or expired verification link.' });
   }
 
@@ -226,16 +228,70 @@ router.post('/resend-otp', async (req, res) => {
 });
 
 /**
+ * GET /api/newsletter/subscribers
+ * Returns active verified subscribers with counts
+ */
+router.get('/subscribers', (req, res) => {
+  try {
+    const subscribers = listActiveNewsletterSubscribers();
+    return res.json({
+      success: true,
+      count: subscribers.length,
+      subscribers,
+    });
+  } catch (error) {
+    console.error('Fetch subscribers error:', error);
+    return res.status(500).json({ error: 'Failed to fetch subscribers.' });
+  }
+});
+
+/**
  * POST /api/newsletter/broadcast
- * Dispatches a job alert digest to all verified active subscribers
+ * Dispatches a job alert digest to all verified active subscribers or test recipient
  */
 router.post('/broadcast', async (req, res) => {
   try {
+    const { subject, headline, customNote, listingIds, targetEmail } = req.body || {};
+    
+    // Determine listings to include
+    let selectedListings = [];
+    const allListings = getAllListings();
+    
+    if (Array.isArray(listingIds) && listingIds.length > 0) {
+      selectedListings = allListings.filter((l) => listingIds.includes(l.id));
+    }
+    
+    if (selectedListings.length === 0) {
+      selectedListings = allListings.slice(0, 5);
+    }
+
+    if (selectedListings.length === 0) {
+      return res.status(400).json({ error: 'No active job openings available to broadcast.' });
+    }
+
+    // If sending test email to a specific address
+    if (targetEmail && isValidEmail(targetEmail)) {
+      const testResult = await sendJobAlertDigestEmail({
+        to: targetEmail.trim().toLowerCase(),
+        listings: selectedListings,
+        subject: subject || `[Test Digest] Verified Openings on Siftrole`,
+        headline,
+        customNote,
+      });
+
+      return res.json({
+        success: true,
+        isTest: true,
+        message: `Test newsletter digest sent to ${targetEmail}.`,
+        count: 1,
+        result: testResult,
+      });
+    }
+
     const subscribers = listActiveNewsletterSubscribers();
-    const recentListings = getAllListings().slice(0, 5);
 
     if (subscribers.length === 0) {
-      return res.json({ success: true, message: 'No active verified subscribers found.' });
+      return res.json({ success: true, message: 'No active verified subscribers found.', count: 0 });
     }
 
     let sentCount = 0;
@@ -243,7 +299,10 @@ router.post('/broadcast', async (req, res) => {
       try {
         await sendJobAlertDigestEmail({
           to: sub.email,
-          listings: recentListings,
+          listings: selectedListings,
+          subject,
+          headline,
+          customNote,
         });
         sentCount++;
       } catch (err) {
@@ -253,7 +312,7 @@ router.post('/broadcast', async (req, res) => {
 
     return res.json({
       success: true,
-      message: `Job alert digest sent to ${sentCount} active subscribers.`,
+      message: `Job alert digest successfully sent to ${sentCount} active subscriber(s).`,
       count: sentCount,
     });
   } catch (error) {

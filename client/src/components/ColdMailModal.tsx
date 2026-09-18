@@ -26,8 +26,8 @@ interface ColdMailModalProps {
 export function ColdMailModal({ contact, onClose }: ColdMailModalProps) {
   const [candidateName, setCandidateName] = useState("");
   const [targetRole, setTargetRole] = useState("");
-  const [background, setBackground] = useState("CS student graduating in 2026");
-  const [highlight, setHighlight] = useState("built high-performance React & Next.js web applications");
+  const [background, setBackground] = useState("");
+  const [highlight, setHighlight] = useState("");
   const [tone, setTone] = useState("concise-human");
 
   const [generatedSubject, setGeneratedSubject] = useState("");
@@ -38,29 +38,96 @@ export function ColdMailModal({ contact, onClose }: ColdMailModalProps) {
 
   useEffect(() => {
     if (!contact) return;
-    // Set default target role from contact hiring list
-    setTargetRole(contact.hiring_for[0] || "Software Engineering");
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
 
-    // Load stored user info if available
+    // Set default target role from contact hiring list
+    const initialRole = contact.hiring_for[0] || "";
+    setTargetRole(initialRole);
+
+    let initialName = "";
+    let initialBackground = "";
+    let initialHighlight = "";
+
+    // 1. First priority: Check parsed resume
     try {
-      const stored = localStorage.getItem("siftrole_user");
-      if (stored) {
-        const u = JSON.parse(stored);
-        if (u.name) setCandidateName(u.name);
-        if (u.degree && u.grad_year) {
-          setBackground(`${u.degree} student (Class of ${u.grad_year})`);
+      const storedResume = localStorage.getItem("siftrole_parsed_resume");
+      if (storedResume) {
+        const resume = JSON.parse(storedResume);
+        if (resume.candidateName || resume.name) {
+          initialName = resume.candidateName || resume.name;
+        }
+
+        const degree =
+          resume.degree ||
+          resume.education?.[0]?.degree ||
+          (resume.education?.[0]?.major ? `Degree in ${resume.education[0].major}` : "");
+        const gradYear =
+          resume.graduationYear ||
+          resume.grad_year ||
+          resume.education?.[0]?.graduationYear ||
+          resume.education?.[0]?.grad_year;
+
+        if (degree) {
+          initialBackground = `${degree}${gradYear ? ` (Graduating ${gradYear})` : ""}`;
+        } else if (resume.headline) {
+          initialBackground = resume.headline;
+        } else if (resume.summary) {
+          initialBackground = resume.summary.slice(0, 100);
+        }
+
+        if (resume.projects && resume.projects.length > 0) {
+          const p = resume.projects[0];
+          initialHighlight = p.name
+            ? `${p.name}${p.description ? `: ${p.description}` : ""}`
+            : p.description || "";
+        } else if (resume.experience && resume.experience.length > 0) {
+          const exp = resume.experience[0];
+          initialHighlight = `${exp.role || "Role"} at ${exp.company || "company"}`;
         }
       }
     } catch {}
 
-    // Auto-generate initial draft
-    handleGenerate(contact.hiring_for[0] || "Software Engineering");
+    // 2. Fallback to user profile if not in resume
+    try {
+      const storedUser = localStorage.getItem("siftrole_user");
+      if (storedUser) {
+        const u = JSON.parse(storedUser);
+        if (!initialName && u.name && u.name !== "Candidate") {
+          initialName = u.name;
+        }
+        if (!initialBackground && u.degree) {
+          initialBackground = `${u.degree}${u.grad_year ? ` (Class of ${u.grad_year})` : ""}`;
+        }
+      }
+    } catch {}
+
+    setCandidateName(initialName);
+    setBackground(initialBackground);
+    setHighlight(initialHighlight);
+
+    // Auto-generate initial draft with resolved parameters
+    handleGenerate(initialRole, initialName, initialBackground, initialHighlight);
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
   }, [contact]);
 
-  const handleGenerate = async (overrideRole?: string) => {
+  const handleGenerate = async (
+    overrideRole?: string,
+    overrideName?: string,
+    overrideBackground?: string,
+    overrideHighlight?: string
+  ) => {
     if (!contact) return;
     setIsGenerating(true);
     setCopied(false);
+
+    const activeRole = overrideRole || targetRole || contact.hiring_for?.[0] || "";
+    const activeName = overrideName !== undefined ? overrideName : candidateName;
+    const activeBackground = overrideBackground !== undefined ? overrideBackground : background;
+    const activeHighlight = overrideHighlight !== undefined ? overrideHighlight : highlight;
 
     try {
       const res = await fetch("/api/ai/cold-email", {
@@ -70,10 +137,10 @@ export function ColdMailModal({ contact, onClose }: ColdMailModalProps) {
           recruiterName: contact.name,
           recruiterEmail: contact.email,
           company: contact.company,
-          roleAppliedFor: overrideRole || targetRole || "Software Engineer",
-          userCandidateName: candidateName || "Candidate",
-          userBackground: background,
-          keyHighlight: highlight,
+          roleAppliedFor: activeRole,
+          userCandidateName: activeName || "Candidate",
+          userBackground: activeBackground || "",
+          keyHighlight: activeHighlight || "",
           tone,
         }),
       });
@@ -106,8 +173,19 @@ export function ColdMailModal({ contact, onClose }: ColdMailModalProps) {
   if (!contact) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white rounded-[28px] max-w-[760px] w-full max-h-[92vh] overflow-y-auto border border-neutral-200 shadow-2xl p-6 sm:p-8 relative">
+    <div
+      data-lenis-prevent="true"
+      onWheel={(e) => e.stopPropagation()}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+      style={{ overscrollBehavior: "contain" }}
+    >
+      <div
+        data-lenis-prevent="true"
+        tabIndex={0}
+        onWheel={(e) => e.stopPropagation()}
+        className="bg-white rounded-[28px] max-w-[760px] w-full max-h-[90vh] overflow-y-auto overscroll-contain border border-neutral-200 shadow-2xl p-6 sm:p-8 relative focus:outline-none"
+        style={{ overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}
+      >
         
         {/* Header */}
         <div className="flex items-start justify-between gap-4 pb-5 border-b border-neutral-100">
@@ -182,7 +260,7 @@ export function ColdMailModal({ contact, onClose }: ColdMailModalProps) {
 
           <div className="sm:col-span-2 flex items-center justify-between pt-1">
             <span className="text-xs font-medium text-[#79857f]">
-              Generates a punchy, 3–5 sentence human-sounding email (under 100 words).
+              Generates a punchy, 3-5 sentence human-sounding email (under 100 words).
             </span>
             <button
               onClick={() => handleGenerate()}
@@ -224,9 +302,12 @@ export function ColdMailModal({ contact, onClose }: ColdMailModalProps) {
             </div>
             <textarea
               rows={8}
+              data-lenis-prevent="true"
+              onWheel={(e) => e.stopPropagation()}
               value={generatedBody}
               onChange={(e) => setGeneratedBody(e.target.value)}
-              className="w-full rounded-xl border border-neutral-300 bg-[#fdfdfd] p-3.5 text-xs font-mono leading-relaxed text-[#24302a] outline-none focus:border-[#84d64f]"
+              className="w-full rounded-xl border border-neutral-300 bg-[#fdfdfd] p-3.5 text-xs font-mono leading-relaxed text-[#24302a] outline-none focus:border-[#84d64f] overscroll-contain"
+              style={{ overscrollBehavior: "contain" }}
             />
           </div>
         </div>

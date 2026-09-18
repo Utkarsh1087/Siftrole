@@ -7,9 +7,20 @@ export interface AuthUser {
   name: string;
   email: string;
   role?: string;
-  grad_year?: string;
+  grad_year?: string | number;
   degree?: string;
+  target_role?: string;
+  bio?: string;
+  skills?: string[];
+  github_url?: string;
+  linkedin_url?: string;
+  phone?: string;
+  portfolio_url?: string;
+  resume_name?: string;
   resume_url?: string;
+  work_mode?: string;
+  salary_expectation?: string;
+  profile_status?: string;
 }
 
 export function getStoredUser(): AuthUser | null {
@@ -27,6 +38,12 @@ export function isUserLoggedIn(): boolean {
   if (typeof window === "undefined") return false;
   const token = localStorage.getItem("siftrole_token");
   return Boolean(token);
+}
+
+export function saveStoredUser(user: AuthUser) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem("siftrole_user", JSON.stringify(user));
+  window.dispatchEvent(new Event("siftrole-auth-change"));
 }
 
 export function useAuth() {
@@ -58,6 +75,19 @@ export function useAuth() {
     };
   }, []);
 
+  const updateUser = (data: Partial<AuthUser>) => {
+    const current = user || getStoredUser() || {
+      id: "user-student",
+      name: data.name || "Candidate",
+      email: data.email || "candidate@university.edu",
+      role: "student",
+    };
+    const updated = { ...current, ...data };
+    saveStoredUser(updated);
+    setUser(updated);
+    return updated;
+  };
+
   const logout = () => {
     localStorage.removeItem("siftrole_token");
     localStorage.removeItem("siftrole_user");
@@ -66,5 +96,5 @@ export function useAuth() {
     setUser(null);
   };
 
-  return { isLoggedIn, user, isLoaded, logout };
+  return { isLoggedIn, user, isLoaded, updateUser, logout };
 }

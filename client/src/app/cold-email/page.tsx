@@ -25,6 +25,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { CompanyLogo } from "@/components/CompanyLogo";
+import { SiftroleLogoMark } from "@/components/SiftroleLogo";
 import {
   HR_CONTACTS_DATA,
   HRContact,
@@ -174,15 +175,17 @@ export default function ColdEmailPage() {
         <header className="sticky top-4 z-50 rounded-[20px] border border-neutral-200/80 bg-white/85 backdrop-blur-md px-5 py-3 shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-all">
           <div className="flex items-center justify-between gap-4">
             {/* Logo & Back */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
               <Link
                 href="/"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-100 hover:bg-neutral-200 px-3.5 py-2 text-xs font-bold text-[#121816] transition"
+                className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-neutral-200/90 bg-[#fbfaf8] hover:bg-neutral-100/80 px-3.5 py-1.5 text-xs font-bold text-[#55615b] hover:text-[#121816] transition-colors"
               >
-                <ChevronLeft className="w-4 h-4 text-[#3c7818]" /> Home
+                <ChevronLeft className="w-3.5 h-3.5 text-[#3c7818]" />
+                <span>Home</span>
               </Link>
 
-              <Link href="/" className="flex items-center gap-2 group">
+              <Link href="/" className="flex items-center gap-2.5 group">
+                <SiftroleLogoMark size={28} />
                 <span className="text-[1.7rem] font-black tracking-[-0.04em] text-[#121816]">
                   Sift<span className="text-[#58a826] transition-colors group-hover:text-[#4a911e]">role</span>
                 </span>
@@ -253,7 +256,7 @@ export default function ColdEmailPage() {
               {isPro ? (
                 <div className="inline-flex items-center gap-2 rounded-2xl bg-[#14281a] text-[#84d64f] px-5 py-3 text-xs font-bold border border-[#84d64f]/30 shadow-sm">
                   <CheckCircle2 className="w-4 h-4 text-[#84d64f]" />
-                  <span>Pro Access Active &bull; All 500+ Contacts Unlocked</span>
+                  <span>Pro Access Active &bull; All {contacts.length}+ Contacts Unlocked</span>
                 </div>
               ) : (
                 <button
@@ -265,10 +268,10 @@ export default function ColdEmailPage() {
                   </div>
                   <div className="text-left">
                     <div className="text-xs font-black text-white flex items-center gap-1.5">
-                      <span>Unlock 500+ Recruiter Contacts</span>
+                      <span>Unlock {contacts.length}+ Recruiter Contacts</span>
                       <span className="bg-[#84d64f] text-[#14281a] text-[0.65rem] px-2 py-0.5 rounded-full">₹49 Only</span>
                     </div>
-                    <div className="text-[0.7rem] text-[#eef8e5]/80">First 10 contacts are free for registered builders</div>
+                    <div className="text-[0.7rem] text-[#eef8e5]/80">First {FREE_CONTACTS_LIMIT} contacts are free for registered builders</div>
                   </div>
                 </button>
               )}
@@ -281,7 +284,7 @@ export default function ColdEmailPage() {
         {/* ======================================================== */}
         <section className="my-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="rounded-[22px] border border-neutral-200/80 bg-white p-5 shadow-sm">
-            <div className="text-2xl sm:text-3xl font-black text-[#121816]">500+</div>
+            <div className="text-2xl sm:text-3xl font-black text-[#121816]">{contacts.length}+</div>
             <div className="text-xs font-bold text-[#14281a] mt-1">Direct HR & Recruiter Emails</div>
             <div className="text-[0.7rem] text-[#55615b]">Verified across Stripe, OpenAI, Figma, Spotify, Linear</div>
           </div>
@@ -548,7 +551,7 @@ export default function ColdEmailPage() {
                           <Lock className="w-5 h-5 text-[#84d64f] mx-auto mb-1.5" />
                           <h4 className="text-xs font-black text-white">Pro Contact Locked</h4>
                           <p className="text-[0.68rem] text-[#eef8e5]/80 mt-1">
-                            Upgrade to unlock this recruiter and 500+ other verified hiring leads.
+                            Upgrade to unlock this recruiter and {contacts.length}+ other verified hiring leads.
                           </p>
                           <button
                             onClick={() => setIsUpgradeModalOpen(true)}

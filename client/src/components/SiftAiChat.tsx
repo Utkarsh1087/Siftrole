@@ -76,24 +76,44 @@ const COMMON_TECH_SKILLS = [
 ];
 
 function renderFormattedMessage(text: string, isUser: boolean) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  const lines = text.split("\n");
   return (
-    <span className="leading-relaxed whitespace-pre-line">
-      {parts.map((part, i) => {
-        if (part.startsWith("**") && part.endsWith("**")) {
-          const content = part.slice(2, -2);
+    <div className="space-y-1.5 text-xs leading-relaxed">
+      {lines.map((line, lineIdx) => {
+        if (!line.trim()) {
+          return <div key={lineIdx} className="h-1" />;
+        }
+        const isBullet = line.trim().startsWith("•") || line.trim().startsWith("- ") || line.trim().startsWith("* ");
+        const cleanLine = isBullet ? line.trim().replace(/^[-*•]\s*/, "") : line;
+
+        const parts = cleanLine.split(/(\*\*[^*]+\*\*)/g);
+        const formattedLine = parts.map((part, i) => {
+          if (part.startsWith("**") && part.endsWith("**")) {
+            const content = part.slice(2, -2);
+            return (
+              <strong
+                key={i}
+                className={`font-black ${isUser ? "text-white" : "text-[#121816]"}`}
+              >
+                {content}
+              </strong>
+            );
+          }
+          return <React.Fragment key={i}>{part}</React.Fragment>;
+        });
+
+        if (isBullet) {
           return (
-            <strong
-              key={i}
-              className={`font-black ${isUser ? "text-white" : "text-[#121816]"}`}
-            >
-              {content}
-            </strong>
+            <div key={lineIdx} className="flex items-start gap-1.5 pl-1">
+              <span className={`text-[0.65rem] mt-0.5 ${isUser ? "text-white/80" : "text-[#3c7818]"}`}>•</span>
+              <div className="flex-1">{formattedLine}</div>
+            </div>
           );
         }
-        return <React.Fragment key={i}>{part}</React.Fragment>;
+
+        return <div key={lineIdx}>{formattedLine}</div>;
       })}
-    </span>
+    </div>
   );
 }
 
@@ -117,41 +137,130 @@ export function SiftAiChat({
     },
   ]);
   const [inputVal, setInputVal] = useState("");
+  const [parsedResume, setParsedResume] = useState<any>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("siftrole_parsed_resume");
+        if (saved) return JSON.parse(saved);
+      } catch {}
+    }
+    return null;
+  });
   const [isTyping, setIsTyping] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
   };
 
   useEffect(() => {
-    const hour = new Date().getHours();
-    let timeGreeting = "Hi";
-    if (hour >= 5 && hour < 12) timeGreeting = "Good morning";
-    else if (hour >= 12 && hour < 17) timeGreeting = "Good afternoon";
-    else if (hour >= 17 && hour < 22) timeGreeting = "Good evening";
-    else timeGreeting = "Working late";
+    let isMounted = true;
 
-    setMessages([
-      {
-        id: "initial-1",
-        sender: "ai",
-        text: `👋 ${timeGreeting}! I'm Sift AI. Drop your resume here or ask me anything about live verified tech roles.`,
-        timestamp: "Just now",
-      },
-    ]);
-  }, []);
+    async function fetchDynamicGreeting() {
+      try {
+        let storedCandidateProfile: any = null;
+        let activeParsedResume = parsedResume;
+        if (typeof window !== "undefined") {
+          try {
+            const rawUser = localStorage.getItem("siftrole_user");
+            if (rawUser) storedCandidateProfile = JSON.parse(rawUser);
+            if (!activeParsedResume) {
+              const saved = localStorage.getItem("siftrole_parsed_resume");
+              if (saved) activeParsedResume = JSON.parse(saved);
+            }
+          } catch {}
+        }
+
+        const res = await fetch("/api/ai/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: "__INITIAL_GREETING__",
+            activeResumeSkills,
+            uploadedResumeName,
+            candidateProfile: storedCandidateProfile,
+            parsedResume: activeParsedResume,
+            liveListings: liveListings.slice(0, 10),
+          }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.reply && isMounted) {
+            setMessages([
+              {
+                id: "initial-" + Date.now(),
+                sender: "ai",
+                text: data.reply,
+                timestamp: "Just now",
+              },
+            ]);
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn("Could not fetch dynamic AI greeting:", err);
+      }
+
+      // Smooth dynamic fallback if network is delayed
+      if (isMounted) {
+        const hour = new Date().getHours();
+        let timeDesc = "today";
+        if (hour >= 5 && hour < 12) timeDesc = "this morning";
+        else if (hour >= 12 && hour < 17) timeDesc = "this afternoon";
+        else if (hour >= 17 && hour < 22) timeDesc = "this evening";
+        else timeDesc = "tonight";
+
+        const hasResume = Boolean(uploadedResumeName && activeResumeSkills.length > 0);
+        const namePart = parsedResume?.candidateName ? ` ${parsedResume.candidateName}` : "";
+        const dynamicText = hasResume
+          ? `👋 Ready to explore roles matching **${uploadedResumeName}** ${timeDesc}${namePart}? Ask me for your top matches or company openings!`
+          : `👋 Welcome to Siftrole! What engineering roles, companies, or tech stacks are you searching for ${timeDesc}?`;
+
+        setMessages([
+          {
+            id: "initial-" + Date.now(),
+            sender: "ai",
+            text: dynamicText,
+            timestamp: "Just now",
+          },
+        ]);
+      }
+    }
+
+    fetchDynamicGreeting();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [uploadedResumeName, activeResumeSkills]);
+
+  useEffect(() => {
+    if (!uploadedResumeName) {
+      setParsedResume(null);
+    } else if (!parsedResume && typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("siftrole_parsed_resume");
+        if (saved) setParsedResume(JSON.parse(saved));
+      } catch {}
+    }
+  }, [uploadedResumeName]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages, isTyping]);
 
-  // Handle Resume Drop / File Upload
-  const handleFileProcess = (file: File) => {
+  // Handle Resume Drop / File Upload with Full AI Parsing
+  const handleFileProcess = async (file: File) => {
     const fileName = file.name;
-    const lowerName = fileName.toLowerCase();
 
     const userMsg: Message = {
       id: Date.now().toString(),
@@ -178,50 +287,158 @@ export function SiftAiChat({
       return;
     }
 
-    // Simulate intelligent resume text reading / skill extraction
-    let detectedSkills: string[] = [];
-    if (lowerName.includes("frontend") || lowerName.includes("react")) {
-      detectedSkills = ["React", "TypeScript", "Next.js", "TailwindCSS", "JavaScript", "GraphQL"];
-    } else if (lowerName.includes("backend") || lowerName.includes("python")) {
-      detectedSkills = ["Python", "Node.js", "PostgreSQL", "Docker", "AWS", "FastAPI", "SQL"];
-    } else if (lowerName.includes("fullstack") || lowerName.includes("dev")) {
-      detectedSkills = ["React", "Node.js", "TypeScript", "PostgreSQL", "Docker", "Next.js", "AWS"];
-    } else {
-      // Default sample extraction for general candidate resume
-      detectedSkills = ["React", "TypeScript", "Node.js", "Python", "SQL", "Docker"];
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      // Get logged in user email if available
+      if (typeof window !== "undefined") {
+        const storedUser = localStorage.getItem("siftrole_user");
+        if (storedUser) {
+          try {
+            const u = JSON.parse(storedUser);
+            if (u.email) formData.append("userEmail", u.email);
+          } catch {}
+        }
+      }
+
+      const res = await fetch("/api/resume/parse", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const parsed = data.parsed || {};
+        const detectedSkills: string[] = Array.isArray(parsed.skills) ? parsed.skills : [];
+
+        setParsedResume(parsed);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("siftrole_parsed_resume", JSON.stringify(parsed));
+          localStorage.setItem("siftrole_resume_skills", JSON.stringify(detectedSkills));
+          localStorage.setItem("siftrole_resume_filename", fileName);
+
+          // Update active user session object with actual resume data
+          try {
+            const rawUser = localStorage.getItem("siftrole_user");
+            let userObj: any = {};
+            if (rawUser) {
+              try {
+                userObj = JSON.parse(rawUser);
+              } catch {}
+            }
+
+            const degreeValue =
+              parsed.degree ||
+              parsed.education?.[0]?.degree ||
+              (parsed.education?.[0]?.major ? `Degree in ${parsed.education[0].major}` : null);
+            const gradYearValue =
+              parsed.graduationYear ||
+              parsed.grad_year ||
+              parsed.education?.[0]?.graduationYear ||
+              parsed.education?.[0]?.grad_year ||
+              null;
+
+            const updatedUser = {
+              ...userObj,
+              id: userObj.id || "user-student",
+              name: parsed.candidateName || userObj.name || "Candidate",
+              email: parsed.email || userObj.email || "student@demo.com",
+              degree: degreeValue || userObj.degree || null,
+              grad_year: gradYearValue || userObj.grad_year || null,
+              skills: detectedSkills,
+              resume_name: fileName,
+              github_url: parsed.githubUrl || userObj.github_url || null,
+              linkedin_url: parsed.linkedinUrl || userObj.linkedin_url || null,
+              portfolio_url: parsed.portfolioUrl || userObj.portfolio_url || null,
+              phone: parsed.phone || userObj.phone || null,
+            };
+
+            localStorage.setItem("siftrole_user", JSON.stringify(updatedUser));
+            window.dispatchEvent(new Event("siftrole_user_updated"));
+
+            // Sync with backend Express DB
+            fetch("http://localhost:4000/api/profile", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                id: updatedUser.id,
+                name: updatedUser.name,
+                degree: updatedUser.degree,
+                grad_year: updatedUser.grad_year,
+                skills: updatedUser.skills,
+                resume_name: fileName,
+                github_url: updatedUser.github_url,
+                linkedin_url: updatedUser.linkedin_url,
+                phone: updatedUser.phone,
+                portfolio_url: updatedUser.portfolio_url,
+              }),
+            }).catch(() => null);
+
+            // Sync with Next.js profile route
+            fetch("/api/profile", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                email: updatedUser.email,
+                name: updatedUser.name,
+                graduation_year: updatedUser.grad_year,
+                skills: updatedUser.skills,
+                resume_url: fileName,
+              }),
+            }).catch(() => null);
+          } catch (storageErr) {
+            console.warn("Could not sync user session from parsed resume:", storageErr);
+          }
+        }
+
+        onApplyResumeSkills(detectedSkills, fileName);
+
+        // Calculate top matching jobs
+        const scoredJobs = liveListings
+          .map((job) => {
+            const jobSkills = job.skills_required || [];
+            const matches = jobSkills.filter((s) =>
+              detectedSkills.some((ds) => ds.toLowerCase() === s.toLowerCase())
+            );
+            const score = jobSkills.length > 0 ? (matches.length / jobSkills.length) * 100 : 50;
+            return { job, score };
+          })
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 3)
+          .map((item) => item.job);
+
+        setIsTyping(false);
+        const nameGreeting = parsed.candidateName ? `Welcome, **${parsed.candidateName}**! ` : "";
+        const expCount = parsed.experience?.length || 0;
+        const projCount = parsed.projects?.length || 0;
+
+        const aiMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          sender: "ai",
+          text: `✨ ${nameGreeting}Parsed your resume (**${fileName}**)! Your profile is active and live match scores are updated across all verified roles.`,
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          recommendedJobs: scoredJobs,
+        };
+        setMessages((prev) => [...prev, aiMsg]);
+        return;
+      }
+    } catch (parseErr) {
+      console.warn("Resume parsing service error:", parseErr);
     }
 
-    onApplyResumeSkills(detectedSkills, fileName);
-
-    // Calculate top matching jobs
-    const scoredJobs = liveListings
-      .map((job) => {
-        const jobSkills = job.skills_required || [];
-        const matches = jobSkills.filter((s) =>
-          detectedSkills.some((ds) => ds.toLowerCase() === s.toLowerCase())
-        );
-        const score = jobSkills.length > 0 ? (matches.length / jobSkills.length) * 100 : 50;
-        return { job, score };
-      })
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 3)
-      .map((item) => item.job);
-
-    setTimeout(() => {
-      setIsTyping(false);
-      const aiMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        sender: "ai",
-        text: `✨ Parsed your resume! Detected **${detectedSkills.length} core skills** (${detectedSkills.join(", ")}). I've re-ranked the job feed on the left to prioritize your strongest matches.`,
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        extractedSkills: detectedSkills,
-        recommendedJobs: scoredJobs,
-      };
-      setMessages((prev) => [...prev, aiMsg]);
-    }, 900);
+    // Graceful error notification if servers are experiencing issues
+    setIsTyping(false);
+    const aiMsg: Message = {
+      id: (Date.now() + 1).toString(),
+      sender: "ai",
+      text: "⚠️ **Notice**: Our servers are experiencing trouble processing files at the moment. Please try uploading your resume again in a few moments.",
+      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    };
+    setMessages((prev) => [...prev, aiMsg]);
   };
 
-  const handleSendMessage = (textToSend?: string) => {
+  const handleSendMessage = async (textToSend?: string) => {
     const query = (textToSend || inputVal).trim();
     if (!query) return;
 
@@ -247,300 +464,236 @@ export function SiftAiChat({
           requiresAuth: true,
         };
         setMessages((prev) => [...prev, aiMsg]);
-      }, 500);
+      }, 400);
       return;
     }
 
     const lower = query.toLowerCase();
 
+    // 1. MULTI-LAYER SECURITY GUARDRAIL
+    const sensitiveKeywords = [
+      "admin password", "admin login", "admin portal", "admin panel",
+      "admin dashboard", "admin token", "admin credential", "admin access",
+      "admin key", "admin secret", "admin endpoint", "admin route",
+      "admin api", "access admin", "login as admin", "become admin",
+      "grant admin", "internal api", "api_key", "apikey", "api key",
+      "groq_api_key", "groq key", "gemini_api_key", "openai_key",
+      "jwt_secret", "session_secret", "auth_secret", "database_url",
+      "connection_string", "postgres://", "postgresql://", "mongodb://",
+      "mongodb+srv", "prisma schema", "dump database", "user table",
+      "all users", "user passwords", "user emails", "candidate passwords",
+      "select * from", "drop table", "union select", "process.env",
+      ".env", "dotenv", "private_key", "secret_key", "id_rsa", "ssh_key"
+    ];
+
+    if (sensitiveKeywords.some((kw) => lower.includes(kw))) {
+      setTimeout(() => {
+        setIsTyping(false);
+        const aiMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          sender: "ai",
+          text: "🔒 **Security Guardrail Active**: Sift AI is strictly restricted to assisting candidates with verified tech openings, application tracking, resume matching, and career preparation. Access to administrative systems, credentials, internal architecture, and environment variables is strictly forbidden.",
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        };
+        setMessages((prev) => [...prev, aiMsg]);
+      }, 400);
+      return;
+    }
+
+    // 2. PASS TO FULL INTELLIGENCE LLM CASCADE VIA /api/ai/chat
+    try {
+      const chatHistory = messages.slice(-6).map((m) => ({
+        sender: m.sender,
+        text: m.text,
+      }));
+
+      // Load user profile info & parsed resume from localStorage if available
+      let storedUserObj: any = null;
+      let activeParsedResume = parsedResume;
+      if (typeof window !== "undefined") {
+        try {
+          const u = localStorage.getItem("siftrole_user");
+          if (u) storedUserObj = JSON.parse(u);
+          if (!activeParsedResume) {
+            const saved = localStorage.getItem("siftrole_parsed_resume");
+            if (saved) activeParsedResume = JSON.parse(saved);
+          }
+        } catch {}
+      }
+
+      const res = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: query,
+          history: chatHistory,
+          activeResumeSkills,
+          uploadedResumeName,
+          candidateProfile: storedUserObj,
+          parsedResume: activeParsedResume
+            ? {
+                ...activeParsedResume,
+                candidateName: activeParsedResume.candidateName || storedUserObj?.name || "Candidate",
+              }
+            : null,
+          liveListings: liveListings,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.reply) {
+          setIsTyping(false);
+
+          let matchedJobs: Listing[] = [];
+          if (Array.isArray(data.matchedJobs) && data.matchedJobs.length > 0) {
+            matchedJobs = data.matchedJobs;
+          } else {
+            // Intelligent multi-token local scoring fallback across all liveListings
+            const queryTokens = lower
+              .replace(/[?!.,;:()\[\]{}"']/g, " ")
+              .split(/\s+/)
+              .filter((t) => t.length > 2 && !["searching", "looking", "for", "the", "with", "show", "find", "have", "some", "tell", "give", "what", "any", "about", "are", "there"].includes(t));
+
+            if (queryTokens.length > 0) {
+              const scored = liveListings.map((job) => {
+                let score = 0;
+                const titleL = (job.title || "").toLowerCase();
+                const compL = (job.company || "").toLowerCase();
+                const locL = (job.location || "").toLowerCase();
+                const skillsL = (job.skills_required || []).map((s) => s.toLowerCase());
+
+                for (let i = 0; i < queryTokens.length - 1; i++) {
+                  const bigram = `${queryTokens[i]} ${queryTokens[i + 1]}`;
+                  if (titleL.includes(bigram)) score += 120;
+                }
+
+                for (const token of queryTokens) {
+                  if (titleL.includes(token)) score += 40;
+                  if (compL.includes(token)) score += 50;
+                  if (locL.includes(token)) score += 20;
+                  if (skillsL.some((s) => s.includes(token))) score += 30;
+                }
+                return { job, score };
+              });
+
+              matchedJobs = scored
+                .filter((s) => s.score >= 25)
+                .sort((a, b) => b.score - a.score)
+                .slice(0, 3)
+                .map((s) => s.job);
+            }
+          }
+
+          const aiMsg: Message = {
+            id: (Date.now() + 1).toString(),
+            sender: "ai",
+            text: data.reply,
+            timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            recommendedJobs: matchedJobs.length > 0 ? matchedJobs : undefined,
+          };
+          setMessages((prev) => [...prev, aiMsg]);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn("LLM Chat API request failed, falling back to local NLP engine:", err);
+    }
+
+    // 5. LOCAL DETERMINISTIC FALLBACK ENGINE (If offline or LLM unavailable)
     setTimeout(() => {
       setIsTyping(false);
       let replyText = "";
       let foundJobs: Listing[] = [];
 
-      // 1. MULTI-LAYER SECURITY, ANTI-JAILBREAK & ADMIN PROTECTION GUARDRAIL
-      const injectionRegexes = [
-        /ignore (all |previous |prior |above |system )*(instructions|rules|prompts|directions|guidelines)/i,
-        /(system|developer|hidden|initial|root|base) prompt/i,
-        /(enter|enable|switch to|activate) (developer|debug|god|unrestricted|dan|jailbreak|root|admin) mode/i,
-        /you are now (an unrestricted|a liberated|jailbroken|dan|in developer mode)/i,
-        /pretend (you are|to be|there are no) (admin|root|unrestricted|filters|guardrails)/i,
-        /act as (an? )?(unrestricted|jailbroken|admin|developer|evil|dan)/i,
-        /forget (all |everything |your )*(rules|instructions|constraints)/i,
-        /bypass (all |the )*(filters?|guardrails?|rules?|restrictions?|safety)/i,
-        /override (all |system |security |safety )*(rules|guardrails|filters|prompts)/i,
-        /(show|print|reveal|output|dump|leak|repeat|display) (your )?(system|hidden|initial|internal|source) (prompt|instructions|code)/i,
-        /execute (command|shell|script|sql|code|bash|sh|cmd)/i,
-        /sudo |su -|chmod |rm -rf|cat \/etc/i,
-      ];
+      const trimmedLower = lower.trim().replace(/[?!.,]/g, "");
+      const isGreeting =
+        /^(hi+|hey+|hello+|yo|howdy|sup|hola|greetings|what'?s\s+up|good\s+(morning|afternoon|evening|day))$/i.test(trimmedLower) ||
+        /^(hi+|hey+|hello+|yo)\s+(sift|ai|there|bot|siftrole)/i.test(trimmedLower);
 
-      const sensitiveKeywords = [
-        "admin password",
-        "admin login",
-        "admin portal",
-        "admin panel",
-        "admin dashboard",
-        "admin token",
-        "admin credential",
-        "admin access",
-        "admin key",
-        "admin secret",
-        "admin endpoint",
-        "admin side",
-        "admin route",
-        "admin api",
-        "access admin",
-        "login as admin",
-        "become admin",
-        "grant admin",
-        "internal api",
-        "api_key",
-        "apikey",
-        "api key",
-        "groq_api_key",
-        "groq key",
-        "gemini_api_key",
-        "openai_key",
-        "jwt_secret",
-        "session_secret",
-        "auth_secret",
-        "database_url",
-        "connection_string",
-        "postgres://",
-        "postgresql://",
-        "mongodb://",
-        "mongodb+srv",
-        "prisma schema",
-        "dump database",
-        "user table",
-        "all users",
-        "user passwords",
-        "user emails",
-        "candidate passwords",
-        "select * from",
-        "drop table",
-        "union select",
-        "process.env",
-        ".env",
-        "dotenv",
-        "private_key",
-        "private key",
-        "secret_key",
-        "secret key",
-        "id_rsa",
-        "ssh_key",
-        "ssh key",
-        "bearer token",
-        "auth token",
-        "refresh token",
-        "internal logs",
-        "audit logs",
-        "server logs",
-        "backend code",
-        "server architecture",
-        "jailbreak",
-        "dan mode",
-      ];
+      const isHowAreYou =
+        /^(how\s+are\s+you|how's\s+it\s+going|how\s+are\s+you\s+doing|how\s+do\s+you\s+do|how\s+are\s+things)/i.test(trimmedLower);
 
-      const isRegexThreat = injectionRegexes.some((rx) => rx.test(query));
-      const isKeywordThreat = sensitiveKeywords.some((kw) => lower.includes(kw));
+      const isWhoAreYou =
+        /^(who\s+are\s+you|what\s+are\s+you|what\s+can\s+you\s+do|introduce\s+yourself|help(\s+me)?)$/i.test(trimmedLower) ||
+        lower.includes("what can you do") ||
+        lower.includes("how can you help");
 
-      if (isRegexThreat || isKeywordThreat) {
-        replyText = "🔒 **Security Guardrail Active**: Sift AI is strictly restricted to assisting candidates with verified tech openings, application tracking, and resume matching. Access to administrative systems, credentials, internal architecture, source code, and environment variables is strictly forbidden and monitored.";
-      }
-      // 2. PLATFORM INFORMATION & PHILOSOPHY
-      else if (
+      const isThanks =
+        /^(thanks|thank\s+you|thx|ty|awesome|cool|great|nice|ok|okay|got\s+it|perfect|sweet|good\s+job)$/i.test(trimmedLower);
+
+      const isGoodbye =
+        /^(bye|goodbye|see\s+ya|see\s+you|later|cya|take\s+care)$/i.test(trimmedLower);
+
+      const currentHour = new Date().getHours();
+      let timeOfDay = "day";
+      if (currentHour >= 5 && currentHour < 12) timeOfDay = "morning";
+      else if (currentHour >= 12 && currentHour < 17) timeOfDay = "afternoon";
+      else if (currentHour >= 17 && currentHour < 22) timeOfDay = "evening";
+      else timeOfDay = "night";
+
+      if (isGreeting) {
+        if (messages.length > 2) {
+          replyText = `👋 Hey again! What else can I help you find or prepare ${timeOfDay === "night" ? "tonight" : "this " + timeOfDay}?`;
+        } else {
+          replyText = `👋 Good ${timeOfDay}! How can I help with your job search?\n\nYou can:\n• Drop your resume here to extract skills & rank live roles\n• Search by role (e.g. 'remote backend internships', 'frontend new grad')\n• Explore companies (e.g. Stripe, Figma, Notion, Spotify)`;
+        }
+      } else if (isHowAreYou) {
+        replyText = `I'm doing great and ready to help you discover verified tech roles ${timeOfDay === "night" ? "tonight" : "today"}! What kind of opportunities or tech stack are you looking for?`;
+      } else if (isWhoAreYou) {
+        replyText = "🤖 I'm **Sift AI**, your personal career intelligence copilot on Siftrole.\n\nHere is what I can do for you:\n• **Resume Matcher**: Drop your PDF or DOCX resume to extract technical skills and re-rank live roles by match score\n• **Direct Role Search**: Ask for specific roles (e.g. 'remote Python jobs', 'summer 2026 internships')\n• **Company Intelligence**: Explore verified openings across Stripe, OpenAI, Figma, Spotify, Linear, and more\n• **Recruiter Outreach**: Connect directly with hiring teams\n\nHow can I help you today?";
+      } else if (isThanks) {
+        replyText = "You're very welcome! Let me know if you want to explore more openings, check your match scores, or prepare recruiter outreach.";
+      } else if (isGoodbye) {
+        replyText = `Good luck with your applications! Have a wonderful ${timeOfDay === "night" ? "rest of your night" : timeOfDay}, and check back anytime as our feeds sync continuously.`;
+      } else if (
         lower.includes("what is siftrole") ||
         lower.includes("how does siftrole work") ||
-        lower.includes("about siftrole") ||
-        lower.includes("tell me about siftrole")
+        lower.includes("about siftrole")
       ) {
-        replyText = "✨ **About Siftrole**: Siftrole is the central hub and ultimate application checklist for tech jobs and internships. We bring verified openings from official company career streams into one place so you never miss an opportunity, track your applications, and match your resume with AI.";
-      } else if (
-        lower.includes("checklist") ||
-        lower.includes("track") ||
-        lower.includes("tracker")
-      ) {
-        replyText = "📋 **The Application Checklist**: Siftrole acts as your personal job search command center. You can browse live openings from top companies, mark roles you have applied to, and keep track of your active pipeline so no opportunity slips by.";
-      } else if (
-        lower.includes("ghost job") ||
-        lower.includes("fake job") ||
-        lower.includes("verified")
-      ) {
-        replyText = "🛡️ **Zero Ghost Jobs Guarantee**: Generic job boards leave stale postings active for months. Siftrole ingests public ATS JSON APIs continuously. When a company marks a role filled or closed, it auto-expires from our feed within minutes.";
-      } else if (
-        lower.includes("free") ||
-        lower.includes("price") ||
-        lower.includes("cost") ||
-        lower.includes("paywall")
-      ) {
-        replyText = "💡 **100% Free for Applicants**: Siftrole is completely free for students, developers, and builders. You can browse, filter, match resumes, and apply directly on the employer's official portal with zero fees or recruiter middlemen.";
-      } else if (
-        lower.includes("how to match") ||
-        lower.includes("upload resume") ||
-        lower.includes("resume match") ||
-        lower.includes("resume score")
-      ) {
-        replyText = "📄 **How Resume Matching Works**: You can drop your PDF/DOCX resume directly into this chat or click the paperclip icon. Sift AI extracts your core tech skills and instantly re-ranks all live jobs by compatibility score.";
-      }
-      // 3. OFF-TOPIC GENERAL INQUIRIES
-      else if (
-        lower.includes("weather") ||
-        lower.includes("recipe") ||
-        lower.includes("movie") ||
-        lower.includes("game") ||
-        lower.includes("joke") ||
-        lower.includes("president") ||
-        lower.includes("politics")
-      ) {
-        replyText = "👋 I am Sift AI, specifically trained to help you discover verified tech roles, match your resume, and navigate official company career feeds. Ask me about open engineering roles, salary brackets, or drop your resume!";
-      }
-      // 4. INTELLIGENT SEARCH & QUERY MATCHING ENGINE
-      else {
-        // Strip conversational noise and extract search intent
-        const conversationalCleaned = lower
-          .replace(/can you (please )?(show|find|give|get|display) (me|be|us)?/g, "")
-          .replace(/could you (please )?(show|find|give|get|display) (me|be|us)?/g, "")
-          .replace(/please (show|find|give|get|display) (me|be|us)?/g, "")
-          .replace(/i('m| am)? (looking|searching) for/g, "")
-          .replace(/i want (to see|to find)?/g, "")
-          .replace(/show (me|be|us)?/g, "")
-          .replace(/find (me|be|us)?/g, "")
-          .replace(/search for/g, "")
-          .replace(/are there any/g, "")
-          .replace(/do you have (any)?/g, "")
-          .replace(/is there (any)?/g, "")
-          .replace(/give me/g, "")
-          .replace(/tell me about/g, "")
-          .replace(/openings? for/g, "")
-          .replace(/positions? for/g, "")
-          .replace(/jobs? for/g, "")
-          .replace(/job of/g, "")
-          .replace(/roles? for/g, "")
-          .replace(/role of/g, "")
-          .replace(/hiring for/g, "")
-          .replace(/[?,.!:;()\[\]]/g, " ")
-          .replace(/\s+/g, " ")
-          .trim();
-
-        const stopWords = new Set([
-          "a", "an", "the", "in", "at", "for", "with", "on", "and", "or", "to", "of", "be", "me", "any", "some", "all", "job", "jobs", "role", "roles", "opening", "openings", "position", "positions"
-        ]);
-
-        const searchTokens = conversationalCleaned
+        replyText = "✨ **About Siftrole**: Siftrole is the central hub and ultimate application checklist for tech jobs and internships. We bring verified openings from official company career streams into one place with zero ghost jobs.";
+      } else {
+        // Multi-token search for candidate role query
+        const queryTokens = lower
+          .replace(/[?!.,;:()\[\]{}"']/g, " ")
           .split(/\s+/)
-          .map((t) => t.trim())
-          .filter((t) => t.length > 1 && !stopWords.has(t));
+          .filter((t) => t.length > 2 && !["searching", "looking", "for", "the", "with", "show", "find", "have", "some", "tell", "give", "what", "any", "about", "are", "there"].includes(t));
 
-        const isRemoteSearch = lower.includes("remote") || lower.includes("anywhere") || lower.includes("work from home");
-        const isInternSearch = lower.includes("intern") || lower.includes("internship") || lower.includes("student") || lower.includes("2026") || lower.includes("junior") || lower.includes("entry");
-        const isHighSalarySearch = lower.includes("salary") || lower.includes("high pay") || lower.includes("highest pay") || lower.includes("150k") || lower.includes("compensation");
+        if (queryTokens.length > 0) {
+          const scored = liveListings.map((job) => {
+            let score = 0;
+            const titleL = (job.title || "").toLowerCase();
+            const compL = (job.company || "").toLowerCase();
+            const locL = (job.location || "").toLowerCase();
+            const skillsL = (job.skills_required || []).map((s) => s.toLowerCase());
 
-        // Score each listing against user query tokens and criteria
-        const scoredListings = liveListings.map((job) => {
-          let score = 0;
-          const titleLower = job.title.toLowerCase();
-          const normTitleLower = (job.normalized_title || "").toLowerCase();
-          const compLower = job.company.toLowerCase();
-          const locLower = job.location.toLowerCase();
-          const skillsLower = (job.skills_required || []).map((s) => s.toLowerCase());
-          const jdLower = ((job.raw_jd_text || "") + " " + (job.job_description || "")).toLowerCase();
-          const empTypeLower = (job.employment_type || "").toLowerCase();
-          const expLevelLower = (job.experience_level || "").toLowerCase();
-
-          // Full cleaned phrase match
-          if (conversationalCleaned.length > 2) {
-            if (titleLower.includes(conversationalCleaned) || normTitleLower.includes(conversationalCleaned)) {
-              score += 120;
-            } else if (compLower.includes(conversationalCleaned)) {
-              score += 80;
-            } else if (skillsLower.some((s) => s.includes(conversationalCleaned))) {
-              score += 70;
+            for (let i = 0; i < queryTokens.length - 1; i++) {
+              const bigram = `${queryTokens[i]} ${queryTokens[i + 1]}`;
+              if (titleL.includes(bigram)) score += 120;
             }
-          }
 
-          // Individual token matches
-          for (const token of searchTokens) {
-            if (titleLower.includes(token) || normTitleLower.includes(token)) {
-              score += 45;
+            for (const token of queryTokens) {
+              if (titleL.includes(token)) score += 40;
+              if (compL.includes(token)) score += 50;
+              if (locL.includes(token)) score += 20;
+              if (skillsL.some((s) => s.includes(token))) score += 30;
             }
-            if (compLower.includes(token)) {
-              score += 50;
-            }
-            if (skillsLower.some((s) => s.includes(token))) {
-              score += 35;
-            }
-            if (locLower.includes(token)) {
-              score += 25;
-            }
-            if (empTypeLower.includes(token) || expLevelLower.includes(token)) {
-              score += 25;
-            }
-            if (jdLower.includes(token)) {
-              score += 10;
-            }
-          }
+            return { job, score };
+          });
 
-          // Attribute matches
-          if (isRemoteSearch && (locLower.includes("remote") || locLower.includes("anywhere"))) {
-            score += 40;
-          }
-          if (isInternSearch && (empTypeLower.includes("intern") || expLevelLower.includes("entry") || expLevelLower.includes("junior") || titleLower.includes("intern") || titleLower.includes("junior"))) {
-            score += 40;
-          }
-          if (isHighSalarySearch && job.stipend_or_salary && (job.stipend_or_salary.includes("1") || job.stipend_or_salary.includes("2"))) {
-            score += 30;
-          }
-
-          return { job, score };
-        });
-
-        // Filter relevant matches
-        const matchesWithScores = scoredListings
-          .filter((item) => item.score >= 35)
-          .sort((a, b) => b.score - a.score);
-
-        let totalMatchesCount = 0;
-        let filterQuery: string | undefined = undefined;
-
-        if (matchesWithScores.length > 0) {
-          foundJobs = matchesWithScores.slice(0, 3).map((item) => item.job);
-          totalMatchesCount = matchesWithScores.length;
-          filterQuery = (searchTokens.length > 0 ? searchTokens.join(" ") : conversationalCleaned) || query;
-          const displaySubject = conversationalCleaned || query;
-
-          if (isRemoteSearch && searchTokens.length <= 1) {
-            replyText = `Found **${matchesWithScores.length} verified remote engineering roles** available across official feeds:`;
-          } else if (isInternSearch && searchTokens.length <= 1) {
-            replyText = `Here are active early-career and entry-level engineering openings open for direct application:`;
-          } else if (isHighSalarySearch && searchTokens.length <= 1) {
-            replyText = `Here are verified roles with top-tier compensation brackets:`;
-          } else {
-            replyText = `Found **${matchesWithScores.length} active verified roles** matching **"${displaySubject}"** across official feeds:`;
-          }
-        } else {
-          // If no matching jobs were found for a specific subject
-          if (conversationalCleaned.length > 0 && searchTokens.length > 0) {
-            foundJobs = liveListings.slice(0, 3);
-            replyText = `I searched all live company career feeds for **"${conversationalCleaned}"**, but there are currently no active openings matching this role in our database.\n\nSiftrole continuously ingests verified openings from official portals. Here are the latest active technical roles available right now:`;
-          } else {
-            foundJobs = liveListings.slice(0, 3);
-            replyText = `Here are top active verified tech roles currently ingesting live from official company feeds:`;
-          }
+          foundJobs = scored
+            .filter((s) => s.score >= 20)
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 3)
+            .map((s) => s.job);
         }
 
-        const aiMsg: Message = {
-          id: (Date.now() + 1).toString(),
-          sender: "ai",
-          text: replyText,
-          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          recommendedJobs: foundJobs.length > 0 ? foundJobs : undefined,
-          totalMatchesCount: totalMatchesCount > 0 ? totalMatchesCount : undefined,
-          filterQuery: filterQuery,
-        };
-
-        setMessages((prev) => [...prev, aiMsg]);
-        return;
+        if (foundJobs.length > 0) {
+          replyText = `🎯 Found **${foundJobs.length} verified role${foundJobs.length > 1 ? "s" : ""}** matching your search on Siftrole:`;
+        } else {
+          foundJobs = liveListings.slice(0, 3);
+          replyText = "✨ Here are top active verified tech roles open right now across official feeds. You can search by specific titles, companies, or tech stacks anytime:";
+        }
       }
 
       const aiMsg: Message = {
@@ -552,12 +705,13 @@ export function SiftAiChat({
       };
 
       setMessages((prev) => [...prev, aiMsg]);
-    }, 650);
+    }, 450);
   };
 
 
   return (
     <div
+      data-lenis-prevent="true"
       onDragOver={(e) => {
         e.preventDefault();
         setIsDragging(true);
@@ -588,7 +742,7 @@ export function SiftAiChat({
       />
 
       {/* Header */}
-      <div className="p-4 border-b border-neutral-100 bg-[#fbfaf8] flex items-center justify-between gap-3">
+      <div className="p-4 border-b border-neutral-100 bg-[#fbfaf8] flex items-center justify-between gap-3 shrink-0">
         <div className="flex items-center gap-2">
           <div className="h-7 w-7 relative flex items-center justify-center shrink-0">
             <Image
@@ -614,25 +768,25 @@ export function SiftAiChat({
         {/* Upload Button */}
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-[#84d64f]/40 bg-[#eef8e5] hover:bg-[#84d64f]/20 px-3 py-1.5 text-xs font-bold text-[#14281a] transition"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 px-3 py-1.5 text-xs font-bold text-[#121816] shadow-2xs transition cursor-pointer"
         >
-          <Paperclip className="w-3.5 h-3.5 text-[#3c7818]" />
+          <Paperclip className="w-3.5 h-3.5 text-neutral-500" />
           <span className="hidden sm:inline">Drop Resume</span>
         </button>
       </div>
 
       {/* Active Resume Status Bar */}
       {uploadedResumeName && (
-        <div className="px-4 py-2 bg-[#14281a] text-white text-xs flex items-center justify-between gap-2 border-b border-[#14281a]">
+        <div className="px-4 py-2 bg-[#18201c] text-white text-xs flex items-center justify-between gap-2 border-b border-neutral-800 shrink-0">
           <div className="flex items-center gap-2 min-w-0">
             <FileText className="w-3.5 h-3.5 text-[#84d64f] shrink-0" />
-            <span className="truncate font-semibold text-[0.72rem]">
-              {uploadedResumeName} ({activeResumeSkills.length} skills active)
+            <span className="truncate font-semibold text-[0.72rem] text-neutral-200">
+              <span className="text-white font-bold">{uploadedResumeName}</span> attached
             </span>
           </div>
           <button
             onClick={onClearResume}
-            className="text-[0.68rem] text-[#84d64f] hover:underline font-bold shrink-0 cursor-pointer"
+            className="text-[0.68rem] text-neutral-400 hover:text-white hover:underline font-bold shrink-0 cursor-pointer"
           >
             Clear
           </button>
@@ -641,8 +795,14 @@ export function SiftAiChat({
 
       {/* Messages Feed */}
       <div
-        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-        className="flex-1 p-4 overflow-y-auto space-y-4 text-xs no-scrollbar [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        ref={messagesContainerRef}
+        data-lenis-prevent="true"
+        tabIndex={0}
+        className="flex-1 min-h-0 p-4 overflow-y-auto overscroll-contain space-y-4 text-xs scroll-smooth focus:outline-none"
+        style={{
+          overscrollBehavior: "contain",
+          WebkitOverflowScrolling: "touch",
+        }}
       >
         {messages.map((m) => (
           <div
@@ -691,7 +851,7 @@ export function SiftAiChat({
                       href={`/jobs/${j.id}`}
                       onClick={(e) => {
                         if (onSelectListing) {
-                          e.preventDefault();
+                           e.preventDefault();
                           onSelectListing(j);
                         }
                       }}
@@ -769,8 +929,9 @@ export function SiftAiChat({
 
       {/* Suggested Quick Prompt Chips */}
       <div
-        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-        className="px-3 py-2 border-t border-neutral-100 bg-[#fbfaf8] flex items-center gap-1.5 overflow-x-auto no-scrollbar [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        data-lenis-prevent="true"
+        className="px-3 py-2 border-t border-neutral-100 bg-[#fbfaf8] flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0"
+        style={{ overscrollBehavior: "contain" }}
       >
         {[
           "Remote roles",

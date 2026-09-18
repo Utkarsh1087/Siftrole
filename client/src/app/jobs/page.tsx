@@ -50,13 +50,15 @@ const companyBrandStyles: Record<string, { bg: string; text: string; border: str
   SmartRecruiters: { bg: "bg-blue-500/10", text: "text-blue-600", border: "border-blue-200" },
 };
 
+type QuickFilterKey = "internships" | "newgrad" | "remote" | "highmatch";
+
 export default function JobsPage() {
   const [liveListings, setLiveListings] = useState<Listing[]>([]);
   const [companiesList, setCompaniesList] = useState<string[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<string>("all");
   const [selectedRoleType, setSelectedRoleType] = useState<string>("all");
   const [appliedFilter, setAppliedFilter] = useState<"all" | "saved" | "unapplied" | "applied">("all");
-  const [quickPill, setQuickPill] = useState<"all" | "internships" | "newgrad" | "remote" | "highmatch">("all");
+  const [selectedQuickFilters, setSelectedQuickFilters] = useState<Set<QuickFilterKey>>(new Set());
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isLoadingListings, setIsLoadingListings] = useState(true);
   const [selectedListingModal, setSelectedListingModal] = useState<Listing | null>(null);
@@ -74,6 +76,24 @@ export default function JobsPage() {
   // Pagination State
   const [currentPage, setCurrentPage] = useState<number>(1);
   const pageSize = 10;
+
+  const toggleQuickFilter = (key: QuickFilterKey) => {
+    setSelectedQuickFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+    setCurrentPage(1);
+  };
+
+  const clearQuickFilters = () => {
+    setSelectedQuickFilters(new Set());
+    setCurrentPage(1);
+  };
 
   // Load persistent resume skills on mount
   useEffect(() => {
@@ -93,9 +113,19 @@ export default function JobsPage() {
   }, []);
 
   useEffect(() => {
+    if (selectedListingModal || showAuthGateModal) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = prevOverflow;
+      };
+    }
+  }, [selectedListingModal, showAuthGateModal]);
+
+  useEffect(() => {
     setCurrentPage(1);
     fetchListings();
-  }, [selectedCompany, selectedRoleType, searchQuery, appliedFilter, quickPill]);
+  }, [selectedCompany, selectedRoleType, searchQuery, appliedFilter, selectedQuickFilters]);
 
   const fetchListings = async () => {
     setIsLoadingListings(true);
@@ -139,6 +169,7 @@ export default function JobsPage() {
       try {
         localStorage.removeItem("siftrole_resume_skills");
         localStorage.removeItem("siftrole_resume_filename");
+        localStorage.removeItem("siftrole_parsed_resume");
       } catch {}
     }
   };
@@ -159,7 +190,7 @@ export default function JobsPage() {
     }, 7000);
   };
 
-  // Helper to compute match score and skill breakdown for a job
+  // Helper to compute multi-factor match score and skill breakdown for a job
   const getJobMatch = (job: Listing) => {
     if (activeResumeSkills.length === 0) return null;
     const jobSkills = job.skills_required || [];
@@ -169,8 +200,24 @@ export default function JobsPage() {
     const missing = jobSkills.filter(
       (s) => !activeResumeSkills.some((rs) => rs.toLowerCase() === s.toLowerCase())
     );
-    const ratio = jobSkills.length > 0 ? matched.length / jobSkills.length : 0.5;
-    const score = Math.round(58 + ratio * 40);
+
+    // Multi-factor JD match calculation (skills + title & stack alignment)
+    const skillRatio = jobSkills.length > 0 ? matched.length / jobSkills.length : 0.6;
+    let bonus = 0;
+    const jobTitleL = job.title.toLowerCase();
+    const jobJdL = ((job.raw_jd_text || "") + " " + (job.job_description || "")).toLowerCase();
+
+    // Check if candidate skills are directly mentioned in the JD body or title
+    const extraSkillHits = activeResumeSkills.filter(
+      (s) => jobJdL.includes(s.toLowerCase()) || jobTitleL.includes(s.toLowerCase())
+    ).length;
+
+    if (extraSkillHits >= 3) bonus += 8;
+    else if (extraSkillHits >= 1) bonus += 4;
+
+    const baseScore = Math.round(55 + skillRatio * 38 + bonus);
+    const score = Math.min(99, Math.max(45, baseScore));
+
     return {
       score,
       matchedCount: matched.length,
@@ -193,24 +240,50 @@ export default function JobsPage() {
       list = list.filter((job) => appliedJobIds.has(job.id));
     }
 
-    // Filter by Quick Early-Career Pills
-    if (quickPill === "internships") {
-      list = list.filter(
-        (job) =>
+    // Filter by Quick Multi-Select Filters
+    if (selectedQuickFilters.size > 0) {
+      list = list.filter((job) => {
+        const hasInternship = selectedQuickFilters.has("internships");
+        const hasNewGrad = selectedQuickFilters.has("newgrad");
+
+        const matchesInternship =
           (job.employment_type && job.employment_type.toLowerCase().includes("intern")) ||
           (job.title && job.title.toLowerCase().includes("intern")) ||
-          (job.eligibility && job.eligibility.toLowerCase().includes("student"))
-      );
-    } else if (quickPill === "newgrad") {
-      list = list.filter(
-        (job) =>
-          (job.experience_level && (job.experience_level.toLowerCase().includes("entry") || job.experience_level.toLowerCase().includes("0-2") || job.experience_level.toLowerCase().includes("grad"))) ||
-          (job.title && (job.title.toLowerCase().includes("grad") || job.title.toLowerCase().includes("junior") || job.title.toLowerCase().includes("associate")))
-      );
-    } else if (quickPill === "remote") {
-      list = list.filter((job) => job.location && job.location.toLowerCase().includes("remote"));
-    } else if (quickPill === "highmatch" && activeResumeSkills.length > 0) {
-      list = list.filter((job) => (getJobMatch(job)?.score || 0) >= 80);
+          (job.eligibility && job.eligibility.toLowerCase().includes("student"));
+
+        const matchesNewGrad =
+          (job.experience_level &&
+            (job.experience_level.toLowerCase().includes("entry") ||
+              job.experience_level.toLowerCase().includes("0-2") ||
+              job.experience_level.toLowerCase().includes("grad"))) ||
+          (job.title &&
+            (job.title.toLowerCase().includes("grad") ||
+              job.title.toLowerCase().includes("junior") ||
+              job.title.toLowerCase().includes("associate")));
+
+        // Early-career role type condition
+        if (hasInternship && hasNewGrad) {
+          if (!matchesInternship && !matchesNewGrad) return false;
+        } else if (hasInternship) {
+          if (!matchesInternship) return false;
+        } else if (hasNewGrad) {
+          if (!matchesNewGrad) return false;
+        }
+
+        // Remote condition
+        if (selectedQuickFilters.has("remote")) {
+          const isRemote = job.location && job.location.toLowerCase().includes("remote");
+          if (!isRemote) return false;
+        }
+
+        // High fit match condition
+        if (selectedQuickFilters.has("highmatch") && activeResumeSkills.length > 0) {
+          const score = getJobMatch(job)?.score || 0;
+          if (score < 80) return false;
+        }
+
+        return true;
+      });
     }
 
     // Sort by Match Score if resume is uploaded
@@ -220,7 +293,7 @@ export default function JobsPage() {
       const scoreB = getJobMatch(b)?.score || 0;
       return scoreB - scoreA;
     });
-  }, [liveListings, activeResumeSkills, appliedFilter, quickPill, appliedJobIds, savedJobIds]);
+  }, [liveListings, activeResumeSkills, appliedFilter, selectedQuickFilters, appliedJobIds, savedJobIds]);
 
   // Calculate Pagination Slices
   const totalListings = processedListings.length;
@@ -263,7 +336,7 @@ export default function JobsPage() {
     setSelectedCompany("all");
     setSelectedRoleType("all");
     setAppliedFilter("all");
-    setQuickPill("all");
+    setSelectedQuickFilters(new Set());
     setSearchQuery("");
     handleClearResume();
   };
@@ -272,7 +345,9 @@ export default function JobsPage() {
     selectedCompany !== "all" ||
     selectedRoleType !== "all" ||
     appliedFilter !== "all" ||
-    quickPill !== "all" ||
+    selectedQuickFilters.size > 0 ||
+    searchQuery.trim().length > 0 ||
+    activeResumeSkills.length > 0;
     searchQuery.trim().length > 0 ||
     activeResumeSkills.length > 0;
 
@@ -292,25 +367,37 @@ export default function JobsPage() {
           <div className="flex items-center justify-between gap-4">
             {/* Logo & Back */}
             <div className="flex items-center gap-4">
-              <Link
-                href="/"
-                className="inline-flex items-center gap-2 group text-[#14281a]"
-              >
-                <div className="h-9 w-9 rounded-xl bg-[#14281a] p-1.5 flex items-center justify-center text-[#84d64f] shadow-xs group-hover:scale-105 transition-transform">
-                  <SiftroleLogoMark className="w-full h-full" />
-                </div>
-                <span className="font-heading text-lg font-bold tracking-tight">
-                  sift<span className="text-[#3c7818]">role</span>
+              {!isLoggedIn && (
+                <Link
+                  href="/"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-100 hover:bg-neutral-200 px-3.5 py-2 text-xs font-bold text-[#121816] transition"
+                >
+                  <ChevronLeft className="w-4 h-4 text-[#3c7818]" /> Home
+                </Link>
+              )}
+
+              <Link href="/" className="flex items-center gap-2.5 group">
+                <SiftroleLogoMark size={28} />
+                <span className="text-[1.7rem] font-black tracking-[-0.04em] text-[#121816]">
+                  Sift<span className="text-[#58a826] transition-colors group-hover:text-[#4a911e]">role</span>
                 </span>
               </Link>
             </div>
 
-            {/* Navigation links */}
-            <nav className="hidden md:flex items-center gap-6 text-xs font-semibold text-[#55615b]">
-              <Link href="/" className="hover:text-[#14281a] transition">Home</Link>
-              <Link href="/jobs" className="text-[#3c7818] font-bold">Opportunities</Link>
-              <Link href="/cold-email" className="hover:text-[#14281a] transition">Outreach</Link>
-              <Link href="/about" className="hover:text-[#14281a] transition">About</Link>
+            {/* Nav Links */}
+            <nav className="hidden md:flex items-center gap-8 text-[0.95rem] font-semibold text-[#55615b]">
+              <Link href="/jobs" className="text-[#3c7818] font-bold hover:text-[#58a826] transition-colors">
+                All Jobs
+              </Link>
+              <Link href="/cold-email" className="hover:text-[#121816] transition-colors">
+                HR Outreach
+              </Link>
+              <Link href="/about" className="hover:text-[#121816] transition-colors">
+                About
+              </Link>
+              <Link href="/#faq" className="hover:text-[#121816] transition-colors">
+                FAQ
+              </Link>
             </nav>
 
             {/* Right Buttons */}
@@ -318,7 +405,7 @@ export default function JobsPage() {
               {isLoggedIn ? (
                 <Link
                   href="/dashboard"
-                  className="rounded-full bg-[#84d64f] hover:bg-[#75c73d] px-5 py-2.5 text-xs sm:text-[0.9rem] font-heading font-bold text-[#14281a] shadow-md shadow-[#84d64f]/25 transition active:scale-[0.98] inline-flex items-center gap-2"
+                  className="rounded-full bg-[#84d64f] hover:bg-[#75c73d] px-5 py-2.5 text-xs sm:text-[0.9rem] font-heading font-black text-[#14281a] shadow-xs transition active:scale-[0.98] inline-flex items-center gap-2"
                 >
                   Go to Dashboard <ArrowRight className="w-3.5 h-3.5 text-[#14281a]" />
                 </Link>
@@ -332,7 +419,7 @@ export default function JobsPage() {
                   </Link>
                   <Link
                     href="/login?mode=signup"
-                    className="rounded-full bg-[#84d64f] hover:bg-[#75c73d] px-4 sm:px-5 py-2.5 text-xs sm:text-[0.9rem] font-heading font-bold text-[#14281a] shadow-md shadow-[#84d64f]/25 transition active:scale-[0.98] inline-flex items-center gap-1.5"
+                    className="rounded-full bg-[#84d64f] hover:bg-[#75c73d] px-4 sm:px-5 py-2.5 text-xs sm:text-[0.9rem] font-heading font-black text-[#14281a] shadow-xs transition active:scale-[0.98] inline-flex items-center gap-1.5"
                   >
                     Sign Up <ArrowRight className="w-3.5 h-3.5 text-[#14281a]" />
                   </Link>
@@ -357,30 +444,39 @@ export default function JobsPage() {
         </section>
 
         {/* ======================================================== */}
-        {/* INTERACTIVE SEARCH & PRIMARY FILTERS */}
+        {/* SEARCH & FILTERS CONTROLS BAR */}
         {/* ======================================================== */}
-        <section id="jobs-filter-section" className="my-6 space-y-3">
-          <div className="rounded-[22px] border border-neutral-200/80 bg-white p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+        <section className="mb-6 rounded-[24px] border border-neutral-200/90 bg-white p-4 sm:p-5 shadow-xs space-y-4">
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3.5">
             {/* Search Input */}
-            <div className="relative w-full md:w-[420px]">
-              <Search className="w-4 h-4 text-[#79857f] absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by role title, skill, or location..."
-                className="w-full rounded-xl border border-neutral-200/80 bg-[#fbfaf8] pl-10 pr-4 py-2.5 text-xs font-medium outline-none transition focus:border-[#84d64f] focus:bg-white focus:ring-2 focus:ring-[#84d64f]/20"
+                placeholder="Search by role title, technical skill, technology, or keywords..."
+                className="w-full pl-10 pr-9 py-2.5 text-xs sm:text-sm rounded-xl border border-neutral-200 bg-[#fbfaf8] hover:border-neutral-300 focus:bg-white focus:border-neutral-400 outline-none text-[#121816] font-medium transition"
               />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-700 p-0.5"
+                  title="Clear search"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
 
-            {/* Filter Dropdowns */}
-            <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+            {/* Dropdown Filters Group */}
+            <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
               {/* Company Select */}
-              <div className="relative">
+              <div className="relative flex-1 sm:flex-none sm:min-w-[150px]">
                 <select
                   value={selectedCompany}
                   onChange={(e) => setSelectedCompany(e.target.value)}
-                  className="appearance-none rounded-xl border border-neutral-200/90 bg-white hover:bg-[#fbfaf8] hover:border-neutral-300 pl-3.5 pr-8 py-2.5 text-xs font-bold text-[#121816] shadow-2xs outline-none transition focus:border-[#84d64f] focus:ring-2 focus:ring-[#84d64f]/20 cursor-pointer"
+                  className="w-full appearance-none rounded-xl border border-neutral-200/90 bg-white hover:bg-[#fbfaf8] hover:border-neutral-300 pl-3.5 pr-8 py-2.5 text-xs font-bold text-[#121816] shadow-2xs outline-none transition focus:border-neutral-400 cursor-pointer"
                 >
                   <option value="all">All Companies ({companiesList.length || 6})</option>
                   {companiesList.map((c) => (
@@ -393,11 +489,11 @@ export default function JobsPage() {
               </div>
 
               {/* Role Type Select */}
-              <div className="relative">
+              <div className="relative flex-1 sm:flex-none sm:min-w-[140px]">
                 <select
                   value={selectedRoleType}
                   onChange={(e) => setSelectedRoleType(e.target.value)}
-                  className="appearance-none rounded-xl border border-neutral-200/90 bg-white hover:bg-[#fbfaf8] hover:border-neutral-300 pl-3.5 pr-8 py-2.5 text-xs font-bold text-[#121816] shadow-2xs outline-none transition focus:border-[#84d64f] focus:ring-2 focus:ring-[#84d64f]/20 cursor-pointer"
+                  className="w-full appearance-none rounded-xl border border-neutral-200/90 bg-white hover:bg-[#fbfaf8] hover:border-neutral-300 pl-3.5 pr-8 py-2.5 text-xs font-bold text-[#121816] shadow-2xs outline-none transition focus:border-neutral-400 cursor-pointer"
                 >
                   <option value="all">All Role Types</option>
                   <option value="FullTime">Full-Time</option>
@@ -412,7 +508,7 @@ export default function JobsPage() {
                 <select
                   value={appliedFilter}
                   onChange={(e) => setAppliedFilter(e.target.value as "all" | "saved" | "unapplied" | "applied")}
-                  className="appearance-none rounded-xl border border-neutral-200/90 bg-white hover:bg-[#fbfaf8] hover:border-neutral-300 pl-3.5 pr-8 py-2.5 text-xs font-bold text-[#121816] shadow-2xs outline-none transition focus:border-[#84d64f] focus:ring-2 focus:ring-[#84d64f]/20 cursor-pointer"
+                  className="appearance-none rounded-xl border border-neutral-200/90 bg-white hover:bg-[#fbfaf8] hover:border-neutral-300 pl-3.5 pr-8 py-2.5 text-xs font-bold text-[#121816] shadow-2xs outline-none transition focus:border-neutral-400 cursor-pointer"
                 >
                   <option value="all">Status: All Roles</option>
                   <option value="saved">Status: Saved Shortlist ({savedJobIds.size})</option>
@@ -437,63 +533,75 @@ export default function JobsPage() {
 
           {/* Quick Early-Career Pill Chips */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-            <span className="text-[0.72rem] font-bold text-[#79857f] uppercase tracking-wider shrink-0 mr-1">
-              Quick Filter:
+            <span className="text-[0.72rem] font-bold text-neutral-400 uppercase tracking-wider shrink-0 mr-1">
+              Quick:
             </span>
             <button
-              onClick={() => setQuickPill("all")}
+              onClick={clearQuickFilters}
               className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition shrink-0 cursor-pointer ${
-                quickPill === "all"
-                  ? "bg-[#14281a] text-[#84d64f] shadow-xs"
-                  : "bg-white border border-neutral-200 text-[#55615b] hover:border-[#84d64f] hover:text-[#14281a]"
+                selectedQuickFilters.size === 0
+                  ? "bg-[#84d64f] text-[#14281a] shadow-xs font-black"
+                  : "bg-white border border-neutral-200 text-[#55615b] hover:border-neutral-300 hover:text-[#121816]"
               }`}
             >
               All Openings
             </button>
             <button
-              onClick={() => setQuickPill("internships")}
+              onClick={() => toggleQuickFilter("internships")}
               className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition shrink-0 cursor-pointer inline-flex items-center gap-1.5 ${
-                quickPill === "internships"
-                  ? "bg-[#14281a] text-[#84d64f] shadow-xs"
-                  : "bg-white border border-neutral-200 text-[#55615b] hover:border-[#84d64f] hover:text-[#14281a]"
+                selectedQuickFilters.has("internships")
+                  ? "bg-[#84d64f] text-[#14281a] shadow-xs font-black"
+                  : "bg-white border border-neutral-200 text-[#55615b] hover:border-neutral-300 hover:text-[#121816]"
               }`}
             >
               <GraduationCap className="w-3.5 h-3.5" />
-              Internships (Summer 2026)
+              <span>Internships (Summer 2026)</span>
+              {selectedQuickFilters.has("internships") && (
+                <Check className="w-3 h-3 text-[#14281a] stroke-[3]" />
+              )}
             </button>
             <button
-              onClick={() => setQuickPill("newgrad")}
+              onClick={() => toggleQuickFilter("newgrad")}
               className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition shrink-0 cursor-pointer inline-flex items-center gap-1.5 ${
-                quickPill === "newgrad"
-                  ? "bg-[#14281a] text-[#84d64f] shadow-xs"
-                  : "bg-white border border-neutral-200 text-[#55615b] hover:border-[#84d64f] hover:text-[#14281a]"
+                selectedQuickFilters.has("newgrad")
+                  ? "bg-[#84d64f] text-[#14281a] shadow-xs font-black"
+                  : "bg-white border border-neutral-200 text-[#55615b] hover:border-neutral-300 hover:text-[#121816]"
               }`}
             >
               <Zap className="w-3.5 h-3.5" />
-              New Grad (2026)
+              <span>New Grad (2026)</span>
+              {selectedQuickFilters.has("newgrad") && (
+                <Check className="w-3 h-3 text-[#14281a] stroke-[3]" />
+              )}
             </button>
             <button
-              onClick={() => setQuickPill("remote")}
+              onClick={() => toggleQuickFilter("remote")}
               className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition shrink-0 cursor-pointer inline-flex items-center gap-1.5 ${
-                quickPill === "remote"
-                  ? "bg-[#14281a] text-[#84d64f] shadow-xs"
-                  : "bg-white border border-neutral-200 text-[#55615b] hover:border-[#84d64f] hover:text-[#14281a]"
+                selectedQuickFilters.has("remote")
+                  ? "bg-[#84d64f] text-[#14281a] shadow-xs font-black"
+                  : "bg-white border border-neutral-200 text-[#55615b] hover:border-neutral-300 hover:text-[#121816]"
               }`}
             >
               <MapPin className="w-3.5 h-3.5" />
-              Remote Only
+              <span>Remote Only</span>
+              {selectedQuickFilters.has("remote") && (
+                <Check className="w-3 h-3 text-[#14281a] stroke-[3]" />
+              )}
             </button>
             {activeResumeSkills.length > 0 && (
               <button
-                onClick={() => setQuickPill("highmatch")}
+                onClick={() => toggleQuickFilter("highmatch")}
                 className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition shrink-0 cursor-pointer inline-flex items-center gap-1.5 ${
-                  quickPill === "highmatch"
-                    ? "bg-[#84d64f] text-[#14281a] shadow-xs"
-                    : "bg-[#eef8e5] border border-[#cce8be] text-[#2c6114] hover:bg-[#84d64f] hover:text-[#14281a]"
+                  selectedQuickFilters.has("highmatch")
+                    ? "bg-[#84d64f] text-[#14281a] shadow-xs font-black"
+                    : "bg-neutral-100 border border-neutral-200 text-neutral-800 hover:bg-neutral-200"
                 }`}
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                High Fit (80%+)
+                <span>High Fit (80%+)</span>
+                {selectedQuickFilters.has("highmatch") && (
+                  <Check className="w-3 h-3 text-[#14281a] stroke-[3]" />
+                )}
               </button>
             )}
           </div>
@@ -503,21 +611,16 @@ export default function JobsPage() {
         {/* RESUME MATCH ACTIVE NOTIFICATION BANNER */}
         {/* ======================================================== */}
         {uploadedResumeName && (
-          <div className="mb-6 rounded-[20px] bg-gradient-to-r from-[#14281a] to-[#1e3c27] p-4 sm:px-6 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md">
+          <div className="mb-6 rounded-2xl border border-neutral-200/90 bg-white p-4 sm:px-5 text-[#121816] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-[#84d64f]/20 border border-[#84d64f]/30 flex items-center justify-center text-[#84d64f] shrink-0">
-                <Sparkles className="w-5 h-5" />
+              <div className="h-9 w-9 rounded-xl bg-neutral-100 border border-neutral-200/80 flex items-center justify-center text-[#121816] shrink-0">
+                <FileText className="w-4 h-4 text-[#55615b]" />
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <h4 className="font-extrabold text-sm text-white">
-                    Resume Matched: {uploadedResumeName}
-                  </h4>
-                  <span className="rounded-full bg-[#84d64f]/20 text-[#84d64f] text-[0.68rem] font-bold px-2 py-0.5 border border-[#84d64f]/30">
-                    {activeResumeSkills.length} Skills Detected
-                  </span>
-                </div>
-                <p className="text-xs text-[#eef8e5]/80 mt-0.5">
+                <h4 className="font-bold text-xs sm:text-sm text-[#121816]">
+                  Resume Matched: <span className="font-extrabold text-[#121816]">{uploadedResumeName}</span>
+                </h4>
+                <p className="text-xs text-[#55615b] mt-0.5">
                   Job feed is sorted by compatibility percentage with your stack ({activeResumeSkills.slice(0, 5).join(", ")}...).
                 </p>
               </div>
@@ -525,7 +628,7 @@ export default function JobsPage() {
 
             <button
               onClick={handleClearResume}
-              className="rounded-xl border border-[#84d64f]/40 bg-white/10 hover:bg-white/20 text-white px-3.5 py-1.5 text-xs font-bold transition shrink-0 cursor-pointer"
+              className="rounded-xl border border-neutral-200 hover:border-neutral-300 hover:bg-neutral-100/80 text-[#55615b] hover:text-[#121816] px-3.5 py-1.5 text-xs font-bold transition shrink-0 cursor-pointer"
             >
               Clear Match
             </button>
@@ -585,13 +688,13 @@ export default function JobsPage() {
                             size="sm"
                             className="!h-5 !w-5 !p-0 rounded-md border-0 bg-transparent shadow-none"
                           />
-                          <span className="text-xs sm:text-sm font-bold text-[#14281a] tracking-tight">
+                          <span className="text-xs sm:text-sm font-bold text-[#121816] tracking-tight">
                             {getCompanyDomain(job.company)}
                           </span>
 
                           {matchInfo && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-[#84d64f] text-[#14281a] text-[0.68rem] font-black px-2.5 py-0.5 shadow-xs">
-                              <Sparkles className="w-3 h-3" />
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#84d64f] text-[#14281a] text-[0.68rem] font-black px-2.5 py-0.5 shadow-2xs">
+                              <Sparkles className="w-3 h-3 text-[#14281a]" />
                               {matchInfo.score}% Match ({matchInfo.matchedCount}/{matchInfo.totalCount} Skills)
                             </span>
                           )}
@@ -600,7 +703,7 @@ export default function JobsPage() {
                         {/* Job Title */}
                         <h3
                           onClick={() => setSelectedListingModal(job)}
-                          className="text-xl sm:text-[1.35rem] font-black text-[#121816] tracking-tight mt-2 mb-3.5 group-hover:text-[#14281a] transition-colors cursor-pointer hover:underline"
+                          className="text-xl sm:text-[1.35rem] font-black text-[#121816] tracking-tight mt-2 mb-3.5 group-hover:text-black transition-colors cursor-pointer hover:underline"
                         >
                           {job.title}
                         </h3>
@@ -608,19 +711,19 @@ export default function JobsPage() {
                         {/* Experience / Type Pills */}
                         <div className="flex flex-wrap items-center gap-2 mb-3">
                           {job.experience_level && (
-                            <span className="rounded-full border border-neutral-300/80 bg-white/70 px-3.5 py-0.5 text-xs font-semibold text-[#14281a] shadow-2xs">
+                            <span className="rounded-full border border-neutral-200 bg-neutral-50 px-3 py-0.5 text-xs font-semibold text-[#55615b]">
                               {job.experience_level.toLowerCase().includes("experience")
                                 ? job.experience_level
                                 : `${job.experience_level} Experience`}
                             </span>
                           )}
                           {job.employment_type && (
-                            <span className="rounded-full border border-neutral-300/80 bg-white/70 px-3.5 py-0.5 text-xs font-semibold text-[#14281a] shadow-2xs">
+                            <span className="rounded-full border border-neutral-200 bg-neutral-50 px-3 py-0.5 text-xs font-semibold text-[#55615b]">
                               {job.employment_type}
                             </span>
                           )}
                           {job.eligibility && (
-                            <span className="rounded-full border border-neutral-300/80 bg-white/70 px-3.5 py-0.5 text-xs font-semibold text-[#14281a] shadow-2xs">
+                            <span className="rounded-full border border-neutral-200 bg-neutral-50 px-3 py-0.5 text-xs font-semibold text-[#55615b]">
                               {job.eligibility}
                             </span>
                           )}
@@ -640,11 +743,11 @@ export default function JobsPage() {
                                     isMatched
                                       ? "bg-[#d7f3be] text-[#1e480d] border-[#84d64f] inline-flex items-center gap-1"
                                       : activeResumeSkills.length > 0
-                                      ? "bg-amber-500/10 text-amber-900 border-amber-200/80"
-                                      : "bg-neutral-100 text-[#49544f] border-neutral-200/80"
+                                      ? "bg-white text-neutral-400 border-neutral-200/60"
+                                      : "bg-neutral-50 text-[#55615b] border-neutral-200/80"
                                   }`}
                                 >
-                                  {isMatched && <Check className="w-2.5 h-2.5 text-[#1e480d]" />}
+                                  {isMatched && <Check className="w-2.5 h-2.5 text-[#1e480d] stroke-[3]" />}
                                   {skill}
                                 </span>
                               );
@@ -769,7 +872,7 @@ export default function JobsPage() {
               <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-[22px] border border-neutral-200/80 bg-white p-4 sm:px-6 shadow-sm">
                 {/* Status counter */}
                 <div className="text-xs font-semibold text-[#55615b]">
-                  Showing <span className="font-extrabold text-[#121816]">{startIndex + 1}–{endIndex}</span> of{" "}
+                  Showing <span className="font-extrabold text-[#121816]">{startIndex + 1} to {endIndex}</span> of{" "}
                   <span className="font-extrabold text-[#121816]">{totalListings}</span> open verified roles
                 </div>
 
@@ -792,7 +895,7 @@ export default function JobsPage() {
                           onClick={() => handlePageChange(page)}
                           className={`h-9 w-9 rounded-xl text-xs font-black transition-all flex items-center justify-center cursor-pointer ${
                             currentPage === page
-                              ? "bg-[#14281a] text-white shadow-sm scale-105"
+                              ? "bg-[#84d64f] text-[#14281a] shadow-sm scale-105"
                               : "bg-white border border-neutral-200/90 text-[#55615b] hover:border-[#84d64f] hover:text-[#14281a] shadow-2xs"
                           }`}
                         >
@@ -887,16 +990,20 @@ export default function JobsPage() {
               </h4>
               <ul className="space-y-2.5 text-xs font-semibold text-[#55615b]">
                 <li><a href="https://linkedin.com" target="_blank" rel="noreferrer" className="hover:text-[#3c7818] transition">LinkedIn</a></li>
-                <li><a href="https://instagram.com" target="_blank" rel="noreferrer" className="hover:text-[#3c7818] transition">Instagram</a></li>
               </ul>
             </div>
           </div>
 
           {/* Sub-row */}
           <div className="pt-8 border-t border-neutral-200/70 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-semibold text-[#55615b]">
-            <div>100% Direct Official Feeds</div>
-            <div>support@siftrole.com</div>
-            <div>&copy; {new Date().getFullYear()} Siftrole Legal</div>
+            <div>
+              &copy; {new Date().getFullYear()} Siftrole. All rights reserved.
+            </div>
+            <div>
+              <a href="mailto:support@siftrole.in" className="hover:text-[#3c7818] transition">
+                support@siftrole.in
+              </a>
+            </div>
           </div>
 
           {/* ======================================================== */}
@@ -924,8 +1031,19 @@ export default function JobsPage() {
       {/* JOB DESCRIPTION MODAL DRAWER */}
       {/* ======================================================== */}
       {selectedListingModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-[28px] max-w-[700px] w-full max-h-[90vh] overflow-y-auto p-7 sm:p-9 shadow-2xl border border-neutral-200">
+        <div
+          data-lenis-prevent="true"
+          onWheel={(e) => e.stopPropagation()}
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4"
+          style={{ overscrollBehavior: "contain" }}
+        >
+          <div
+            data-lenis-prevent="true"
+            tabIndex={0}
+            onWheel={(e) => e.stopPropagation()}
+            className="bg-white rounded-[28px] max-w-[700px] w-full max-h-[90vh] overflow-y-auto overscroll-contain p-7 sm:p-9 shadow-2xl border border-neutral-200 focus:outline-none"
+            style={{ overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}
+          >
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-start gap-4">
                 <CompanyLogo company={selectedListingModal.company} size="lg" />
@@ -1034,7 +1152,11 @@ export default function JobsPage() {
               <h4 className="font-extrabold text-xs uppercase tracking-wider text-[#79857f] mb-2.5">
                 Role Summary & Details
               </h4>
-              <div className="prose prose-sm text-[#55615b] leading-relaxed max-h-[260px] overflow-y-auto pr-2">
+              <div
+                data-lenis-prevent="true"
+                className="prose prose-sm text-[#55615b] leading-relaxed max-h-[260px] overflow-y-auto overscroll-contain pr-2"
+                style={{ overscrollBehavior: "contain" }}
+              >
                 {selectedListingModal.raw_jd_text ? (
                   <p className="whitespace-pre-line text-xs">
                     {selectedListingModal.raw_jd_text}

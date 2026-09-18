@@ -36,7 +36,7 @@ export function middleware(req: NextRequest) {
 
     if (timestamps.length >= maxRequests) {
       return new NextResponse(
-        JSON.stringify({ error: "Rate limit exceeded. Please wait before making more requests." }),
+        JSON.stringify({ error: "Our servers are experiencing high traffic at the moment. Please try again shortly." }),
         {
           status: 429,
           headers: {

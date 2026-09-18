@@ -31,6 +31,7 @@ import {
   FileText,
 } from "lucide-react";
 import { CompanyLogo, getCompanyDomain } from "@/components/CompanyLogo";
+import { SiftroleLogoMark } from "@/components/SiftroleLogo";
 
 type ApplicationStage = "saved" | "applied" | "interviewing" | "offered" | "rejected";
 
@@ -221,6 +222,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     setMounted(true);
+
     // Check authentication from localStorage
     const token = localStorage.getItem("siftrole_token");
     const storedUser = localStorage.getItem("siftrole_user");
@@ -468,121 +470,128 @@ export default function DashboardPage() {
         {/* Floating Top Navbar */}
         <header className="sticky top-4 z-50 rounded-[20px] border border-neutral-200/80 bg-white/85 backdrop-blur-md px-5 py-3 shadow-[0_8px_30px_rgba(0,0,0,0.04)] mb-8">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <Link href="/" className="flex items-center gap-2 group">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <Link
+                href="/"
+                className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-neutral-200/90 bg-[#fbfaf8] hover:bg-neutral-100/80 px-3.5 py-1.5 text-xs font-bold text-[#55615b] hover:text-[#121816] transition-colors"
+              >
+                <ChevronLeft className="w-3.5 h-3.5 text-[#3c7818]" />
+                <span>Home</span>
+              </Link>
+
+              <Link href="/" className="flex items-center gap-2.5 group">
+                <SiftroleLogoMark size={28} />
                 <span className="text-[1.7rem] font-black tracking-[-0.04em] text-[#121816]">
                   Sift<span className="text-[#58a826] transition-colors group-hover:text-[#4a911e]">role</span>
                 </span>
               </Link>
-
-              <span className="hidden sm:inline-block h-5 w-[1px] bg-neutral-200" />
-              <Link href="/jobs" className="hidden md:inline-flex text-xs font-bold text-[#55615b] hover:text-[#121816] transition">
-                All Jobs
-              </Link>
-              <Link href="/cold-email" className="hidden md:inline-flex text-xs font-bold text-[#3c7818] hover:text-[#58a826] transition">
-                HR Outreach
-              </Link>
-              <span className="hidden sm:inline-block rounded-full bg-[#eef8e5] border border-[#cce8be] px-3 py-0.5 text-xs font-black text-[#14281a]">
-                Application Checklist
-              </span>
             </div>
 
-            <div className="flex items-center gap-3">
-              <Link
-                href="/cold-email"
-                className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-[#14281a] hover:bg-[#1f3d27] text-[#84d64f] px-3.5 py-1.5 text-xs font-bold transition shadow-2xs"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>HR Emails</span>
+            {/* Nav Links */}
+            <nav className="hidden md:flex items-center gap-8 text-[0.95rem] font-semibold text-[#55615b]">
+              <Link href="/jobs" className="hover:text-[#121816] transition-colors">
+                All Jobs
               </Link>
+              <Link href="/cold-email" className="hover:text-[#121816] transition-colors">
+                HR Outreach
+              </Link>
+              <Link href="/about" className="hover:text-[#121816] transition-colors">
+                About
+              </Link>
+              <Link href="/#faq" className="hover:text-[#121816] transition-colors">
+                FAQ
+              </Link>
+            </nav>
 
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-[#84d64f] text-[#14281a] font-black text-xs flex items-center justify-center shadow-xs">
+            {/* Right Buttons: User Info & Sign Out */}
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              <div className="flex items-center gap-2.5 bg-neutral-50 border border-neutral-200/80 rounded-full pl-1.5 pr-4 py-1">
+                <div className="w-7 h-7 rounded-full bg-[#84d64f] text-[#14281a] font-black text-xs flex items-center justify-center shadow-xs">
                   {userName.charAt(0)}
                 </div>
-                <div className="hidden lg:block text-left">
-                  <div className="text-xs font-black text-[#121816] leading-none">{userName}</div>
+                <div className="hidden sm:block text-left">
+                  <div className="text-xs font-bold text-[#121816] leading-none">{userName}</div>
                   <div className="text-[0.68rem] text-[#55615b] leading-none mt-1">{userEmail}</div>
                 </div>
-                <button
-                  onClick={handleSignOut}
-                  title="Sign Out"
-                  className="p-2 rounded-xl text-[#55615b] hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
               </div>
+              <button
+                onClick={handleSignOut}
+                title="Sign Out"
+                className="p-2 rounded-xl text-[#55615b] hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
             </div>
           </div>
         </header>
 
         {/* Welcome Banner with Dynamic Time & Situation Greetings */}
-        <section className="mt-6 mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div>
-            <h1 className="text-[2.2rem] sm:text-[2.8rem] font-black tracking-[-0.035em] text-[#121816] leading-[1.1]">
-              {greeting.headline}
-            </h1>
-            <p className="mt-2 text-sm sm:text-base text-[#55615b] max-w-[640px] leading-relaxed">
-              {greeting.situation}
-            </p>
-          </div>
+        <section className="mt-2 mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
+              <div>
+                <h1 className="text-[2.2rem] sm:text-[2.8rem] font-black tracking-[-0.035em] text-[#121816] leading-[1.1]">
+                  {greeting.headline}
+                </h1>
+                <p className="mt-2 text-sm sm:text-base text-[#55615b] max-w-[640px] leading-relaxed">
+                  {greeting.situation}
+                </p>
+              </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center gap-3">
-            <Link
-              href="/jobs"
-              className="rounded-full border border-neutral-200/90 bg-white hover:bg-neutral-50 px-5 py-3 text-xs font-extrabold text-[#121816] shadow-2xs transition inline-flex items-center gap-2"
-            >
-              <Search className="w-4 h-4 text-[#3c7818]" /> Browse Master List
-            </Link>
+              {/* Action Buttons */}
+              <div className="flex items-center gap-3">
+                <Link
+                  href="/jobs"
+                  className="rounded-full border border-neutral-200/90 bg-white hover:bg-neutral-50 px-5 py-3 text-xs font-extrabold text-[#121816] shadow-2xs transition inline-flex items-center gap-2"
+                >
+                  <Search className="w-4 h-4 text-[#3c7818]" /> Browse Master List
+                </Link>
 
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="rounded-full bg-[#84d64f] hover:bg-[#75c73d] px-5 py-3 text-xs font-heading font-bold text-[#14281a] shadow-md shadow-[#84d64f]/25 transition active:scale-[0.98] inline-flex items-center gap-2 cursor-pointer"
-            >
-              <Plus className="w-4 h-4 text-[#14281a]" /> Log Application
-            </button>
-          </div>
-        </section>
+                <button
+                  onClick={() => setIsAddModalOpen(true)}
+                  className="rounded-full bg-[#84d64f] hover:bg-[#75c73d] px-5 py-3 text-xs font-heading font-bold text-[#14281a] shadow-md shadow-[#84d64f]/25 transition active:scale-[0.98] inline-flex items-center gap-2 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4 text-[#14281a]" /> Log Application
+                </button>
+              </div>
+            </section>
 
-        {/* Metrics Row */}
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="rounded-[22px] border border-neutral-200/90 bg-white p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-[#55615b]">Total Tracked</span>
-              <Layers className="w-4 h-4 text-[#3c7818]" />
-            </div>
-            <div className="mt-3 text-3xl font-black text-[#121816]">{stats.total}</div>
-            <div className="mt-1 text-xs text-[#55615b]">{stats.saved} pending submission</div>
-          </div>
+            {/* Metrics Row */}
+            <section className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+              <div className="rounded-[22px] border border-neutral-200/90 bg-white p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-extrabold uppercase tracking-wider text-[#55615b]">Total Tracked</span>
+                  <Layers className="w-4 h-4 text-[#3c7818]" />
+                </div>
+                <div className="mt-3 text-3xl font-black text-[#121816]">{stats.total}</div>
+                <div className="mt-1 text-xs text-[#55615b]">{stats.saved} pending submission</div>
+              </div>
 
-          <div className="rounded-[22px] border border-neutral-200/90 bg-white p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-[#3c7818]">Submitted</span>
-              <CheckCircle2 className="w-4 h-4 text-[#3c7818]" />
-            </div>
-            <div className="mt-3 text-3xl font-black text-[#3c7818]">{stats.applied}</div>
-            <div className="mt-1 text-xs text-[#3c7818]">Direct ATS submissions</div>
-          </div>
+              <div className="rounded-[22px] border border-neutral-200/90 bg-white p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-extrabold uppercase tracking-wider text-[#3c7818]">Submitted</span>
+                  <CheckCircle2 className="w-4 h-4 text-[#3c7818]" />
+                </div>
+                <div className="mt-3 text-3xl font-black text-[#3c7818]">{stats.applied}</div>
+                <div className="mt-1 text-xs text-[#3c7818]">Direct ATS submissions</div>
+              </div>
 
-          <div className="rounded-[22px] border border-neutral-200/90 bg-white p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-teal-800">Interviewing</span>
-              <TrendingUp className="w-4 h-4 text-teal-600" />
-            </div>
-            <div className="mt-3 text-3xl font-black text-teal-800">{stats.interviewing}</div>
-            <div className="mt-1 text-xs text-teal-700">Active evaluation rounds</div>
-          </div>
+              <div className="rounded-[22px] border border-neutral-200/90 bg-white p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-extrabold uppercase tracking-wider text-teal-800">Interviewing</span>
+                  <TrendingUp className="w-4 h-4 text-teal-600" />
+                </div>
+                <div className="mt-3 text-3xl font-black text-teal-800">{stats.interviewing}</div>
+                <div className="mt-1 text-xs text-teal-700">Active evaluation rounds</div>
+              </div>
 
-          <div className="rounded-[22px] border border-neutral-200/90 bg-white p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-[#3c7818]">Offers</span>
-              <Sparkles className="w-4 h-4 text-[#3c7818]" />
-            </div>
-            <div className="mt-3 text-3xl font-black text-[#14281a]">{stats.offered}</div>
-            <div className="mt-1 text-xs text-[#14281a]">Decision / negotiation</div>
-          </div>
-        </section>
+              <div className="rounded-[22px] border border-neutral-200/90 bg-white p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-extrabold uppercase tracking-wider text-[#3c7818]">Offers</span>
+                  <Sparkles className="w-4 h-4 text-[#3c7818]" />
+                </div>
+                <div className="mt-3 text-3xl font-black text-[#14281a]">{stats.offered}</div>
+                <div className="mt-1 text-xs text-[#14281a]">Decision / negotiation</div>
+              </div>
+            </section>
 
         {/* Toolbar: Search, Filters & View Mode Switcher */}
         <div className="rounded-[22px] border border-neutral-200/90 bg-white p-4 shadow-sm mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">

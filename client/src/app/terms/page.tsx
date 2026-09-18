@@ -248,8 +248,8 @@ export default function TermsPage() {
             </p>
             <div className="p-4 rounded-2xl bg-[#fbfaf8] border border-neutral-200/80 inline-flex flex-col gap-1 text-xs">
               <span className="font-bold text-[#121816]">Siftrole Legal & Community Team</span>
-              <span className="text-[#55615b]">Email: support@siftrole.com</span>
-              <span className="text-[#55615b]">Website: https://siftrole.com</span>
+              <span className="text-[#55615b]">Email: support@siftrole.in</span>
+              <span className="text-[#55615b]">Website: https://siftrole.in</span>
             </div>
           </section>
 

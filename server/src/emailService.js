@@ -1,8 +1,14 @@
 const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
-// Initialize transporter
+// Initialize Resend client if API key is provided
+let resendClient = null;
+if (process.env.RESEND_API_KEY) {
+  resendClient = new Resend(process.env.RESEND_API_KEY);
+}
+
+// Fallback nodemailer transporter
 let transporter = null;
-
 function getTransporter() {
   if (transporter) return transporter;
 
@@ -17,7 +23,6 @@ function getTransporter() {
       },
     });
   } else {
-    // Development fallback transporter (logs preview or sends test message)
     transporter = nodemailer.createTransport({
       host: 'smtp.ethereal.email',
       port: 587,
@@ -31,235 +36,325 @@ function getTransporter() {
   return transporter;
 }
 
-const FROM_SENDER = process.env.FROM_EMAIL || '"Siftrole Job Radar" <jobs@siftrole.com>';
+const FROM_SENDER = process.env.FROM_EMAIL || 'Siftrole <onboarding@resend.dev>';
 const APP_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 
+const EMAIL_FONT_STACK = "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+const GOOGLE_FONT_LINK = `<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">`;
+
 /**
- * Sends a 6-digit OTP verification email with a 1-click magic confirmation link
+ * Sends a 1-click magic confirmation link email
  */
-async function sendOtpVerificationEmail({ email, otpCode, verificationLink }) {
-  const mailOptions = {
-    from: FROM_SENDER,
-    to: email,
-    subject: `Your Siftrole Verification Code: ${otpCode}`,
-    text: `Your Siftrole Job Alert verification code is ${otpCode}. It expires in 15 minutes.\n\nOr click this link to verify directly:\n${verificationLink}`,
-    html: `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8f7f5; margin: 0; padding: 30px 15px; color: #121816; }
-          .container { max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 24px; padding: 40px 32px; border: 1px solid #e5e2db; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
-          .logo { display: inline-flex; align-items: center; gap: 8px; font-weight: 900; font-size: 20px; color: #14281a; text-decoration: none; margin-bottom: 24px; }
-          .badge { display: inline-block; background: #eef8e5; color: #3c7818; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px; border: 1px solid #cce8be; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.05em; }
-          h1 { font-size: 24px; font-weight: 800; line-height: 1.25; margin: 0 0 12px; color: #14281a; }
-          p { font-size: 14px; line-height: 1.6; color: #55615b; margin: 0 0 20px; }
-          .otp-card { background: #14281a; border-radius: 16px; padding: 24px; text-align: center; margin: 24px 0; border: 1px solid #84d64f; }
-          .otp-code { font-family: 'SF Mono', Monaco, Menlo, Consolas, monospace; font-size: 36px; font-weight: 900; letter-spacing: 6px; color: #84d64f; margin: 0; }
-          .otp-sub { font-size: 12px; color: #eef8e5; opacity: 0.8; margin-top: 6px; }
-          .btn { display: inline-block; width: 100%; box-sizing: border-box; background: #84d64f; color: #14281a; font-size: 14px; font-weight: 800; text-align: center; padding: 14px 24px; border-radius: 12px; text-decoration: none; margin: 10px 0; }
-          .footer { margin-top: 32px; padding-top: 20px; border-top: 1px solid #f3f2ee; font-size: 11px; color: #79857f; text-align: center; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="logo">
-            <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:#84d64f;"></span>
-            Siftrole
-          </div>
-          <br>
-          <span class="badge">Email Verification</span>
-          <h1>Verify your job alert subscription</h1>
-          <p>
-            You requested to receive daily tech job openings, early career internships, and verified recruiter opportunities from Siftrole.
-          </p>
-          
-          <div class="otp-card">
-            <div class="otp-code">${otpCode}</div>
-            <div class="otp-sub">Valid for the next 15 minutes</div>
-          </div>
+async function sendOtpVerificationEmail({ email, verificationLink }) {
+  const subject = `Confirm your Siftrole Job Alerts subscription`;
+  const html = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Confirm your subscription</title>
+      ${GOOGLE_FONT_LINK}
+      <style>
+        body, table, td, p, a, h1, h2, h3 {
+          font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+        }
+      </style>
+    </head>
+    <body style="background-color: #f8fafc; margin: 0; padding: 40px 15px; font-family: ${EMAIL_FONT_STACK}; color: #334155; -webkit-font-smoothing: antialiased;">
+      <table align="center" width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 520px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 36px 32px; box-shadow: 0 1px 3px rgba(15,23,42,0.04);">
+        <tbody>
+          <tr>
+            <td>
+              <!-- Header Logo -->
+              <div style="margin-bottom: 24px;">
+                <span style="font-size: 20px; font-weight: 600; letter-spacing: -0.02em; color: #0f172a;">
+                  Sift<span style="color: #16a34a;">role</span>
+                </span>
+              </div>
 
-          <p style="text-align: center; font-size: 12px; color: #79857f;">or click the button below to confirm instantly:</p>
+              <h1 style="font-size: 19px; font-weight: 600; color: #0f172a; margin: 0 0 12px; line-height: 1.35;">
+                Confirm your job alert subscription
+              </h1>
+              
+              <p style="font-size: 13.5px; line-height: 22px; color: #64748b; margin: 0 0 24px; font-weight: 400;">
+                Please click the button below to confirm your email and activate daily alerts for verified tech openings, internships, and startup opportunities.
+              </p>
 
-          <a href="${verificationLink}" class="btn" target="_blank">
-            1-Click Confirm Subscription
-          </a>
+              <!-- 1-Click Magic Button -->
+              <div style="margin: 28px 0; text-align: center;">
+                <a href="${verificationLink}" target="_blank" style="display: inline-block; background-color: #0f172a; color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 500; padding: 11px 26px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); letter-spacing: 0.01em;">
+                  Confirm Subscription &rarr;
+                </a>
+              </div>
 
-          <div class="footer">
-            If you did not request this email, you can safely ignore it.<br>
-            Siftrole, Verified Tech Opportunities & Cold Outreach Platform.
-          </div>
-        </div>
-      </body>
-      </html>
-    `,
-  };
+              <p style="font-size: 12px; line-height: 18px; color: #94a3b8; margin: 20px 0 0; font-weight: 400;">
+                Button not working? You can also copy and open this link in your browser:<br />
+                <a href="${verificationLink}" style="color: #2563eb; word-break: break-all; text-decoration: underline;">${verificationLink}</a>
+              </p>
 
+              <hr style="border: none; border-top: 1px solid #f1f5f9; margin: 24px 0 20px;" />
+
+              <p style="font-size: 11.5px; line-height: 18px; color: #94a3b8; margin: 0; font-weight: 400;">
+                If you did not request this email, no further action is required. You can safely ignore this message.
+              </p>
+              
+              <p style="font-size: 11px; line-height: 16px; color: #cbd5e1; margin: 12px 0 0; font-weight: 400;">
+                &copy; 2026 Siftrole. All rights reserved.
+              </p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </body>
+    </html>
+  `.trim();
+
+  // 1. Try sending via Resend API
+  if (resendClient) {
+    try {
+      const response = await resendClient.emails.send({
+        from: FROM_SENDER,
+        to: [email],
+        subject,
+        html,
+      });
+
+      if (response.data?.id) {
+        console.log(`[Email Service] OTP email delivered via Resend to ${email} (ID: ${response.data.id})`);
+        return { success: true, method: 'resend', id: response.data.id };
+      }
+      if (response.error) {
+        console.warn(`[Email Service] Resend API response error for ${email}:`, response.error);
+        if (response.error.message?.includes('testing emails to your own email address')) {
+          console.log(`[Resend Sandbox Notice] To send to ${email}, please verify your domain in Resend or test with utkarsh.rajput.2005@gmail.com`);
+        }
+      }
+    } catch (resendErr) {
+      console.warn(`[Email Service] Resend error:`, resendErr);
+    }
+  }
+
+  // 2. Fallback to Nodemailer SMTP
   try {
     const mailClient = getTransporter();
-    await mailClient.sendMail(mailOptions);
-    console.log(`[Email Service] OTP Verification email sent to ${email} (OTP: ${otpCode})`);
-    return { success: true, simulated: false };
-  } catch (err) {
-    console.log(`[Email Service] Live SMTP failed or not configured. Console simulation for ${email}:`);
-    console.log(`====================================================`);
-    console.log(`  TO: ${email}`);
-    console.log(`  OTP CODE: ${otpCode}`);
-    console.log(`  1-CLICK VERIFICATION LINK: ${verificationLink}`);
-    console.log(`====================================================`);
-    return { success: true, simulated: true };
+    await mailClient.sendMail({
+      from: FROM_SENDER,
+      to: email,
+      subject,
+      html,
+    });
+    console.log(`[Email Service] OTP email delivered via SMTP to ${email}`);
+    return { success: true, method: 'smtp' };
+  } catch (smtpErr) {
+    console.warn(`[Email Service] SMTP error:`, smtpErr);
   }
+
+  return { success: true, simulated: true };
 }
 
 /**
  * Sends a welcome confirmation digest with top verified openings
  */
 async function sendWelcomeNewsletterEmail({ email, recentListings = [] }) {
+  const subject = 'Welcome to Siftrole! Your daily job alerts are active';
   const listingsHtml = (recentListings || []).slice(0, 4).map((job) => `
-    <div style="background: #fbfaf8; border: 1px solid #e5e2db; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px;">
-      <div style="font-size: 11px; font-weight: 800; color: #3c7818; text-transform: uppercase;">${job.company}</div>
-      <div style="font-size: 14px; font-weight: 800; color: #121816; margin: 2px 0;">${job.title}</div>
-      <div style="font-size: 12px; color: #55615b;">${job.location} • <strong style="color:#14281a;">${job.stipend_or_salary || 'Competitive'}</strong></div>
-      <div style="margin-top: 8px;">
-        <a href="${job.apply_url || `${APP_URL}/jobs/${job.id}`}" style="display:inline-block; background:#14281a; color:#84d64f; font-size:11px; font-weight:800; padding:6px 12px; border-radius:8px; text-decoration:none;" target="_blank">
-          View & Apply &rarr;
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; margin-bottom: 12px;">
+      <div style="font-size: 11px; font-weight: 600; color: #16a34a; letter-spacing: 0.02em;">${job.company}</div>
+      <div style="font-size: 14px; font-weight: 500; color: #1e293b; margin: 3px 0;">${job.title}</div>
+      <div style="font-size: 12px; color: #64748b; font-weight: 400;">${job.location} • <strong style="color:#0f172a; font-weight: 500;">${job.stipend_or_salary || 'Competitive'}</strong></div>
+      <div style="margin-top: 10px;">
+        <a href="${job.apply_url || `${APP_URL}/jobs/${job.id}`}" style="display:inline-block; background:#0f172a; color:#ffffff; font-size:12px; font-weight:500; padding:6px 14px; border-radius:6px; text-decoration:none;" target="_blank">
+          View Role & Apply &rarr;
         </a>
       </div>
     </div>
   `).join('');
 
-  const mailOptions = {
-    from: FROM_SENDER,
-    to: email,
-    subject: 'Welcome to Siftrole! Your daily job alerts are active',
-    html: `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8f7f5; margin: 0; padding: 30px 15px; color: #121816; }
-          .container { max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 24px; padding: 40px 32px; border: 1px solid #e5e2db; }
-          .logo { display: inline-flex; align-items: center; gap: 8px; font-weight: 900; font-size: 20px; color: #14281a; text-decoration: none; margin-bottom: 24px; }
-          h1 { font-size: 22px; font-weight: 800; color: #14281a; margin-bottom: 12px; }
-          p { font-size: 13px; line-height: 1.6; color: #55615b; }
-          .cta { display: inline-block; background: #84d64f; color: #14281a; font-size: 13px; font-weight: 800; padding: 12px 24px; border-radius: 12px; text-decoration: none; margin: 16px 0; }
-          .footer { margin-top: 32px; padding-top: 20px; border-top: 1px solid #f3f2ee; font-size: 11px; color: #79857f; text-align: center; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="logo">
-            <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:#84d64f;"></span>
-            Siftrole
-          </div>
-          <h1>You are officially subscribed to Siftrole Radar!</h1>
-          <p>
-            Your email is verified. You will receive direct job alerts as soon as verified technical roles, university internships, and high-growth startup positions are published.
-          </p>
+  const html = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Welcome to Siftrole</title>
+      ${GOOGLE_FONT_LINK}
+      <style>
+        body, table, td, p, a, h1, h2, h3 {
+          font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+        }
+      </style>
+    </head>
+    <body style="background-color: #f8fafc; margin: 0; padding: 40px 15px; font-family: ${EMAIL_FONT_STACK}; color: #334155; -webkit-font-smoothing: antialiased;">
+      <table align="center" width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 560px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 36px 32px; box-shadow: 0 1px 3px rgba(15,23,42,0.04);">
+        <tbody>
+          <tr>
+            <td>
+              <div style="margin-bottom: 24px;">
+                <span style="font-size: 20px; font-weight: 600; letter-spacing: -0.02em; color: #0f172a;">
+                  Sift<span style="color: #16a34a;">role</span>
+                </span>
+              </div>
 
-          <h3 style="font-size: 14px; font-weight: 800; color: #14281a; margin: 24px 0 12px;">Top verified openings right now:</h3>
-          ${listingsHtml}
+              <h1 style="font-size: 19px; font-weight: 600; color: #0f172a; margin: 0 0 12px; line-height: 1.35;">
+                You are now subscribed to Siftrole Radar
+              </h1>
+              <p style="font-size: 13.5px; line-height: 22px; color: #64748b; margin: 0 0 20px; font-weight: 400;">
+                Your email is confirmed. You will receive verified tech openings, early career internships, and founder outreach alerts.
+              </p>
 
-          <div style="text-align: center; margin-top: 20px;">
-            <a href="${APP_URL}/jobs" class="cta" target="_blank">Browse All Open Roles &rarr;</a>
-          </div>
+              <h3 style="font-size: 13.5px; font-weight: 600; color: #0f172a; margin: 24px 0 12px;">
+                Featured Open Roles:
+              </h3>
+              ${listingsHtml}
 
-          <div class="footer">
-            You received this email because you subscribed on Siftrole.<br>
-            <a href="${APP_URL}/unsubscribe-newsletter?email=${encodeURIComponent(email)}" style="color:#79857f; text-decoration:underline;">Unsubscribe from alerts</a>
-          </div>
-        </div>
-      </body>
-      </html>
-    `,
-  };
+              <div style="text-align: center; margin: 24px 0;">
+                <a href="${APP_URL}/jobs" style="display: inline-block; background-color: #16a34a; color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 500; padding: 11px 24px; border-radius: 8px;" target="_blank">
+                  Browse All Opportunities &rarr;
+                </a>
+              </div>
 
-  try {
-    const mailClient = getTransporter();
-    await mailClient.sendMail(mailOptions);
-    console.log(`[Email Service] Welcome email sent to ${email}`);
-    return { success: true };
-  } catch (err) {
-    console.log(`[Email Service] Welcome email queued for ${email} (Simulation mode active)`);
-    return { success: true, simulated: true };
+              <hr style="border: none; border-top: 1px solid #f1f5f9; margin: 24px 0 20px;" />
+
+              <p style="font-size: 11.5px; line-height: 16px; color: #94a3b8; margin: 0; font-weight: 400;">
+                You received this email because you subscribed on Siftrole.<br />
+                <a href="${APP_URL}/unsubscribe-newsletter?email=${encodeURIComponent(email)}" style="color: #2563eb; text-decoration: underline;">Unsubscribe from alerts</a>
+              </p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </body>
+    </html>
+  `.trim();
+
+  if (resendClient) {
+    try {
+      await resendClient.emails.send({
+        from: FROM_SENDER,
+        to: [email],
+        subject,
+        html,
+      });
+      return { success: true };
+    } catch (err) {
+      console.warn('Resend welcome email error:', err);
+    }
   }
+
+  return { success: true };
 }
 
 /**
  * Broadcasts a job alert digest to multiple active subscribers
  */
-async function sendJobAlertDigestEmail({ to, listings = [] }) {
-  if (!listings || listings.length === 0) return;
+async function sendJobAlertDigestEmail({ to, listings = [], subject, headline, customNote }) {
+  if (!listings || listings.length === 0) return { success: false, error: "No listings provided" };
 
-  const listingsHtml = listings.slice(0, 5).map((job) => `
-    <div style="background: #fbfaf8; border: 1px solid #e5e2db; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px;">
-      <div style="font-size: 11px; font-weight: 800; color: #3c7818; text-transform: uppercase;">${job.company}</div>
-      <div style="font-size: 14px; font-weight: 800; color: #121816; margin: 2px 0;">${job.title}</div>
-      <div style="font-size: 12px; color: #55615b;">${job.location} • <strong style="color:#14281a;">${job.stipend_or_salary || 'Competitive'}</strong></div>
-      <div style="margin-top: 8px;">
-        <a href="${job.apply_url || `${APP_URL}/jobs/${job.id}`}" style="display:inline-block; background:#84d64f; color:#14281a; font-size:11px; font-weight:800; padding:6px 12px; border-radius:8px; text-decoration:none;" target="_blank">
-          Apply Now &rarr;
+  const emailSubject = subject || `We found new verified openings: do not miss these opportunities`;
+  const emailHeadline = headline || "We found new verified openings: do not miss these opportunities";
+
+  const listingsHtml = listings.map((job) => `
+    <div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 18px; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(15,23,42,0.02);">
+      <div style="font-size: 11.5px; font-weight: 600; color: #16a34a; letter-spacing: 0.02em; margin-bottom: 4px;">
+        ${job.company || "Verified Company"}
+      </div>
+      <div style="font-size: 15px; font-weight: 500; color: #0f172a; margin: 0 0 6px; line-height: 1.35;">
+        ${job.title || "Software Engineering Role"}
+      </div>
+      <div style="font-size: 12.5px; color: #64748b; margin-bottom: 14px; font-weight: 400;">
+        <span>${job.location || "Remote / Hybrid"}</span>
+        <span style="margin: 0 8px; color: #cbd5e1;">•</span>
+        <strong style="color: #1e293b; font-weight: 500;">${job.stipend_or_salary || "Competitive Compensation"}</strong>
+        ${job.employment_type ? `<span style="margin: 0 8px; color: #cbd5e1;">•</span><span>${job.employment_type}</span>` : ""}
+      </div>
+      <div>
+        <a href="${job.apply_url || `${APP_URL}/jobs/${job.id}`}" style="display: inline-block; background-color: #0f172a; color: #ffffff; font-size: 12.5px; font-weight: 500; padding: 8px 18px; border-radius: 7px; text-decoration: none;" target="_blank">
+          View Role & Apply &rarr;
         </a>
       </div>
     </div>
   `).join('');
 
-  const mailOptions = {
-    from: FROM_SENDER,
-    to,
-    subject: `New verified openings: ${listings[0]?.company} & more hiring now`,
-    html: `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8f7f5; margin: 0; padding: 30px 15px; color: #121816; }
-          .container { max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 24px; padding: 40px 32px; border: 1px solid #e5e2db; }
-          .logo { display: inline-flex; align-items: center; gap: 8px; font-weight: 900; font-size: 20px; color: #14281a; text-decoration: none; margin-bottom: 24px; }
-          h1 { font-size: 22px; font-weight: 800; color: #14281a; margin-bottom: 12px; }
-          p { font-size: 13px; line-height: 1.6; color: #55615b; }
-          .footer { margin-top: 32px; padding-top: 20px; border-top: 1px solid #f3f2ee; font-size: 11px; color: #79857f; text-align: center; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="logo">
-            <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:#84d64f;"></span>
-            Siftrole Job Radar
-          </div>
-          <h1>New verified tech opportunities</h1>
-          <p>Here are the latest verified job openings published on Siftrole matching top tech stacks:</p>
+  const html = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${emailSubject}</title>
+      ${GOOGLE_FONT_LINK}
+      <style>
+        body, table, td, p, a, h1, h2, h3 {
+          font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+        }
+      </style>
+    </head>
+    <body style="background-color: #f8fafc; margin: 0; padding: 40px 15px; font-family: ${EMAIL_FONT_STACK}; color: #334155; -webkit-font-smoothing: antialiased;">
+      <table align="center" width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 580px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 36px 32px; box-shadow: 0 1px 3px rgba(15,23,42,0.04);">
+        <tbody>
+          <tr>
+            <td>
+              <!-- Header Logo -->
+              <div style="margin-bottom: 22px;">
+                <span style="font-size: 21px; font-weight: 600; letter-spacing: -0.02em; color: #0f172a;">
+                  Sift<span style="color: #16a34a;">role</span>
+                </span>
+                <span style="display: inline-block; font-size: 11px; font-weight: 500; color: #64748b; letter-spacing: 0.04em; border-left: 1px solid #e2e8f0; padding-left: 10px; margin-left: 10px;">
+                  Job Radar Alert
+                </span>
+              </div>
 
-          ${listingsHtml}
+              <h1 style="font-size: 18px; font-weight: 600; color: #0f172a; margin: 0 0 12px; line-height: 1.4;">
+                ${emailHeadline}
+              </h1>
 
-          <div style="text-align: center; margin-top: 24px;">
-            <a href="${APP_URL}/jobs" style="display:inline-block; background:#14281a; color:#84d64f; font-size:13px; font-weight:800; padding:12px 24px; border-radius:12px; text-decoration:none;" target="_blank">
-              Explore All Openings on Siftrole &rarr;
-            </a>
-          </div>
+              ${customNote ? `
+                <div style="background-color: #f8fafc; border-left: 3px solid #16a34a; padding: 12px 16px; border-radius: 6px; font-size: 13px; line-height: 20px; color: #475569; margin: 0 0 20px; font-weight: 400;">
+                  ${customNote}
+                </div>
+              ` : `
+                <p style="font-size: 13.5px; line-height: 22px; color: #64748b; margin: 0 0 20px; font-weight: 400;">
+                  New high-priority roles matching our verified criteria were just published. Review the details below and apply directly:
+                </p>
+              `}
 
-          <div class="footer">
-            Siftrole Daily Job Radar.<br>
-            <a href="${APP_URL}/unsubscribe-newsletter?email=${encodeURIComponent(to)}" style="color:#79857f; text-decoration:underline;">Unsubscribe</a>
-          </div>
-        </div>
-      </body>
-      </html>
-    `,
-  };
+              ${listingsHtml}
 
-  try {
-    const mailClient = getTransporter();
-    await mailClient.sendMail(mailOptions);
-    console.log(`[Email Service] Broadcast sent to ${to}`);
-    return { success: true };
-  } catch (err) {
-    console.log(`[Email Service] Broadcast simulation for ${to}`);
-    return { success: true, simulated: true };
+              <div style="text-align: center; margin: 28px 0 18px;">
+                <a href="${APP_URL}/jobs" style="display: inline-block; background-color: #16a34a; color: #ffffff; text-decoration: none; font-size: 13.5px; font-weight: 500; padding: 12px 28px; border-radius: 8px;" target="_blank">
+                  View All Open Opportunities on Siftrole &rarr;
+                </a>
+              </div>
+
+              <hr style="border: none; border-top: 1px solid #f1f5f9; margin: 28px 0 20px;" />
+              <p style="font-size: 11.5px; line-height: 18px; color: #94a3b8; margin: 0; text-align: center; font-weight: 400;">
+                You received this digest because you are subscribed to Siftrole Job Alerts.<br />
+                <a href="${APP_URL}/unsubscribe-newsletter?email=${encodeURIComponent(to)}" style="color: #2563eb; text-decoration: underline;">Unsubscribe from alerts</a>
+              </p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </body>
+    </html>
+  `.trim();
+
+  if (resendClient) {
+    try {
+      const response = await resendClient.emails.send({
+        from: FROM_SENDER,
+        to: [to],
+        subject: emailSubject,
+        html,
+      });
+      return { success: true, id: response.data?.id };
+    } catch (err) {
+      console.warn('Resend digest error:', err);
+    }
   }
+
+  return { success: true, simulated: true };
 }
 
 module.exports = {

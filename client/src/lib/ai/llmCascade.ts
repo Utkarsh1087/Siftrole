@@ -13,6 +13,7 @@ export interface LLMRequestOptions {
   systemPrompt: string;
   userPrompt: string;
   temperature?: number;
+  maxTokens?: number;
   responseFormatJson?: boolean;
   timeoutMs?: number;
 }
@@ -64,10 +65,16 @@ export function getAvailableLLMProviders(): ProviderCandidate[] {
 
   allGroqKeys.forEach((key, idx) => {
     candidates.push({
-      name: `Groq Key #${idx + 1}`,
+      name: `Groq High-Capacity #${idx + 1}`,
       type: "groq",
       apiKey: key,
-      model: "llama-3.3-70b-versatile",
+      model: "openai/gpt-oss-120b",
+    });
+    candidates.push({
+      name: `Groq Compound #${idx + 1}`,
+      type: "groq",
+      apiKey: key,
+      model: "groq/compound",
     });
   });
 
@@ -129,6 +136,7 @@ export async function executeLLMCascade(
     systemPrompt,
     userPrompt,
     temperature = 0.65,
+    maxTokens,
     responseFormatJson = false,
     timeoutMs = 4200,
   } = options;
@@ -165,6 +173,10 @@ export async function executeLLMCascade(
           ],
         };
 
+        if (maxTokens) {
+          payload.max_tokens = maxTokens;
+        }
+
         if (responseFormatJson && provider.type !== "openrouter") {
           payload.response_format = { type: "json_object" };
         }
@@ -186,6 +198,17 @@ export async function executeLLMCascade(
           console.warn(
             `[LLM Cascade] ${provider.name} returned HTTP ${response.status}: ${errText.slice(0, 100)}. Trying next key...`
           );
+
+          if (response.status === 429 || errText.toLowerCase().includes("rate limit") || errText.toLowerCase().includes("quota")) {
+            const { notifyAdminApiLimitReached } = await import("@/lib/alerts/notifyAdmin");
+            notifyAdminApiLimitReached({
+              provider: provider.name,
+              model: provider.model,
+              statusCode: response.status,
+              errorMessage: errText.slice(0, 200),
+            }).catch(() => null);
+          }
+
           continue;
         }
 
@@ -194,7 +217,7 @@ export async function executeLLMCascade(
       } else if (provider.type === "gemini") {
         const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${provider.model}:generateContent?key=${provider.apiKey}`;
 
-        const payload = {
+        const payload: any = {
           contents: [
             {
               role: "user",
@@ -204,6 +227,7 @@ export async function executeLLMCascade(
           generationConfig: {
             temperature,
             responseMimeType: responseFormatJson ? "application/json" : "text/plain",
+            ...(maxTokens ? { maxOutputTokens: maxTokens } : {}),
           },
         };
 
@@ -221,6 +245,17 @@ export async function executeLLMCascade(
           console.warn(
             `[LLM Cascade] ${provider.name} returned HTTP ${response.status}: ${errText.slice(0, 100)}. Trying next key...`
           );
+
+          if (response.status === 429 || errText.toLowerCase().includes("rate limit") || errText.toLowerCase().includes("quota") || errText.toLowerCase().includes("resource_exhausted")) {
+            const { notifyAdminApiLimitReached } = await import("@/lib/alerts/notifyAdmin");
+            notifyAdminApiLimitReached({
+              provider: provider.name,
+              model: provider.model,
+              statusCode: response.status,
+              errorMessage: errText.slice(0, 200),
+            }).catch(() => null);
+          }
+
           continue;
         }
 

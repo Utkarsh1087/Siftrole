@@ -3,6 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useAuth } from "@/lib/useAuth";
 
 interface SiftroleLogoProps {
   size?: "sm" | "md" | "lg" | "xl" | "massive" | number;
@@ -88,6 +89,9 @@ export function SiftroleLogo({
   className = "",
   priority = false,
 }: SiftroleLogoProps) {
+  const { isLoggedIn } = useAuth();
+  const targetHref = isLoggedIn ? "/jobs" : "/";
+
   let pixelSize = 32;
   if (typeof size === "number") pixelSize = size;
   else if (size === "sm") pixelSize = 24;
@@ -102,7 +106,7 @@ export function SiftroleLogo({
 
   if (variant === "wordmark-o") {
     return (
-      <Link href="/" className={`inline-flex items-center group ${className}`}>
+      <Link href={targetHref} className={`inline-flex items-center group ${className}`}>
         <SiftroleWordmark className="text-xl sm:text-2xl text-[#121816]" uppercase={false} />
       </Link>
     );
@@ -117,7 +121,7 @@ export function SiftroleLogo({
   }
 
   return (
-    <Link href="/" className={`inline-flex items-center gap-2.5 group ${className}`}>
+    <Link href={targetHref} className={`inline-flex items-center gap-2.5 group ${className}`}>
       <SiftroleLogoMark size={pixelSize} priority={priority} />
       <span className="text-xl sm:text-2xl font-black tracking-[-0.04em] text-[#121816]">
         Sift<span className="text-[#58a826] transition-colors group-hover:text-[#4a911e]">role</span>

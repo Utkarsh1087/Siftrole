@@ -6,10 +6,8 @@ import {
   Mail,
   CheckCircle2,
   AlertCircle,
-  Sparkles,
   ArrowRight,
   RefreshCw,
-  ShieldCheck,
 } from "lucide-react";
 
 interface NewsletterOtpModalProps {
@@ -159,41 +157,38 @@ export function NewsletterOtpModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-[#14281a] text-white rounded-[32px] max-w-[480px] w-full border border-[#84d64f]/35 shadow-[0_25px_60px_rgba(0,0,0,0.5)] p-6 sm:p-8 relative overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white text-neutral-900 rounded-3xl max-w-[440px] w-full border border-neutral-100 shadow-2xl p-6 sm:p-8 relative">
         
-        {/* Glow Ambient Lights */}
-        <div className="absolute -top-24 -right-24 w-64 h-64 rounded-full bg-[#84d64f]/15 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-64 h-64 rounded-full bg-[#84d64f]/10 blur-3xl pointer-events-none" />
-
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition cursor-pointer z-10"
+          className="absolute top-5 right-5 h-8 w-8 rounded-full text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 flex items-center justify-center transition cursor-pointer"
+          aria-label="Close modal"
         >
-          <X className="w-4 h-4 text-white" />
+          <X className="w-4 h-4" />
         </button>
 
         {!isVerified ? (
           <div>
-            {/* Header Badge */}
-            <div className="inline-flex items-center gap-2 rounded-full bg-[#84d64f]/20 border border-[#84d64f]/40 px-3.5 py-1 text-xs font-bold text-[#84d64f] mb-3">
-              <ShieldCheck className="w-3.5 h-3.5" /> Confirm Subscription
+            {/* Minimal Icon */}
+            <div className="h-11 w-11 rounded-2xl bg-neutral-100 text-neutral-900 flex items-center justify-center mb-4">
+              <Mail className="w-5 h-5" />
             </div>
 
-            {/* Title */}
-            <h3 className="text-2xl sm:text-3xl font-black tracking-[-0.02em] leading-tight text-white">
-              Enter Verification Code
+            {/* Title & Description */}
+            <h3 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">
+              Check your inbox
             </h3>
-            <p className="mt-2 text-xs sm:text-sm text-[#eef8e5]/80 leading-relaxed">
-              We sent a 6-digit security code to{" "}
-              <strong className="text-white font-mono font-bold break-all">{email}</strong>.
+            <p className="mt-1.5 text-sm text-neutral-500 leading-normal">
+              We sent a 6-digit verification code to{" "}
+              <span className="font-medium text-neutral-900 break-all">{email}</span>.
             </p>
 
             {/* 6-Digit OTP Inputs */}
             <div className="my-6">
               <div
-                className="flex items-center justify-between gap-2 sm:gap-2.5"
+                className="flex items-center justify-between gap-2"
                 onPaste={handlePaste}
               >
                 {otp.map((digit, i) => (
@@ -208,73 +203,73 @@ export function NewsletterOtpModal({
                     value={digit}
                     onChange={(e) => handleChange(i, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(i, e)}
-                    className="w-11 h-13 sm:w-13 sm:h-15 text-center text-xl sm:text-2xl font-mono font-black rounded-2xl bg-white/10 border border-white/20 focus:border-[#84d64f] focus:bg-white/15 focus:ring-2 focus:ring-[#84d64f]/30 outline-none text-white transition"
+                    className="w-11 h-13 sm:w-12 sm:h-14 text-center text-xl font-mono font-semibold rounded-xl bg-neutral-50 border border-neutral-200 text-neutral-900 focus:bg-white focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 outline-none transition shadow-xs"
                   />
                 ))}
               </div>
 
               {/* Feedback messages */}
               {errorMsg && (
-                <div className="mt-3 flex items-center gap-2 text-xs font-semibold text-rose-400">
+                <div className="mt-3 flex items-center gap-2 text-xs font-medium text-red-600">
                   <AlertCircle className="w-4 h-4 shrink-0" />
                   <span>{errorMsg}</span>
                 </div>
               )}
 
               {resendMsg && (
-                <div className="mt-3 flex items-center gap-2 text-xs font-semibold text-[#84d64f]">
+                <div className="mt-3 flex items-center gap-2 text-xs font-medium text-emerald-600">
                   <CheckCircle2 className="w-4 h-4 shrink-0" />
                   <span>{resendMsg}</span>
                 </div>
               )}
             </div>
 
-            {/* Verification Action Button */}
+            {/* Submit Action Button */}
             <button
               onClick={() => handleVerifyCode()}
               disabled={isVerifying || otp.join("").length !== 6}
-              className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-[#84d64f] hover:bg-[#75c73d] text-[#14281a] py-3.5 text-sm font-heading font-extrabold shadow-[0_10px_25px_rgba(132,214,79,0.35)] transition active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-neutral-900 hover:bg-black text-white py-3 text-sm font-medium transition active:scale-[0.99] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-xs"
             >
               {isVerifying ? (
                 <>
-                  <div className="h-4 w-4 rounded-full border-2 border-[#14281a] border-t-transparent animate-spin" />
-                  <span>Verifying Code...</span>
+                  <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                  <span>Verifying...</span>
                 </>
               ) : (
                 <>
-                  <span>Confirm & Activate Job Alerts</span>
+                  <span>Verify Email</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
 
             {/* Resend Code Section */}
-            <div className="mt-5 text-center text-xs text-[#eef8e5]/70">
-              Did not receive the code?{" "}
+            <div className="mt-5 text-center text-xs text-neutral-500">
+              Didn't receive the code?{" "}
               {countdown > 0 ? (
-                <span className="font-semibold text-neutral-400">
-                  Resend in <span className="font-mono text-white">{countdown}s</span>
+                <span className="font-medium text-neutral-700">
+                  Resend in <span className="font-mono">{countdown}s</span>
                 </span>
               ) : (
                 <button
                   onClick={handleResend}
                   disabled={isResending}
-                  className="font-bold text-[#84d64f] hover:underline inline-flex items-center gap-1 cursor-pointer"
+                  className="font-medium text-neutral-900 hover:underline inline-flex items-center gap-1 cursor-pointer"
                 >
                   <RefreshCw className={`w-3 h-3 ${isResending ? "animate-spin" : ""}`} />
-                  <span>Resend Code</span>
+                  <span>Resend code</span>
                 </button>
               )}
             </div>
           </div>
         ) : (
-          <div className="py-8 text-center animate-in zoom-in-95 duration-200">
-            <div className="h-16 w-16 rounded-full bg-[#84d64f]/20 border border-[#84d64f] text-[#84d64f] flex items-center justify-center mx-auto mb-4">
-              <CheckCircle2 className="w-8 h-8" />
+          <div className="py-6 text-center animate-in zoom-in-95 duration-200">
+            <div className="h-12 w-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3">
+              <CheckCircle2 className="w-6 h-6" />
             </div>
-            <h3 className="text-2xl font-black text-white">Email Verified!</h3>
-            <p className="text-xs sm:text-sm text-[#eef8e5]/80 mt-1 max-w-xs mx-auto">
-              Your job alert subscription is active. We sent your first welcome digest to your inbox.
+            <h3 className="text-xl font-semibold text-neutral-900">Email Verified</h3>
+            <p className="text-sm text-neutral-500 mt-1 max-w-xs mx-auto">
+              You're all set! Job alert digests will now arrive directly in your inbox.
             </p>
           </div>
         )}

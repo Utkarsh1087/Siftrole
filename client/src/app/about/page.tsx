@@ -48,12 +48,14 @@ export default function AboutPage() {
           <div className="flex items-center justify-between gap-4">
             {/* Logo & Back */}
             <div className="flex items-center gap-4">
-              <Link
-                href="/"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-100 hover:bg-neutral-200 px-3.5 py-2 text-xs font-bold text-[#121816] transition"
-              >
-                <ChevronLeft className="w-4 h-4 text-[#3c7818]" /> Home
-              </Link>
+              {!isLoggedIn && (
+                <Link
+                  href="/"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-100 hover:bg-neutral-200 px-3.5 py-2 text-xs font-bold text-[#121816] transition"
+                >
+                  <ChevronLeft className="w-4 h-4 text-[#3c7818]" /> Home
+                </Link>
+              )}
 
               <Link href="/" className="flex items-center gap-2.5 group">
                 <SiftroleLogoMark size={28} />

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Search,
   Briefcase,
@@ -29,6 +30,9 @@ import {
   FileText,
   CheckCircle2,
   Check,
+  Send,
+  Mail,
+  AlertCircle,
 } from "lucide-react";
 import { CompanyLogo, getCompanyDomain } from "@/components/CompanyLogo";
 import { LiquidSilkBackground } from "@/components/LiquidSilkBackground";
@@ -65,17 +69,71 @@ const COMPANY_COLORS: Record<string, { bg: string; text: string; border: string 
   SmartRecruiters: { bg: "bg-blue-500/10", text: "text-blue-600", border: "border-blue-200" },
 };
 
-export default function Home() {
+export default function LandingPage() {
+  const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedRoleType, setSelectedRoleType] = useState("all");
   const [activeFaq, setActiveFaq] = useState<number | null>(0);
   const [featuredListings, setFeaturedListings] = useState<Listing[]>([]);
   const [totalListingsCount, setTotalListingsCount] = useState<number>(0);
-  const [isLoadingListings, setIsLoadingListings] = useState(true);
+  const [isLoadingListings, setIsLoadingListings] = useState(false);
   const [selectedListingModal, setSelectedListingModal] = useState<Listing | null>(null);
   const [savedJobIds, setSavedJobIds] = useState<Set<string>>(new Set());
   const [copiedLink, setCopiedLink] = useState(false);
+  const [newsletterEmail, setNewsletterEmail] = useState("");
   const [subscribedEmail, setSubscribedEmail] = useState(false);
   const { appliedJobIds, toggleApplied, isApplied } = useAppliedJobs();
   const { isLoggedIn, isLoaded } = useAuth();
+
+  // Contact / Feedback form state
+  const [contactName, setContactName] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactCategory, setContactCategory] = useState("Feedback");
+  const [contactMessage, setContactMessage] = useState("");
+  const [isSendingContact, setIsSendingContact] = useState(false);
+  const [contactSuccess, setContactSuccess] = useState(false);
+  const [contactError, setContactError] = useState<string | null>(null);
+
+  const handleContactSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!contactEmail.trim() || !contactMessage.trim()) return;
+    setIsSendingContact(true);
+    setContactError(null);
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: contactName.trim(),
+          email: contactEmail.trim().toLowerCase(),
+          topic: contactCategory,
+          message: contactMessage.trim(),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to send message. Please try again.");
+      }
+
+      setContactSuccess(true);
+      setContactName("");
+      setContactEmail("");
+      setContactMessage("");
+    } catch (err: any) {
+      console.error("Contact form error:", err);
+      setContactError(err.message || "Failed to send message. Please try again.");
+    } finally {
+      setIsSendingContact(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isLoaded && isLoggedIn) {
+      router.replace("/jobs");
+    }
+  }, [isLoaded, isLoggedIn, router]);
 
   const metrics = [
     { value: "100%", label: "Direct from company career feeds", caption: "Zero scraped third-party reposts" },
@@ -123,22 +181,38 @@ export default function Home() {
     }
   };
 
+  if (isLoaded && isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-[#f8f7f5] flex items-center justify-center">
+        <div className="w-10 h-10 rounded-full border-4 border-[#14281a] border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+
   const faqs = [
     {
-      q: "How does Siftrole guarantee every listing is real?",
-      a: "Every listing on Siftrole is pulled directly from a company's official career page or verified directly from official hiring feeds before publishing. No scraped-from-nowhere postings, no unverified spam.",
+      q: "How does Siftrole guarantee every job listing is verified and active?",
+      a: "Every listing is pulled directly from official company career feeds and applicant tracking systems (like Greenhouse, Lever, Ashby, and SmartRecruiters). The second a role closes on a company's career page, our sync pipeline removes it from Siftrole, eliminating ghost jobs, duplicate reposts, and dead links.",
     },
     {
-      q: "What happens when a company closes an opening?",
-      a: "Listings are kept in sync automatically. The moment a role is filled or closed on the company's own career site, it disappears from Siftrole, eliminating dead links sitting around for weeks.",
+      q: "How does the AI Resume Match scoring work?",
+      a: "Upload your resume or set your target tech stack and graduation year. Our AI parser analyzes the job description's core requirements, skills, and eligibility criteria, ranking roles as High, Medium, or Low fit so you can focus your time on opportunities where you stand out.",
     },
     {
-      q: "Is Siftrole free for students and developers?",
-      a: "Yes, 100% free. You can search, filter, and jump directly to official application portals without registration fees, paywalls, or recruiter middlemen.",
+      q: "What is the AI Cold Email & HR Outreach generator?",
+      a: "Siftrole includes an AI-powered outreach generator that drafts personalized, high-converting cold emails and LinkedIn messages tailored to each specific company and role, helping you connect directly with hiring managers and recruiters.",
     },
     {
-      q: "How does AI Resume Matching work?",
-      a: "Upload your resume in the Sift AI drawer on the Jobs board, and our matching engine instantly scores and ranks all open roles into High, Medium, and Low fit match buckets based on your stack and graduation year.",
+      q: "Can I track my job applications directly on Siftrole?",
+      a: "Yes! Siftrole includes a built-in Application Tracker in your dashboard. You can mark jobs as Applied, track your interview stages, take notes, and keep your entire job search organized in one clean interface.",
+    },
+    {
+      q: "How often are new tech opportunities added and updated?",
+      a: "Our automated sync pipeline continuously monitors official career feeds throughout the day, bringing in verified internships, new grad roles, and full-time engineering positions within minutes of companies publishing them.",
+    },
+    {
+      q: "Is Siftrole completely free for students and developers?",
+      a: "Yes, 100% free. You can search, filter, generate outreach emails, match resumes, and click directly to official application portals without paywalls, subscription gates, or recruiter middlemen.",
     },
   ];
 
@@ -220,7 +294,7 @@ export default function Home() {
         {/* ======================================================== */}
         {/* HERO SECTION */}
         {/* ======================================================== */}
-        <section className="relative mt-8 sm:mt-12 lg:mt-14 pb-12 lg:pb-16">
+        <section className="relative mt-8 sm:mt-12 lg:mt-14 pb-4 sm:pb-6">
           <div className="grid items-center gap-10 lg:grid-cols-[1.12fr_0.88fr]">
             
             {/* Left Column: Heading & Core Angle */}
@@ -271,6 +345,54 @@ export default function Home() {
               </div>
             </div>
           </div>
+
+          {/* ======================================================== */}
+          {/* CASCADING GLOWING CHEVRONS SCROLL PROMPT */}
+          {/* ======================================================== */}
+          <div className="relative z-20 -mt-2 sm:-mt-6 lg:-mt-10 flex justify-center">
+            <button
+              type="button"
+              onClick={() => document.getElementById("jobs")?.scrollIntoView({ behavior: "smooth" })}
+              aria-label="Scroll down to explore verified opportunities"
+              className="group flex flex-col items-center justify-center p-2 transition-all hover:scale-110 active:scale-95 cursor-pointer focus:outline-none"
+            >
+              <div className="flex flex-col items-center -space-y-3 drop-shadow-[0_0_8px_rgba(132,214,79,0.6)]">
+                <svg
+                  className="w-6 h-6 text-[#84d64f] animate-[pulse_1.4s_infinite_100ms] opacity-60 transition-colors group-hover:opacity-90"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+                <svg
+                  className="w-6 h-6 text-[#58a826] animate-[pulse_1.4s_infinite_350ms] opacity-80 transition-colors group-hover:opacity-100"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+                <svg
+                  className="w-6 h-6 text-[#14281a] animate-[pulse_1.4s_infinite_600ms] transition-colors group-hover:text-[#2d5d11]"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </div>
+            </button>
+          </div>
         </section>
 
         {/* ======================================================== */}
@@ -300,146 +422,9 @@ export default function Home() {
         </section>
 
         {/* ======================================================== */}
-        {/* WHY SIFTROLE BENTO GRID */}
-        {/* ======================================================== */}
-        <section id="about" className="py-16 scroll-mt-20">
-          <div className="mb-10 grid gap-6 lg:grid-cols-[1.1fr_0.9fr] items-end">
-            <div>
-              <span className="text-[0.85rem] font-extrabold uppercase tracking-[0.15em] text-[#3c7818]">
-                Why Siftrole
-              </span>
-              <h2 className="mt-2 text-[2.8rem] sm:text-[3.8rem] font-black leading-[1.06] tracking-[-0.04em] text-[#121816]">
-                Built for signal, not noise.
-              </h2>
-            </div>
-            <div className="pt-2 lg:pt-6 text-[1.15rem] leading-[1.8] text-[#55615b]">
-              Every other platform competes on volume: more listings, more noise, more expired reposts. We compete on signal: every listing here is real, current, and verifiable directly back to its source.
-            </div>
-          </div>
-
-          {/* Bento Layout Grid */}
-          <div className="grid gap-6 md:grid-cols-3">
-            
-            {/* Bento 1: Sourced, Not Scraped */}
-            <div className="md:col-span-2 rounded-[28px] border border-neutral-200/80 bg-[#f2eee9] p-8 sm:p-10 flex flex-col justify-between shadow-sm">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="rounded-md bg-[#eef8e5] border border-[#cce8be] text-[#14281a] text-xs font-bold px-2.5 py-1 uppercase tracking-wider">
-                    Always Current
-                  </span>
-                  <span className="rounded-md bg-neutral-200/80 text-[#121915] text-xs font-bold px-2.5 py-1 uppercase tracking-wider">
-                    Auto-Expiring
-                  </span>
-                </div>
-                <h3 className="text-[2.2rem] sm:text-[2.6rem] font-black leading-[1.1] tracking-[-0.03em] text-[#121816] mt-4">
-                  Sourced, not scraped.
-                </h3>
-                <p className="mt-4 text-[1.05rem] leading-[1.7] text-[#55615b] max-w-[620px]">
-                  Every listing traces directly back to the company's official career page. The moment a role closes on the company's own site, it vanishes from ours: eliminating dead links sitting around for weeks.
-                </p>
-              </div>
-
-              <div className="mt-8 relative h-[220px] rounded-[20px] overflow-hidden shadow-sm">
-                <Image
-                  src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80"
-                  alt="Students collaborating on projects"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-            </div>
-
-            {/* Bento 2: Zero Spam & Verified Startups */}
-            <div className="rounded-[28px] bg-[#14281a] p-8 text-white flex flex-col justify-between shadow-md">
-              <div>
-                <span className="rounded-md bg-[#84d64f]/20 text-[#84d64f] text-xs font-bold px-2.5 py-1 uppercase tracking-wider border border-[#84d64f]/30">
-                  Zero Spam
-                </span>
-                <h3 className="text-[2rem] font-black leading-[1.15] tracking-[-0.03em] text-white mt-4">
-                  Verified startups only.
-                </h3>
-                <p className="mt-3 text-sm leading-[1.7] text-[#eef8e5]/90">
-                  Every non-top-company post is manually checked before going live. No anonymous postings, no fake recruitment ads.
-                </p>
-              </div>
-
-              <div className="mt-6 pt-6 border-t border-white/10 flex items-center justify-between">
-                <span className="text-xs font-bold text-[#84d64f]">100% Verified Source Gate</span>
-                <ShieldCheck className="w-5 h-5 text-[#84d64f]" />
-              </div>
-            </div>
-
-            {/* Bento 3: One Feed */}
-            <div className="rounded-[28px] border border-neutral-200/80 bg-white p-8 flex flex-col justify-between shadow-sm">
-              <div>
-                <div className="h-10 w-10 rounded-xl bg-[#eef8e5] text-[#3c7818] flex items-center justify-center mb-3">
-                  <Layers className="w-5 h-5" />
-                </div>
-                <h4 className="text-[1.8rem] font-black tracking-[-0.02em] text-[#121816]">
-                  One feed, not fifty tabs.
-                </h4>
-                <p className="mt-3 text-sm leading-[1.65] text-[#55615b]">
-                  Top tech company openings across official career portals in one clean, unified stream.
-                </p>
-              </div>
-              <div className="mt-6 flex items-center gap-2 text-xs font-bold text-[#14281a]">
-                <ShieldCheck className="w-4 h-4 text-[#3c7818]" />
-                <span>Direct company sync</span>
-              </div>
-            </div>
-
-            {/* Bento 4: Resume-Matched */}
-            <div className="rounded-[28px] border border-neutral-200/80 bg-white p-8 flex flex-col justify-between shadow-sm">
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="rounded-full bg-[#eef8e5] border border-[#cce8be] text-[#14281a] text-xs font-bold px-3 py-1 uppercase tracking-wider">
-                    Smart Rank
-                  </span>
-                  <Sparkles className="w-4 h-4 text-[#58a826]" />
-                </div>
-                <div className="text-[1.8rem] font-black tracking-[-0.02em] text-[#121816]">
-                  Resume-matched.
-                </div>
-                <p className="mt-2 text-sm leading-[1.65] text-[#55615b]">
-                  Upload your resume once. Open roles are ranked as High, Medium, or Low fit based on your exact profile.
-                </p>
-              </div>
-              <div className="mt-6 flex items-center justify-between pt-4 border-t border-neutral-100">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-[#14281a]">
-                  <BellRing className="w-4 h-4 text-[#58a826]" />
-                  <span>Passive discovery alerts</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Bento 5: Application Tracking */}
-            <div className="rounded-[28px] border border-neutral-200/80 bg-white p-8 flex flex-col justify-between shadow-sm">
-              <div>
-                <div className="h-10 w-10 rounded-xl bg-neutral-100 text-[#121816] flex items-center justify-center mb-3">
-                  <ClipboardCheck className="w-5 h-5 text-[#3c7818]" />
-                </div>
-                <h4 className="text-[1.7rem] font-black tracking-[-0.02em] text-[#121816]">
-                  Application tracking.
-                </h4>
-                <p className="mt-2 text-sm leading-[1.65] text-[#55615b]">
-                  One unified place to track applied, interviewed, offered, and rejected across every role you pursue.
-                </p>
-              </div>
-              <Link
-                href="/jobs"
-                className="mt-6 text-xs font-bold text-[#3c7818] inline-flex items-center gap-1 hover:text-[#58a826]"
-              >
-                Explore opportunities <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-
-          </div>
-        </section>
-
-        {/* ======================================================== */}
         {/* FEATURED OPPORTUNITIES SECTION (CURATED PREVIEW) */}
         {/* ======================================================== */}
-        <section id="jobs" className="pt-16 pb-20 scroll-mt-20">
+        <section id="jobs" className="py-16 scroll-mt-20">
           {/* Section Heading with Direct CTA */}
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
             <div>
@@ -614,47 +599,353 @@ export default function Home() {
         </section>
 
         {/* ======================================================== */}
-        {/* FAQ SECTION */}
+        {/* WHY SIFTROLE BENTO GRID */}
         {/* ======================================================== */}
-        <section id="faq" className="py-16 scroll-mt-20 border-t border-neutral-200/80">
-          <div className="max-w-[800px] mx-auto">
-            <div className="text-center mb-10">
+        <section id="about" className="py-16 scroll-mt-20">
+          <div className="mb-10 grid gap-6 lg:grid-cols-[1.1fr_0.9fr] items-end">
+            <div>
               <span className="text-[0.85rem] font-extrabold uppercase tracking-[0.15em] text-[#3c7818]">
-                Got Questions?
+                Why Siftrole
               </span>
-              <h2 className="mt-2 text-[2.4rem] sm:text-[3.2rem] font-black tracking-[-0.03em] text-[#121816]">
-                Frequently Asked Questions
+              <h2 className="mt-2 text-[2.8rem] sm:text-[3.8rem] font-black leading-[1.06] tracking-[-0.04em] text-[#121816]">
+                Built for signal, not noise.
               </h2>
             </div>
-
-            <div className="space-y-4">
-              {faqs.map((faq, idx) => {
-                const isOpen = activeFaq === idx;
-                return (
-                  <div
-                    key={faq.q}
-                    className="rounded-[20px] border border-neutral-200/80 bg-white overflow-hidden shadow-sm transition"
-                  >
-                    <button
-                      onClick={() => setActiveFaq(isOpen ? null : idx)}
-                      className="w-full text-left p-6 font-black text-base sm:text-lg text-[#121816] flex items-center justify-between gap-4"
-                    >
-                      <span>{faq.q}</span>
-                      <ChevronDown
-                        className={`w-5 h-5 text-[#79857f] transition-transform duration-200 shrink-0 ${
-                          isOpen ? "rotate-180 text-[#3c7818]" : ""
-                        }`}
-                      />
-                    </button>
-                    {isOpen && (
-                      <div className="px-6 pb-6 pt-1 text-sm leading-[1.75] text-[#55615b] border-t border-neutral-100">
-                        {faq.a}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+            <div className="pt-2 lg:pt-6 text-[1.15rem] leading-[1.8] text-[#55615b]">
+              Every other platform competes on volume: more listings, more noise, more expired reposts. We compete on signal: every listing here is real, current, and verifiable directly back to its source.
             </div>
+          </div>
+
+          {/* Bento Layout Grid */}
+          <div className="grid gap-6 md:grid-cols-3">
+            
+            {/* Bento 1: Sourced, Not Scraped */}
+            <div className="md:col-span-2 rounded-[28px] border border-neutral-200/80 bg-[#f2eee9] p-8 sm:p-10 flex flex-col justify-between shadow-sm">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-md bg-[#eef8e5] border border-[#cce8be] text-[#14281a] text-xs font-bold px-2.5 py-1 uppercase tracking-wider">
+                    Always Current
+                  </span>
+                  <span className="rounded-md bg-neutral-200/80 text-[#121915] text-xs font-bold px-2.5 py-1 uppercase tracking-wider">
+                    Auto-Expiring
+                  </span>
+                </div>
+                <h3 className="text-[2.2rem] sm:text-[2.6rem] font-black leading-[1.1] tracking-[-0.03em] text-[#121816] mt-4">
+                  Sourced, not scraped.
+                </h3>
+                <p className="mt-4 text-[1.05rem] leading-[1.7] text-[#55615b] max-w-[620px]">
+                  Every listing traces directly back to the company's official career page. The moment a role closes on the company's own site, it vanishes from ours: eliminating dead links sitting around for weeks.
+                </p>
+              </div>
+
+              <div className="mt-8 relative h-[220px] rounded-[20px] overflow-hidden shadow-sm">
+                <Image
+                  src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80"
+                  alt="Students collaborating on projects"
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            </div>
+
+            {/* Bento 2: Zero Spam & Verified Startups */}
+            <div className="rounded-[28px] bg-[#14281a] p-8 text-white flex flex-col justify-between shadow-md">
+              <div>
+                <span className="rounded-md bg-[#84d64f]/20 text-[#84d64f] text-xs font-bold px-2.5 py-1 uppercase tracking-wider border border-[#84d64f]/30">
+                  Zero Spam
+                </span>
+                <h3 className="text-[2rem] font-black leading-[1.15] tracking-[-0.03em] text-white mt-4">
+                  Verified startups only.
+                </h3>
+                <p className="mt-3 text-sm leading-[1.7] text-[#eef8e5]/90">
+                  Every non-top-company post is manually checked before going live. No anonymous postings, no fake recruitment ads.
+                </p>
+              </div>
+
+              <div className="mt-6 pt-6 border-t border-white/10 flex items-center justify-between">
+                <span className="text-xs font-bold text-[#84d64f]">100% Verified Source Gate</span>
+                <ShieldCheck className="w-5 h-5 text-[#84d64f]" />
+              </div>
+            </div>
+
+            {/* Bento 3: One Feed */}
+            <div className="rounded-[28px] border border-neutral-200/80 bg-white p-8 flex flex-col justify-between shadow-sm">
+              <div>
+                <div className="h-10 w-10 rounded-xl bg-[#eef8e5] text-[#3c7818] flex items-center justify-center mb-3">
+                  <Layers className="w-5 h-5" />
+                </div>
+                <h4 className="text-[1.8rem] font-black tracking-[-0.02em] text-[#121816]">
+                  One feed, not fifty tabs.
+                </h4>
+                <p className="mt-3 text-sm leading-[1.65] text-[#55615b]">
+                  Top tech company openings across official career portals in one clean, unified stream.
+                </p>
+              </div>
+              <div className="mt-6 flex items-center gap-2 text-xs font-bold text-[#14281a]">
+                <ShieldCheck className="w-4 h-4 text-[#3c7818]" />
+                <span>Direct company sync</span>
+              </div>
+            </div>
+
+            {/* Bento 4: Resume-Matched */}
+            <div className="rounded-[28px] border border-neutral-200/80 bg-white p-8 flex flex-col justify-between shadow-sm">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="rounded-full bg-[#eef8e5] border border-[#cce8be] text-[#14281a] text-xs font-bold px-3 py-1 uppercase tracking-wider">
+                    Smart Rank
+                  </span>
+                  <Sparkles className="w-4 h-4 text-[#58a826]" />
+                </div>
+                <div className="text-[1.8rem] font-black tracking-[-0.02em] text-[#121816]">
+                  Resume-matched.
+                </div>
+                <p className="mt-2 text-sm leading-[1.65] text-[#55615b]">
+                  Upload your resume once. Open roles are ranked as High, Medium, or Low fit based on your exact profile.
+                </p>
+              </div>
+              <div className="mt-6 flex items-center justify-between pt-4 border-t border-neutral-100">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[#14281a]">
+                  <BellRing className="w-4 h-4 text-[#58a826]" />
+                  <span>Passive discovery alerts</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Bento 5: Application Tracking */}
+            <div className="rounded-[28px] border border-neutral-200/80 bg-white p-8 flex flex-col justify-between shadow-sm">
+              <div>
+                <div className="h-10 w-10 rounded-xl bg-neutral-100 text-[#121816] flex items-center justify-center mb-3">
+                  <ClipboardCheck className="w-5 h-5 text-[#3c7818]" />
+                </div>
+                <h4 className="text-[1.7rem] font-black tracking-[-0.02em] text-[#121816]">
+                  Application tracking.
+                </h4>
+                <p className="mt-2 text-sm leading-[1.65] text-[#55615b]">
+                  One unified place to track applied, interviewed, offered, and rejected across every role you pursue.
+                </p>
+              </div>
+              <Link
+                href="/jobs"
+                className="mt-6 text-xs font-bold text-[#3c7818] inline-flex items-center gap-1 hover:text-[#58a826]"
+              >
+                Explore opportunities <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+
+          </div>
+        </section>
+
+        {/* ======================================================== */}
+        {/* FAQ & WE WOULD LIKE TO HEAR FROM YOU SECTION */}
+        {/* ======================================================== */}
+        <section id="faq" className="py-16 sm:py-20 scroll-mt-20 border-t border-neutral-200/80">
+          <div className="grid lg:grid-cols-[1.12fr_0.88fr] gap-10 lg:gap-14 items-start">
+            
+            {/* Left Column: FAQ Accordion */}
+            <div>
+              <div className="mb-8">
+                <span className="text-[0.85rem] font-extrabold uppercase tracking-[0.15em] text-[#3c7818]">
+                  Got Questions?
+                </span>
+                <h2 className="mt-2 text-[2.2rem] sm:text-[2.8rem] font-black tracking-[-0.03em] text-[#121816] leading-[1.1]">
+                  Frequently Asked Questions
+                </h2>
+                <p className="mt-2 text-xs sm:text-sm text-[#55615b]">
+                  Everything you need to know about our verified feeds, AI tools, and matching.
+                </p>
+              </div>
+
+              <div className="space-y-3.5">
+                {faqs.map((faq, idx) => {
+                  const isOpen = activeFaq === idx;
+                  return (
+                    <div
+                      key={faq.q}
+                      className={`rounded-[20px] border transition-all duration-300 overflow-hidden shadow-2xs ${
+                        isOpen
+                          ? "border-[#84d64f]/60 bg-white shadow-sm ring-1 ring-[#84d64f]/20"
+                          : "border-neutral-200/80 bg-white hover:border-neutral-300"
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setActiveFaq(isOpen ? null : idx)}
+                        className="w-full text-left p-5 sm:p-6 font-black text-sm sm:text-base text-[#121816] flex items-center justify-between gap-4 cursor-pointer hover:bg-neutral-50/50 transition-colors"
+                      >
+                        <span className={`leading-snug transition-colors duration-200 ${isOpen ? "text-[#14281a]" : "text-[#121816]"}`}>
+                          {faq.q}
+                        </span>
+                        <ChevronDown
+                          className={`w-5 h-5 text-[#79857f] transition-transform duration-300 shrink-0 ${
+                            isOpen ? "rotate-180 text-[#3c7818]" : ""
+                          }`}
+                        />
+                      </button>
+
+                      {/* Smooth expanding container */}
+                      <div
+                        className={`grid transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] ${
+                          isOpen
+                            ? "[grid-template-rows:1fr] opacity-100"
+                            : "[grid-template-rows:0fr] opacity-0"
+                        }`}
+                      >
+                        <div className="overflow-hidden">
+                          <div className="px-5 sm:px-6 pb-5 sm:pb-6 pt-2 text-xs sm:text-sm leading-[1.75] text-[#55615b] border-t border-neutral-100 bg-[#fafcfa]/60">
+                            {faq.a}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Right Column: We Would Like to Hear From You Form Card */}
+            <div className="lg:sticky lg:top-24 rounded-[28px] border border-neutral-200/90 bg-white p-7 sm:p-9 shadow-md shadow-neutral-200/40 relative overflow-hidden">
+              {/* Subtle radiant background accent */}
+              <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-bl from-[#84d64f]/25 via-[#84d64f]/5 to-transparent rounded-bl-full pointer-events-none" />
+
+              <div>
+                <span className="text-[0.85rem] font-extrabold uppercase tracking-[0.15em] text-[#3c7818]">
+                  Get In Touch
+                </span>
+                <h3 className="mt-2 text-2xl sm:text-[1.75rem] font-black tracking-tight text-[#121816]">
+                  We would like to hear from you
+                </h3>
+                <p className="mt-2 text-xs sm:text-sm text-[#55615b] leading-relaxed">
+                  Have feedback, a feature suggestion, or spotted a company career feed we should track? Send us a message directly.
+                </p>
+              </div>
+
+              {contactSuccess ? (
+                <div className="mt-6 rounded-2xl border border-[#cce8be] bg-[#f7fcf3] p-6 text-center animate-fadeIn">
+                  <CheckCircle2 className="w-10 h-10 text-[#3c7818] mx-auto mb-2" />
+                  <h4 className="font-extrabold text-sm text-[#14281a]">Thank you for reaching out!</h4>
+                  <p className="text-xs text-[#556958] mt-1.5 leading-relaxed">
+                    Your message has been sent directly to our team. We read every note and will get back to you shortly.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setContactSuccess(false)}
+                    className="mt-4 text-xs font-bold text-[#3c7818] hover:text-[#58a826] underline cursor-pointer"
+                  >
+                    Send another message
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleContactSubmit} className="mt-6 space-y-3.5">
+                  <div>
+                    <label className="block text-[0.72rem] font-extrabold uppercase tracking-wider text-[#45524d] mb-1.5">
+                      Your Name <span className="text-neutral-400 font-normal text-[0.7rem]">(Optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={contactName}
+                      onChange={(e) => {
+                        setContactName(e.target.value);
+                        setContactError(null);
+                      }}
+                      placeholder="Alex Morgan"
+                      className="w-full rounded-xl border border-neutral-200 bg-[#fafcfa] px-4 py-2.5 text-xs sm:text-sm font-medium text-[#121816] placeholder:text-neutral-400 outline-none transition focus:border-[#84d64f] focus:bg-white focus:ring-2 focus:ring-[#84d64f]/20"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[0.72rem] font-extrabold uppercase tracking-wider text-[#45524d] mb-1.5">
+                      Email Address <span className="text-red-500 font-bold">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={contactEmail}
+                      onChange={(e) => {
+                        setContactEmail(e.target.value);
+                        setContactError(null);
+                      }}
+                      placeholder="you@domain.com"
+                      className="w-full rounded-xl border border-neutral-200 bg-[#fafcfa] px-4 py-2.5 text-xs sm:text-sm font-medium text-[#121816] placeholder:text-neutral-400 outline-none transition focus:border-[#84d64f] focus:bg-white focus:ring-2 focus:ring-[#84d64f]/20"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[0.72rem] font-extrabold uppercase tracking-wider text-[#45524d] mb-1.5">
+                      Topic
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {["Feedback", "Feature Request", "Other"].map((cat) => (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => setContactCategory(cat)}
+                          className={`rounded-lg py-1.5 px-2 text-[0.75rem] font-bold transition text-center cursor-pointer border ${
+                            contactCategory === cat
+                              ? "bg-[#14281a] text-[#84d64f] border-[#14281a] shadow-2xs"
+                              : "bg-[#fafcfa] text-[#55615b] border-neutral-200 hover:border-neutral-300"
+                          }`}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[0.72rem] font-extrabold uppercase tracking-wider text-[#45524d] mb-1.5">
+                      Message <span className="text-red-500 font-bold">*</span>
+                    </label>
+                    <textarea
+                      required
+                      rows={3}
+                      value={contactMessage}
+                      onChange={(e) => {
+                        setContactMessage(e.target.value);
+                        setContactError(null);
+                      }}
+                      placeholder="Tell us what you think or how we can help..."
+                      className="w-full rounded-xl border border-neutral-200 bg-[#fafcfa] p-3 text-xs sm:text-sm font-medium text-[#121816] placeholder:text-neutral-400 outline-none transition focus:border-[#84d64f] focus:bg-white focus:ring-2 focus:ring-[#84d64f]/20 resize-none"
+                    />
+                  </div>
+
+                  {contactError && (
+                    <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
+                      <span>{contactError}</span>
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={isSendingContact}
+                    className="w-full rounded-xl bg-[#84d64f] hover:bg-[#75c73d] text-[#14281a] font-bold text-xs sm:text-sm py-3 shadow-md shadow-[#84d64f]/25 transition active:scale-[0.98] disabled:opacity-60 cursor-pointer inline-flex items-center justify-center gap-2 mt-1"
+                  >
+                    {isSendingContact ? (
+                      <>
+                        <div className="w-4 h-4 rounded-full border-2 border-[#14281a] border-t-transparent animate-spin" />
+                        <span>Sending message...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-3.5 h-3.5" />
+                        <span>Send Message</span>
+                      </>
+                    )}
+                  </button>
+                </form>
+              )}
+
+              <div className="mt-5 pt-4 border-t border-neutral-100 flex items-center justify-center text-[0.72rem] text-[#718276]">
+                <a
+                  href="mailto:support@siftrole.in"
+                  className="inline-flex items-center gap-1.5 hover:text-[#3c7818] transition-colors"
+                >
+                  <Mail className="w-3.5 h-3.5 text-[#3c7818]" />
+                  <span>support@siftrole.in</span>
+                </a>
+              </div>
+            </div>
+
           </div>
         </section>
 
@@ -708,16 +999,20 @@ export default function Home() {
               </h4>
               <ul className="space-y-2.5 text-xs font-semibold text-[#55615b]">
                 <li><a href="https://linkedin.com" target="_blank" rel="noreferrer" className="hover:text-[#3c7818] transition">LinkedIn</a></li>
-                <li><a href="https://instagram.com" target="_blank" rel="noreferrer" className="hover:text-[#3c7818] transition">Instagram</a></li>
               </ul>
             </div>
           </div>
 
           {/* Sub-row */}
           <div className="pt-8 border-t border-neutral-200/70 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-semibold text-[#55615b]">
-            <div>100% Direct Official Feeds</div>
-            <div>support@siftrole.com</div>
-            <div>&copy; {new Date().getFullYear()} Siftrole Legal</div>
+            <div>
+              &copy; {new Date().getFullYear()} Siftrole. All rights reserved.
+            </div>
+            <div>
+              <a href="mailto:support@siftrole.in" className="hover:text-[#3c7818] transition">
+                support@siftrole.in
+              </a>
+            </div>
           </div>
 
           {/* ======================================================== */}

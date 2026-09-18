@@ -81,6 +81,31 @@ db.exec(`
   );
 `);
 
+// Safe column migrations for users table
+try {
+  const userCols = db.prepare("PRAGMA table_info(users)").all().map(c => c.name);
+  const profileColsToAdd = [
+    { name: 'skills', type: 'TEXT' },
+    { name: 'target_role', type: 'TEXT' },
+    { name: 'bio', type: 'TEXT' },
+    { name: 'github_url', type: 'TEXT' },
+    { name: 'linkedin_url', type: 'TEXT' },
+    { name: 'phone', type: 'TEXT' },
+    { name: 'portfolio_url', type: 'TEXT' },
+    { name: 'resume_name', type: 'TEXT' },
+    { name: 'work_mode', type: 'TEXT' },
+    { name: 'salary_expectation', type: 'TEXT' },
+  ];
+
+  for (const col of profileColsToAdd) {
+    if (!userCols.includes(col.name)) {
+      db.prepare(`ALTER TABLE users ADD COLUMN ${col.name} ${col.type}`).run();
+    }
+  }
+} catch (migErr) {
+  console.warn('User profile column migration notice:', migErr.message);
+}
+
 function seedDefaults() {
   const listingCount = db.prepare('SELECT COUNT(*) AS count FROM listings').get().count;
   if (listingCount > 0) return;
@@ -168,18 +193,18 @@ function seedDefaults() {
     const users = [
       {
         id: 'user-student',
-        name: 'Aisha Singh',
+        name: 'Candidate',
         email: 'student@demo.com',
         password_hash: bcrypt.hashSync('password123', 10),
         role: 'student',
-        grad_year: 2027,
-        degree: 'B.Tech in CSE',
-        resume_url: 'https://example.com/resume/aisha.pdf',
+        grad_year: null,
+        degree: null,
+        resume_url: null,
         profile_status: 'verified',
       },
       {
         id: 'user-admin',
-        name: 'Priya Verma',
+        name: 'Admin',
         email: 'admin@demo.com',
         password_hash: bcrypt.hashSync('admin123', 10),
         role: 'admin',
@@ -190,7 +215,7 @@ function seedDefaults() {
       },
       {
         id: 'user-recruiter',
-        name: 'Rahul Mehra',
+        name: 'Recruiter',
         email: 'recruiter@demo.com',
         password_hash: bcrypt.hashSync('recruit123', 10),
         role: 'recruiter',
@@ -209,6 +234,12 @@ function seedDefaults() {
     for (const user of users) {
       insertUser.run(user);
     }
+  } else {
+    // Purge any legacy mock degrees/names from existing SQLite demo user
+    try {
+      db.prepare("UPDATE users SET degree = NULL, grad_year = NULL WHERE id = 'user-student' AND (degree = 'B.Tech in CSE' OR degree LIKE '%CSE%')").run();
+      db.prepare("UPDATE users SET name = 'Candidate' WHERE id = 'user-student' AND name = 'Aisha Singh'").run();
+    } catch {}
   }
 
   const applicationCount = db.prepare('SELECT COUNT(*) AS count FROM applications').get().count;
@@ -382,7 +413,7 @@ module.exports = {
     if (existing) {
       db.prepare(`
         UPDATE newsletter_subscribers
-        SET otp_code = ?, verification_token = ?, otp_expires_at = ?, status = 'active'
+        SET otp_code = ?, verification_token = ?, otp_expires_at = ?, status = 'active', is_verified = 0
         WHERE email = ?
       `).run(otp_code, verification_token, otp_expires_at, email);
       return db.prepare('SELECT * FROM newsletter_subscribers WHERE email = ?').get(email);
@@ -415,5 +446,94 @@ module.exports = {
   unsubscribeNewsletter(email) {
     db.prepare("UPDATE newsletter_subscribers SET status = 'unsubscribed' WHERE email = ?").run(email);
     return true;
+  },
+  getUserProfile(id) {
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+    if (!user) return null;
+    let parsedSkills = [];
+    try {
+      if (user.skills) parsedSkills = JSON.parse(user.skills);
+    } catch {
+      parsedSkills = [];
+    }
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      grad_year: user.grad_year,
+      degree: user.degree,
+      target_role: user.target_role,
+      bio: user.bio,
+      skills: parsedSkills,
+      github_url: user.github_url,
+      linkedin_url: user.linkedin_url,
+      phone: user.phone,
+      portfolio_url: user.portfolio_url,
+      resume_name: user.resume_name,
+      resume_url: user.resume_url,
+      work_mode: user.work_mode,
+      salary_expectation: user.salary_expectation,
+      profile_status: user.profile_status,
+      created_at: user.created_at,
+    };
+  },
+  updateUserProfile(id, {
+    name,
+    grad_year,
+    degree,
+    target_role,
+    bio,
+    skills,
+    github_url,
+    linkedin_url,
+    phone,
+    portfolio_url,
+    resume_name,
+    resume_url,
+    work_mode,
+    salary_expectation,
+  }) {
+    const existing = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+    if (!existing) return null;
+
+    const skillsString = Array.isArray(skills) ? JSON.stringify(skills) : (skills || existing.skills || '[]');
+
+    db.prepare(`
+      UPDATE users
+      SET name = COALESCE(@name, name),
+          grad_year = COALESCE(@grad_year, grad_year),
+          degree = COALESCE(@degree, degree),
+          target_role = COALESCE(@target_role, target_role),
+          bio = COALESCE(@bio, bio),
+          skills = @skills,
+          github_url = COALESCE(@github_url, github_url),
+          linkedin_url = COALESCE(@linkedin_url, linkedin_url),
+          phone = COALESCE(@phone, phone),
+          portfolio_url = COALESCE(@portfolio_url, portfolio_url),
+          resume_name = COALESCE(@resume_name, resume_name),
+          resume_url = COALESCE(@resume_url, resume_url),
+          work_mode = COALESCE(@work_mode, work_mode),
+          salary_expectation = COALESCE(@salary_expectation, salary_expectation)
+      WHERE id = @id
+    `).run({
+      id,
+      name: name !== undefined ? name : null,
+      grad_year: grad_year !== undefined ? grad_year : null,
+      degree: degree !== undefined ? degree : null,
+      target_role: target_role !== undefined ? target_role : null,
+      bio: bio !== undefined ? bio : null,
+      skills: skillsString,
+      github_url: github_url !== undefined ? github_url : null,
+      linkedin_url: linkedin_url !== undefined ? linkedin_url : null,
+      phone: phone !== undefined ? phone : null,
+      portfolio_url: portfolio_url !== undefined ? portfolio_url : null,
+      resume_name: resume_name !== undefined ? resume_name : null,
+      resume_url: resume_url !== undefined ? resume_url : null,
+      work_mode: work_mode !== undefined ? work_mode : null,
+      salary_expectation: salary_expectation !== undefined ? salary_expectation : null,
+    });
+
+    return this.getUserProfile(id);
   },
 };

@@ -27,16 +27,27 @@ enum UserStatus {
 }
 
 model User {
-  id              String      @id @default(cuid())
-  email           String      @unique
-  name            String
-  role            UserRole    @default(STUDENT)
-  status          UserStatus  @default(ACTIVE)
-  graduation_year Int?
-  skills          String[]    @default([])
-  resume_url      String?
-  created_at      DateTime    @default(now())
-  updated_at      DateTime    @updatedAt
+  id                 String      @id @default(cuid())
+  email              String      @unique
+  name               String
+  role               UserRole    @default(STUDENT)
+  status             UserStatus  @default(ACTIVE)
+  graduation_year    Int?
+  degree             String?
+  target_role        String?
+  bio                String?
+  skills             String[]    @default([])
+  github_url         String?
+  linkedin_url       String?
+  phone              String?
+  portfolio_url      String?
+  resume_name        String?
+  resume_url         String?
+  work_mode          String?
+  salary_expectation String?
+  profile_status     String?
+  created_at         DateTime    @default(now())
+  updated_at         DateTime    @updatedAt
 
   @@map("users")
 }
