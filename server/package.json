@@ -15,7 +15,6 @@
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.3",
     "nodemailer": "^10.0.10",
-    "resend": "^6.28.1",
-    "siftrole": "file:.."
+    "resend": "^6.28.1"
   }
 }

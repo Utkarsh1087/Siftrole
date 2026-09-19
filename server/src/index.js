@@ -49,11 +49,34 @@ function adminOnly(req, res, next) {
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 
-// Global bot protection and API rate limiter
-app.use(generalApiLimiter);
+// Process crash-prevention: ensure server NEVER goes down on unexpected errors
+process.on('uncaughtException', (err) => {
+  console.error('[CRITICAL] Uncaught Exception intercepted (prevented server crash):', err?.message || err);
+  if (err?.stack) console.error(err.stack);
+});
 
-app.get('/health', (req, res) => res.json({ status: 'ok', service: 'siftrole-server', uptime: process.uptime(), timestamp: new Date().toISOString() }));
-app.get('/api/health', (req, res) => res.json({ status: 'ok', service: 'siftrole-server', uptime: process.uptime(), timestamp: new Date().toISOString() }));
+process.on('unhandledRejection', (reason) => {
+  console.error('[CRITICAL] Unhandled Rejection intercepted (prevented server crash):', reason?.message || reason);
+});
+
+// Exempt health endpoints from rate limiting so Uptime Monitors and GitHub Actions never hit 429
+app.get('/health', (req, res) => res.json({ 
+  status: 'ok', 
+  service: 'siftrole-server', 
+  uptime: Math.floor(process.uptime()), 
+  memoryUsageMb: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+  timestamp: new Date().toISOString() 
+}));
+app.get('/api/health', (req, res) => res.json({ 
+  status: 'ok', 
+  service: 'siftrole-server', 
+  uptime: Math.floor(process.uptime()), 
+  memoryUsageMb: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+  timestamp: new Date().toISOString() 
+}));
+
+// Global bot protection and API rate limiter for all other routes
+app.use(generalApiLimiter);
 
 // Apply dedicated auth rate limiter to prevent brute force
 app.use('/api/auth', authLimiter, authRoutes);
@@ -89,10 +112,38 @@ app.get('/api/roles', (req, res) => {
   res.json({ roles: ['student', 'admin'] });
 });
 
+// Global Express error handler to prevent unhandled response drops
+app.use((err, req, res, next) => {
+  console.error('[EXPRESS ERROR]', err?.message || err);
+  if (res.headersSent) {
+    return next(err);
+  }
+  return res.status(err.status || 500).json({
+    error: 'Internal Server Error',
+    message: process.env.NODE_ENV === 'production' ? 'An unexpected server error occurred.' : (err?.message || 'Unknown error'),
+  });
+});
+
 const { initScraperScheduler } = require('./scraperCron');
 
 const port = process.env.PORT || 4000;
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`Server running on ${port}`);
   initScraperScheduler();
 });
+
+// Graceful shutdown handling for cloud orchestrators (Docker, Kubernetes, Render, Railway)
+function handleGracefulShutdown(signal) {
+  console.log(`Received ${signal}. Gracefully closing HTTP server connections...`);
+  server.close(() => {
+    console.log('HTTP server closed cleanly. Exiting.');
+    process.exit(0);
+  });
+  setTimeout(() => {
+    console.error('Forcefully exiting after timeout.');
+    process.exit(1);
+  }, 10000);
+}
+
+process.on('SIGTERM', () => handleGracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => handleGracefulShutdown('SIGINT'));
