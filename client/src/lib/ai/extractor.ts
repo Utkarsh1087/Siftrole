@@ -11,7 +11,7 @@ CRITICAL PARSING RULES:
 1. STRIP ALL GARBAGE: Strip out scraped UI artifacts like 'info_outline', 'X', close buttons, navigation headers, or cookie banners.
 2. TITLE: Extract the clean official title (e.g. 'Software Engineering Intern, PhD (Summer 2027)'). Never include URLs or raw UI tags in the title.
 3. COMPANY: Detect the accurate company name (e.g. 'Google').
-4. LOCATION: Detect primary locations or summarize if multiple (e.g. 'United States (Multiple Locations: Mountain View, NYC, Seattle, etc.)').
+4. LOCATION: Detect primary location or concise summary (e.g. 'United States (Multiple Locations)' or 'Mountain View, CA' or 'Remote'). Keep it short and concise (under 40 characters). Do NOT dump long lists of 10+ cities.
 5. EMPLOYMENT TYPE: 'Internship' | 'Full time' | 'Part time' | 'Contract' | null.
 6. SALARY / STIPEND: Extract exact figures or range with currency (e.g. '$118,000 - $157,000 (USD)'). If not mentioned, set to null.
 7. DEADLINE: Extract exact deadline if mentioned (e.g. '2027-02-26' or 'February 26, 2027'). If unstated, set to null.

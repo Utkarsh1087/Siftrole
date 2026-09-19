@@ -51,6 +51,23 @@ const companyBrandStyles: Record<string, { bg: string; text: string; border: str
   SmartRecruiters: { bg: "bg-blue-500/10", text: "text-blue-600", border: "border-blue-200" },
 };
 
+function formatLocation(loc: string | null | undefined): string {
+  if (!loc) return "Remote / Unspecified";
+  const trimmed = loc.trim();
+  if (/multiple locations/i.test(trimmed)) {
+    const prefix = trimmed.split("(")[0].trim();
+    return prefix ? `${prefix} (Multiple Locations)` : "Multiple Locations";
+  }
+  if (trimmed.length > 35) {
+    const parts = trimmed.split(/[;,]/);
+    if (parts.length > 1 && parts[0].trim().length >= 3) {
+      return `${parts[0].trim()} +more`;
+    }
+    return trimmed.slice(0, 32) + "...";
+  }
+  return trimmed;
+}
+
 type QuickFilterKey = "internships" | "newgrad" | "remote" | "highmatch";
 
 export default function JobsPage() {
@@ -673,161 +690,145 @@ export default function JobsPage() {
                 return (
                   <div
                     key={job.id || job.raw_jd_hash || idx}
-                    className={`block group rounded-[24px] border p-6 sm:p-7 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all duration-200 hover:border-[#84d64f] hover:bg-[#f7fcf4] hover:shadow-md relative overflow-hidden ${
-                      applied
-                        ? "border-[#84d64f]/70 bg-[#f7fcf3]"
-                        : "border-neutral-200/90 bg-white"
+                    onClick={() => setSelectedListingModal(job)}
+                    className={`group rounded-2xl border p-5 sm:p-6 shadow-xs transition-all duration-150 hover:border-[#84d64f] hover:shadow-md cursor-pointer relative ${
+                      applied ? "border-[#84d64f]/70 bg-[#f8fcf5]" : "border-neutral-200/90 bg-white"
                     }`}
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                      {/* Left Block */}
-                      <div className="flex-1 min-w-0">
-                        {/* Company Logo + Domain + Match Badge */}
-                        <div className="flex items-center gap-2.5 flex-wrap">
-                          <CompanyLogo
-                            company={job.company}
-                            size="sm"
-                            className="!h-5 !w-5 !p-0 rounded-md border-0 bg-transparent shadow-none"
-                          />
-                          <span className="text-xs sm:text-sm font-bold text-[#121816] tracking-tight">
-                            {getCompanyDomain(job.company)}
+                    {/* Top Row: Company Logo & Name & Verified Badge, Actions */}
+                    <div className="flex items-center justify-between gap-3 mb-2.5">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-wrap">
+                        <CompanyLogo
+                          company={job.company}
+                          size="sm"
+                          className="!h-6 !w-6 !p-0.5 rounded-md border border-neutral-100 bg-white shadow-none shrink-0"
+                        />
+                        <span className="text-xs sm:text-sm font-bold text-[#121816] tracking-tight truncate">
+                          {job.company}
+                        </span>
+                        <span className="rounded-full bg-[#eef8e5] text-[#2d6113] text-[0.65rem] font-bold px-2 py-0.5 border border-[#cce8be] inline-flex items-center gap-1 shrink-0">
+                          <ShieldCheck className="w-3 h-3 text-[#3c7818]" /> Verified
+                        </span>
+
+                        {matchInfo && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-[#84d64f] text-[#14281a] text-[0.65rem] font-extrabold px-2 py-0.5 shadow-2xs shrink-0">
+                            <Sparkles className="w-3 h-3 text-[#14281a]" />
+                            {matchInfo.score}% Match
                           </span>
-
-                          {matchInfo && (
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#84d64f] text-[#14281a] text-[0.68rem] font-black px-2.5 py-0.5 shadow-2xs">
-                              <Sparkles className="w-3 h-3 text-[#14281a]" />
-                              {matchInfo.score}% Match ({matchInfo.matchedCount}/{matchInfo.totalCount} Skills)
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Job Title */}
-                        <h3
-                          onClick={() => setSelectedListingModal(job)}
-                          className="text-xl sm:text-[1.35rem] font-black text-[#121816] tracking-tight mt-2 mb-3.5 group-hover:text-black transition-colors cursor-pointer hover:underline"
-                        >
-                          {job.title}
-                        </h3>
-
-                        {/* Experience / Type Pills */}
-                        <div className="flex flex-wrap items-center gap-2 mb-3">
-                          {job.experience_level && (
-                            <span className="rounded-full border border-neutral-200 bg-neutral-50 px-3 py-0.5 text-xs font-semibold text-[#55615b]">
-                              {job.experience_level.toLowerCase().includes("experience")
-                                ? job.experience_level
-                                : `${job.experience_level} Experience`}
-                            </span>
-                          )}
-                          {job.employment_type && (
-                            <span className="rounded-full border border-neutral-200 bg-neutral-50 px-3 py-0.5 text-xs font-semibold text-[#55615b]">
-                              {job.employment_type}
-                            </span>
-                          )}
-                          {job.eligibility && (
-                            <span className="rounded-full border border-neutral-200 bg-neutral-50 px-3 py-0.5 text-xs font-semibold text-[#55615b]">
-                              {job.eligibility}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Skills Breakdown Tags: Matched vs Missing */}
-                        {job.skills_required && job.skills_required.length > 0 && (
-                          <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                            {job.skills_required.slice(0, 6).map((skill) => {
-                              const isMatched = activeResumeSkills.some(
-                                (rs) => rs.toLowerCase() === skill.toLowerCase()
-                              );
-                              return (
-                                <span
-                                  key={skill}
-                                  className={`rounded-lg px-2.5 py-0.5 text-[0.72rem] font-bold border transition-colors ${
-                                    isMatched
-                                      ? "bg-[#d7f3be] text-[#1e480d] border-[#84d64f] inline-flex items-center gap-1"
-                                      : activeResumeSkills.length > 0
-                                      ? "bg-white text-neutral-400 border-neutral-200/60"
-                                      : "bg-neutral-50 text-[#55615b] border-neutral-200/80"
-                                  }`}
-                                >
-                                  {isMatched && <Check className="w-2.5 h-2.5 text-[#1e480d] stroke-[3]" />}
-                                  {skill}
-                                </span>
-                              );
-                            })}
-                            {job.skills_required.length > 6 && (
-                              <span className="text-[0.68rem] text-[#79857f] font-semibold">
-                                +{job.skills_required.length - 6} more
-                              </span>
-                            )}
-                          </div>
                         )}
                       </div>
 
-                      {/* Right Block: Compensation & Location & Bookmark / Applied Actions */}
-                      <div className="flex sm:flex-col items-start sm:items-end justify-between sm:justify-start gap-3 shrink-0 mt-3 sm:mt-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-neutral-100">
-                        <div className="text-left sm:text-right">
-                          <div className="text-lg sm:text-xl font-black text-[#121816] tracking-tight">
-                            {job.stipend_or_salary ? (
-                              job.stipend_or_salary.toLowerCase().includes("year") ||
-                              job.stipend_or_salary.toLowerCase().includes("/yr") ||
-                              job.stipend_or_salary.toLowerCase().includes("/mo") ? (
-                                job.stipend_or_salary
-                              ) : (
-                                <>
-                                  {job.stipend_or_salary}
-                                  <span className="text-xs sm:text-sm font-semibold text-[#55615b]">/Yearly</span>
-                                </>
-                              )
-                            ) : (
-                              <>
-                                $140K<span className="text-xs sm:text-sm font-semibold text-[#55615b]">/Yearly</span>
-                              </>
-                            )}
-                          </div>
-                          <div className="text-xs sm:text-sm font-medium text-[#55615b] mt-0.5">
-                            {job.location}
-                          </div>
-                        </div>
+                      {/* Bookmark & Apply Actions */}
+                      <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={(e) => toggleSaved(job, e)}
+                          className={`p-1.5 rounded-xl border transition-all cursor-pointer shadow-2xs ${
+                            saved
+                              ? "bg-[#14281a] text-[#84d64f] border-[#14281a]"
+                              : "bg-white border-neutral-200 text-[#79857f] hover:text-[#14281a] hover:border-[#84d64f]"
+                          }`}
+                          title={saved ? "Saved" : "Save"}
+                        >
+                          <Bookmark className={`w-3.5 h-3.5 ${saved ? "fill-[#84d64f]" : ""}`} />
+                        </button>
 
-                        {/* Action Buttons: Save & Mark Applied */}
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={(e) => toggleSaved(job, e)}
-                            className={`p-2 rounded-xl border transition-all cursor-pointer shadow-2xs ${
-                              saved
-                                ? "bg-[#14281a] text-[#84d64f] border-[#14281a]"
-                                : "bg-white border-neutral-300 text-[#79857f] hover:text-[#14281a] hover:border-[#84d64f]"
-                            }`}
-                            title={saved ? "Saved to shortlist (Click to remove)" : "Save to shortlist"}
-                          >
-                            <Bookmark className={`w-3.5 h-3.5 ${saved ? "fill-[#84d64f]" : ""}`} />
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={(e) => toggleApplied(job, e)}
-                            className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all shadow-2xs cursor-pointer ${
-                              applied
-                                ? "bg-[#14281a] text-[#84d64f] hover:bg-[#1f3d27]"
-                                : "border border-neutral-300 bg-white/90 text-[#45524d] hover:border-[#84d64f] hover:text-[#14281a] hover:bg-[#eef8e5]"
-                            }`}
-                            title={applied ? "Click to unmark as applied" : "Mark as applied"}
-                          >
-                            {applied ? (
-                              <>
-                                <CheckCircle2 className="w-3.5 h-3.5 text-[#84d64f]" />
-                                <span>Applied</span>
-                              </>
-                            ) : (
-                              <>
-                                <Check className="w-3.5 h-3.5 text-[#79857f]" />
-                                <span>Mark Applied</span>
-                              </>
-                            )}
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => toggleApplied(job, e)}
+                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[0.7rem] font-bold transition-all shadow-2xs cursor-pointer ${
+                            applied
+                              ? "bg-[#14281a] text-[#84d64f]"
+                              : "border border-neutral-200 bg-neutral-50 hover:border-[#84d64f] hover:text-[#14281a] hover:bg-[#eef8e5] text-[#55615b]"
+                          }`}
+                        >
+                          {applied ? (
+                            <>
+                              <CheckCircle2 className="w-3 h-3 text-[#84d64f]" />
+                              <span>Applied</span>
+                            </>
+                          ) : (
+                            <>
+                              <Check className="w-3 h-3 text-[#79857f]" />
+                              <span>Mark Applied</span>
+                            </>
+                          )}
+                        </button>
                       </div>
                     </div>
+
+                    {/* Second Row: Job Title */}
+                    <h3 className="text-lg sm:text-xl font-black text-[#121816] tracking-tight group-hover:text-[#2d6113] transition-colors leading-snug mb-3 line-clamp-2">
+                      {job.title}
+                    </h3>
+
+                    {/* Third Row: Key Important Details Pills */}
+                    <div className="flex flex-wrap items-center gap-2 mb-3.5">
+                      {/* Location */}
+                      <div className="inline-flex items-center gap-1.5 bg-[#f6f5f2] border border-neutral-200/80 rounded-lg px-2.5 py-1 text-xs font-medium text-[#45524d]">
+                        <MapPin className="w-3.5 h-3.5 text-[#79857f] shrink-0" />
+                        <span className="truncate max-w-[240px]">{formatLocation(job.location)}</span>
+                      </div>
+
+                      {/* Employment Type */}
+                      {job.employment_type && (
+                        <div className="inline-flex items-center gap-1.5 bg-[#f6f5f2] border border-neutral-200/80 rounded-lg px-2.5 py-1 text-xs font-medium text-[#45524d]">
+                          <Briefcase className="w-3.5 h-3.5 text-[#79857f] shrink-0" />
+                          <span>{job.employment_type}</span>
+                        </div>
+                      )}
+
+                      {/* Salary */}
+                      {job.stipend_or_salary && (
+                        <div className="inline-flex items-center gap-1.5 bg-[#eef8e5] border border-[#cce8be] text-[#24580d] rounded-lg px-2.5 py-1 text-xs font-bold">
+                          <DollarSign className="w-3.5 h-3.5 text-[#3c7818] shrink-0" />
+                          <span>{job.stipend_or_salary}</span>
+                        </div>
+                      )}
+
+                      {/* Experience Level */}
+                      {job.experience_level && (
+                        <div className="inline-flex items-center gap-1.5 bg-[#f6f5f2] border border-neutral-200/80 rounded-lg px-2.5 py-1 text-xs font-medium text-[#45524d]">
+                          <GraduationCap className="w-3.5 h-3.5 text-[#79857f] shrink-0" />
+                          <span>{job.experience_level}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Fourth Row: Skills + View Details Link */}
+                    {job.skills_required && job.skills_required.length > 0 && (
+                      <div className="flex items-center justify-between gap-2 pt-3 border-t border-neutral-100 flex-wrap">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {job.skills_required.slice(0, 5).map((skill) => {
+                            const isMatched = activeResumeSkills.some(
+                              (rs) => rs.toLowerCase() === skill.toLowerCase()
+                            );
+                            return (
+                              <span
+                                key={skill}
+                                className={`rounded-md px-2 py-0.5 text-[0.7rem] font-semibold border ${
+                                  isMatched
+                                    ? "bg-[#d7f3be] text-[#1e480d] border-[#84d64f] font-bold"
+                                    : "bg-neutral-50 text-[#55615b] border-neutral-200/70"
+                                }`}
+                              >
+                                {isMatched && <Check className="w-2.5 h-2.5 text-[#1e480d] inline mr-1 stroke-[3]" />}
+                                {skill}
+                              </span>
+                            );
+                          })}
+                          {job.skills_required.length > 5 && (
+                            <span className="text-[0.68rem] text-[#79857f] font-medium">
+                              +{job.skills_required.length - 5} more
+                            </span>
+                          )}
+                        </div>
+
+                        <span className="text-xs font-bold text-[#3c7818] group-hover:underline inline-flex items-center gap-1 shrink-0 ml-auto">
+                          View Details <ArrowRight className="w-3.5 h-3.5" />
+                        </span>
+                      </div>
+                    )}
                   </div>
                 );
               })
