@@ -50,9 +50,9 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-base font-black text-[#121816]">4. Free Launch Access (First Two Months)</h2>
+            <h2 className="text-base font-black text-[#121816]">4. Platform Access</h2>
             <p>
-              All job listings, verified recruiter contacts, AI career copilot tools, and cold email drafters are 100% free for your first two months during our promotional launch period. Siftrole does not charge any upfront fees or require credit cards to access all platform features.
+              All job listings, verified recruiter contacts, AI career copilot tools, and cold email drafters are completely open for candidates. Siftrole does not require candidate subscription fees or credit cards to search and apply for verified roles.
             </p>
           </section>
 

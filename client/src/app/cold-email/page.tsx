@@ -250,12 +250,11 @@ export default function ColdEmailPage() {
               </p>
             </div>
 
-            {/* Clean Status Badge */}
+            {/* Directory Count Badge */}
             <div className="shrink-0">
               <div className="inline-flex items-center gap-2 rounded-xl border border-neutral-200/90 bg-white px-3.5 py-2 text-xs text-[#55615b] shadow-2xs">
-                <span className="font-semibold text-[#121816]">Free for first 2 months</span>
-                <span className="text-neutral-300">•</span>
-                <span>All {contacts.length}+ contacts unlocked</span>
+                <span className="h-2 w-2 rounded-full bg-[#3c7818]" />
+                <span className="font-semibold text-[#121816]">{contacts.length}+ Verified Contacts</span>
               </div>
             </div>
           </div>

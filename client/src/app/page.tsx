@@ -222,7 +222,7 @@ export default function LandingPage() {
     },
     {
       q: "Is Siftrole completely free for students and developers?",
-      a: "Yes! Siftrole is 100% free for your first two months during our launch phase. You get full, unrestricted access to verified recruiter contacts, AI cold email drafting, resume match scoring, and direct application links with zero fees or credit cards required.",
+      a: "Yes, 100% free. You can search, filter, generate outreach emails, match resumes, and click directly to official application portals without paywalls or subscription gates.",
     },
   ];
 
@@ -309,13 +309,6 @@ export default function LandingPage() {
             
             {/* Left Column: Heading & Core Angle */}
             <div className="relative z-10">
-              {/* Simple announcement badge */}
-              <div className="inline-flex items-center gap-2 rounded-full border border-neutral-200/90 bg-white px-3.5 py-1 text-xs text-[#55615b] shadow-2xs mb-5">
-                <span className="font-semibold text-[#121816]">Free for first 2 months</span>
-                <span className="text-neutral-300">•</span>
-                <span>No credit card required</span>
-              </div>
-
               <h1 className="font-heading text-[3.2rem] sm:text-[4.4rem] lg:text-[4.9rem] font-extrabold tracking-[-0.035em] text-[#121816] leading-[1.05]">
                 Thinking you applied to them all?<br />
                 <span className="text-[#58a826]">Check the master list.</span>
