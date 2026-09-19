@@ -377,11 +377,24 @@ export const HR_CONTACTS_DATA: HRContact[] = [
   },
 ];
 
+/**
+ * Launch Special: Free for First 2 Months
+ * Full platform features, recruiter database, and AI cold email tooling are 100% free.
+ */
+export const IS_PROMOTIONAL_FREE_PERIOD = true;
+export const PROMOTION_DURATION = "First 2 Months Free";
 export const FREE_CONTACTS_LIMIT = 99999;
 
 export function isProUser(): boolean {
-  // All recruiter contacts and features are 100% free and unlocked
-  return true;
+  // Free for first two months for all users
+  if (IS_PROMOTIONAL_FREE_PERIOD) return true;
+  if (typeof window === "undefined") return false;
+  try {
+    const pro = localStorage.getItem("siftrole_pro_unlocked");
+    return pro === "true";
+  } catch {
+    return false;
+  }
 }
 
 export function unlockProAccess(): void {
