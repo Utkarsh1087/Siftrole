@@ -309,10 +309,11 @@ export default function LandingPage() {
             
             {/* Left Column: Heading & Core Angle */}
             <div className="relative z-10">
-              {/* Launch Offer Badge */}
-              <div className="inline-flex items-center gap-2 rounded-full bg-[#14281a] text-[#84d64f] px-4 py-1.5 text-xs font-bold border border-[#84d64f]/30 shadow-xs mb-4">
-                <span className="flex h-2 w-2 rounded-full bg-[#84d64f] animate-pulse" />
-                <span>🎉 Launch Special: 100% Free for First 2 Months</span>
+              {/* Simple announcement badge */}
+              <div className="inline-flex items-center gap-2 rounded-full border border-neutral-200/90 bg-white px-3.5 py-1 text-xs text-[#55615b] shadow-2xs mb-5">
+                <span className="font-semibold text-[#121816]">Free for first 2 months</span>
+                <span className="text-neutral-300">•</span>
+                <span>No credit card required</span>
               </div>
 
               <h1 className="font-heading text-[3.2rem] sm:text-[4.4rem] lg:text-[4.9rem] font-extrabold tracking-[-0.035em] text-[#121816] leading-[1.05]">

@@ -250,35 +250,13 @@ export default function ColdEmailPage() {
               </p>
             </div>
 
-            {/* Free for First 2 Months Launch Special Badge */}
+            {/* Clean Status Badge */}
             <div className="shrink-0">
-              <div className="inline-flex items-center gap-2 rounded-2xl bg-[#14281a] text-[#84d64f] px-5 py-3 text-xs font-bold border border-[#84d64f]/30 shadow-sm">
-                <Sparkles className="w-4 h-4 text-[#84d64f]" />
-                <span>🎉 Free for First 2 Months &bull; All {contacts.length}+ Contacts Unlocked</span>
+              <div className="inline-flex items-center gap-2 rounded-xl border border-neutral-200/90 bg-white px-3.5 py-2 text-xs text-[#55615b] shadow-2xs">
+                <span className="font-semibold text-[#121816]">Free for first 2 months</span>
+                <span className="text-neutral-300">•</span>
+                <span>All {contacts.length}+ contacts unlocked</span>
               </div>
-            </div>
-          </div>
-
-          {/* Promotional 2-Month Free Banner */}
-          <div className="mt-6 rounded-2xl bg-gradient-to-r from-[#14281a] via-[#1a3822] to-[#14281a] border border-[#84d64f]/30 p-4 sm:p-4.5 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
-            <div className="flex items-center gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#84d64f] text-[#14281a] font-black text-base shadow-xs">
-                🎁
-              </span>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-black uppercase tracking-wider text-[#84d64f]">Launch Special</span>
-                  <span className="rounded-full bg-[#84d64f]/20 text-[#84d64f] px-2 py-0.5 text-[0.65rem] font-bold">2 Months Free Access</span>
-                </div>
-                <p className="text-xs sm:text-[0.82rem] text-[#eef8e5] mt-0.5 font-medium">
-                  Direct access to all 36+ verified tech recruiter emails and our AI cold email drafter is <strong>100% free for your first two months</strong>. No payment or credit card required.
-                </p>
-              </div>
-            </div>
-            <div className="shrink-0 flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-3 py-1.5 text-xs font-bold text-[#84d64f] border border-white/10">
-                <CheckCircle2 className="w-3.5 h-3.5" /> All Features Unlocked
-              </span>
             </div>
           </div>
         </section>
