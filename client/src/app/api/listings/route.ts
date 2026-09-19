@@ -78,10 +78,12 @@ export async function GET(req: NextRequest) {
       orderBy: { name: "asc" },
     });
 
+    const totalCount = await prisma.listing.count({ where });
+
     return NextResponse.json({
       listings,
       companies: companies.map(c => c.name),
-      total: listings.length,
+      total: totalCount,
     });
   } catch (error: any) {
     console.error("Public listings fetch error:", error);

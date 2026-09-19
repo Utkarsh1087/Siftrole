@@ -135,9 +135,19 @@ export default function LandingPage() {
     }
   }, [isLoaded, isLoggedIn, router]);
 
-  const metrics = [
+  const metrics: { value: React.ReactNode; label: string; caption: string }[] = [
     { value: "100%", label: "Direct from company career feeds", caption: "Zero scraped third-party reposts" },
-    { value: totalListingsCount > 0 ? `${totalListingsCount}+` : "1,000+", label: "Verified active tech opportunities", caption: "Synced across official company career portals" },
+    {
+      value: totalListingsCount > 0 ? (
+        `${totalListingsCount.toLocaleString()}+`
+      ) : isLoadingListings ? (
+        <span className="inline-block w-28 h-10 bg-neutral-200/70 rounded-xl animate-pulse align-middle" />
+      ) : (
+        "0+"
+      ),
+      label: "Verified active tech opportunities",
+      caption: "Synced across official company career portals",
+    },
     { value: "0", label: "Dead links or expired ghost postings", caption: "Auto-removed the second a role closes" },
   ];
 
@@ -152,7 +162,7 @@ export default function LandingPage() {
       if (res.ok) {
         const data = await res.json();
         const listings: Listing[] = data.listings || [];
-        setTotalListingsCount(listings.length);
+        setTotalListingsCount(typeof data.total === "number" ? data.total : listings.length);
         setFeaturedListings(listings.slice(0, 5));
       }
     } catch (e) {
@@ -408,12 +418,12 @@ export default function LandingPage() {
           <div className="grid gap-8 md:grid-cols-3">
             {metrics.map((metric, i) => (
               <div
-                key={metric.value}
+                key={metric.label}
                 className={`flex flex-col justify-center px-4 sm:px-8 py-2 ${
                   i < 2 ? "md:border-r md:border-neutral-200/80" : ""
                 }`}
               >
-                <div className="text-[3.2rem] sm:text-[4rem] font-black tracking-[-0.04em] text-[#121816] leading-none">
+                <div className="text-[3.2rem] sm:text-[4rem] font-black tracking-[-0.04em] text-[#121816] leading-none min-h-[4rem] flex items-center">
                   {metric.value}
                 </div>
                 <div className="mt-2 text-base font-bold text-[#121816]">
@@ -441,7 +451,7 @@ export default function LandingPage() {
                 Recently Verified Openings
               </h2>
               <p className="mt-2 text-sm font-medium text-[#55615b]">
-                A preview of active roles parsed with AI. Explore the full board for 990+ live positions.
+                A preview of active roles parsed with AI. Explore the full board for {totalListingsCount > 0 ? `${totalListingsCount.toLocaleString()}+` : "all verified"} live positions.
               </p>
             </div>
 
@@ -449,7 +459,7 @@ export default function LandingPage() {
               href="/jobs"
               className="text-xs sm:text-sm font-extrabold text-[#3c7818] hover:text-[#58a826] inline-flex items-center gap-1.5 transition group"
             >
-              <span>View all {totalListingsCount || "990+"} live listings</span>
+              <span>View all {totalListingsCount > 0 ? `${totalListingsCount.toLocaleString()}+` : "verified"} live listings</span>
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
             </Link>
           </div>
