@@ -35,6 +35,7 @@ import { LiquidSilkBackground } from "@/components/LiquidSilkBackground";
 import { NewsletterSection } from "@/components/NewsletterSection";
 import { SiftAiChat, Listing } from "@/components/SiftAiChat";
 import { SiftroleLogoMark } from "@/components/SiftroleLogo";
+import { JobDetailModal } from "@/components/JobDetailModal";
 import { useAppliedJobs } from "@/lib/appliedJobs";
 import { useAuth } from "@/lib/useAuth";
 
@@ -1031,191 +1032,12 @@ export default function JobsPage() {
       {/* JOB DESCRIPTION MODAL DRAWER */}
       {/* ======================================================== */}
       {selectedListingModal && (
-        <div
-          data-lenis-prevent="true"
-          onWheel={(e) => e.stopPropagation()}
-          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4"
-          style={{ overscrollBehavior: "contain" }}
-        >
-          <div
-            data-lenis-prevent="true"
-            tabIndex={0}
-            onWheel={(e) => e.stopPropagation()}
-            className="bg-white rounded-[28px] max-w-[700px] w-full max-h-[90vh] overflow-y-auto overscroll-contain p-7 sm:p-9 shadow-2xl border border-neutral-200 focus:outline-none"
-            style={{ overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-start gap-4">
-                <CompanyLogo company={selectedListingModal.company} size="lg" />
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-extrabold uppercase tracking-wider text-[#3c7818]">
-                      {selectedListingModal.company}
-                    </span>
-                    <span className="rounded-full bg-[#eef8e5] border border-[#cce8be] text-[#3c7818] text-[0.65rem] font-bold px-2.5 py-0.5 inline-flex items-center gap-1">
-                      <ShieldCheck className="w-3 h-3 text-[#3c7818]" /> Verified Official Feed
-                    </span>
-                  </div>
-                  <h3 className="text-2xl font-black text-[#121816] mt-1.5">
-                    {selectedListingModal.title}
-                  </h3>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setSelectedListingModal(null)}
-                className="h-9 w-9 rounded-full bg-neutral-100 hover:bg-neutral-200 flex items-center justify-center text-sm font-bold transition shrink-0 cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Quick Summary Pill Bar */}
-            <div className="mt-6 flex flex-wrap gap-4 text-xs font-bold text-[#121816] bg-[#f8f7f5] rounded-2xl p-4 border border-neutral-200/80">
-              <div className="flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-[#79857f]" />
-                <span>{selectedListingModal.location}</span>
-              </div>
-              {selectedListingModal.employment_type && (
-                <div className="flex items-center gap-1.5">
-                  <Briefcase className="w-3.5 h-3.5 text-[#79857f]" />
-                  <span>{selectedListingModal.employment_type}</span>
-                </div>
-              )}
-              {selectedListingModal.stipend_or_salary && (
-                <div className="flex items-center gap-1.5">
-                  <DollarSign className="w-3.5 h-3.5 text-[#79857f]" />
-                  <span>{selectedListingModal.stipend_or_salary}</span>
-                </div>
-              )}
-              {selectedListingModal.experience_level && (
-                <div className="flex items-center gap-1.5">
-                  <GraduationCap className="w-3.5 h-3.5 text-[#79857f]" />
-                  <span>{selectedListingModal.experience_level}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Resume Match Breakdown if uploaded */}
-            {activeResumeSkills.length > 0 && (() => {
-              const modalMatch = getJobMatch(selectedListingModal);
-              if (!modalMatch) return null;
-              return (
-                <div className="mt-6 rounded-2xl border border-[#84d64f]/40 bg-[#f4faee] p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-[#3c7818]" />
-                      <span className="text-xs font-black text-[#14281a]">
-                        AI Compatibility Score: {modalMatch.score}%
-                      </span>
-                    </div>
-                    <span className="text-[0.68rem] font-bold text-[#2d6113]">
-                      {modalMatch.matchedCount} of {modalMatch.totalCount} Skills Matched
-                    </span>
-                  </div>
-
-                  {modalMatch.matchedSkills.length > 0 && (
-                    <div className="mt-3">
-                      <span className="text-[0.68rem] font-bold uppercase tracking-wider text-[#2d6113] block mb-1.5">
-                        Matching Skills on Your Resume:
-                      </span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {modalMatch.matchedSkills.map((s) => (
-                          <span key={s} className="rounded-lg bg-[#d7f3be] text-[#1e480d] border border-[#84d64f] px-2.5 py-0.5 text-xs font-bold inline-flex items-center gap-1">
-                            <Check className="w-3 h-3 text-[#1e480d]" /> {s}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {modalMatch.missingSkills.length > 0 && (
-                    <div className="mt-3">
-                      <span className="text-[0.68rem] font-bold uppercase tracking-wider text-amber-800 block mb-1.5">
-                        Skills to Highlight or Add:
-                      </span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {modalMatch.missingSkills.map((s) => (
-                          <span key={s} className="rounded-lg bg-amber-500/10 text-amber-900 border border-amber-200/80 px-2.5 py-0.5 text-xs font-medium">
-                            {s}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-
-            {/* Full JD Description */}
-            <div className="mt-6">
-              <h4 className="font-extrabold text-xs uppercase tracking-wider text-[#79857f] mb-2.5">
-                Role Summary & Details
-              </h4>
-              <div
-                data-lenis-prevent="true"
-                className="prose prose-sm text-[#55615b] leading-relaxed max-h-[260px] overflow-y-auto overscroll-contain pr-2"
-                style={{ overscrollBehavior: "contain" }}
-              >
-                {selectedListingModal.raw_jd_text ? (
-                  <p className="whitespace-pre-line text-xs">
-                    {selectedListingModal.raw_jd_text}
-                  </p>
-                ) : (
-                  <div className="space-y-3 text-xs">
-                    <p>
-                      This role is actively listed and verified on {selectedListingModal.company}&apos;s official careers ATS portal.
-                    </p>
-                    <p>
-                      Location: {selectedListingModal.location}. Employment Type: {selectedListingModal.employment_type || "Direct Hire"}.
-                    </p>
-                    <p>
-                      Click &quot;Apply on Official Portal&quot; below to submit your application directly on the employer&apos;s portal with zero third-party intermediaries.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Skills Tags */}
-            {selectedListingModal.skills_required?.length > 0 && (
-              <div className="mt-6">
-                <h4 className="font-extrabold text-xs uppercase tracking-wider text-[#79857f] mb-2.5">
-                  Required Skills & Stack
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {selectedListingModal.skills_required.map((s) => (
-                    <span key={s} className="rounded-xl bg-[#eef8e5] text-[#3c7818] font-bold text-xs px-3 py-1.5 border border-[#cce8be]">
-                      {s}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Apply CTA Button */}
-            <div className="mt-8 pt-4 border-t border-neutral-100 flex items-center justify-between gap-3">
-              <button
-                onClick={(e) => handleShare(selectedListingModal, e)}
-                className="rounded-xl border border-neutral-200/80 hover:bg-neutral-100 px-4 py-3 text-xs font-bold inline-flex items-center gap-1.5 transition cursor-pointer"
-              >
-                <Share2 className="w-3.5 h-3.5" />
-                {copiedLink ? "Link Copied!" : "Share Link"}
-              </button>
-
-              <a
-                href={selectedListingModal.apply_url}
-                target="_blank"
-                rel="noreferrer"
-                onClick={() => handleApplyClick(selectedListingModal)}
-                className="flex-1 text-center rounded-full bg-[#84d64f] hover:bg-[#7ec942] text-[#14261b] py-3.5 font-heading font-extrabold text-sm shadow-[0_8px_20px_rgba(132,214,79,0.25)] transition inline-flex items-center justify-center gap-2 cursor-pointer"
-              >
-                Apply on Official Portal
-                <ExternalLink className="w-4 h-4" />
-              </a>
-            </div>
-          </div>
-        </div>
+        <JobDetailModal
+          listing={selectedListingModal}
+          onClose={() => setSelectedListingModal(null)}
+          activeResumeSkills={activeResumeSkills}
+          onApplyClick={handleApplyClick}
+        />
       )}
 
       {/* ======================================================== */}

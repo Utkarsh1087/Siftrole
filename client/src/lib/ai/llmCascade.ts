@@ -86,9 +86,18 @@ export function getAvailableLLMProviders(): ProviderCandidate[] {
 
   const groqSingleKeys = [process.env.GROQ_API_KEY, process.env.AI_API_KEY].filter(Boolean) as string[];
 
-  const allGroqKeys = Array.from(new Set([...groqNumberedKeys, ...groqCsvKeys, ...groqSingleKeys]));
+  const allGroqKeys = Array.from(new Set([...groqNumberedKeys, ...groqCsvKeys, ...groqSingleKeys]))
+    .map((k) => k.replace(/^["']|["']$/g, "").trim())
+    .filter(Boolean);
 
   allGroqKeys.forEach((key, idx) => {
+    // High-capacity GPT-OSS 120B (High reasoning & structured extraction)
+    candidates.push({
+      name: `Groq GPT-OSS 120B #${idx + 1}`,
+      type: "groq",
+      apiKey: key,
+      model: "openai/gpt-oss-120b",
+    });
     // Ultra-fast Qwen 3.8 27B (High speed, versatile)
     candidates.push({
       name: `Groq Qwen-3.8 27B #${idx + 1}`,
@@ -96,16 +105,9 @@ export function getAvailableLLMProviders(): ProviderCandidate[] {
       apiKey: key,
       model: "qwen/qwen3.8-27b",
     });
-    // High-capacity GPT-OSS 120B
-    candidates.push({
-      name: `Groq GPT-OSS 120B #${idx + 1}`,
-      type: "groq",
-      apiKey: key,
-      model: "openai/gpt-oss-120b",
-    });
   });
 
-  // 2. Google Gemini Keys (Gemini 3.6 Flash & 3.8 Flash)
+  // 2. Google Gemini Keys (Gemini 1.5 Flash & 2.0 Flash)
   const geminiNumberedKeys = [
     process.env.GEMINI_API_KEY_1,
     process.env.GEMINI_API_KEY_2,
@@ -118,20 +120,22 @@ export function getAvailableLLMProviders(): ProviderCandidate[] {
     process.env.GOOGLE_API_KEY,
   ].filter(Boolean) as string[];
 
-  const allGeminiKeys = Array.from(new Set([...geminiNumberedKeys, ...geminiSingleKeys]));
+  const allGeminiKeys = Array.from(new Set([...geminiNumberedKeys, ...geminiSingleKeys]))
+    .map((k) => k.replace(/^["']|["']$/g, "").trim())
+    .filter(Boolean);
 
   allGeminiKeys.forEach((key, idx) => {
     candidates.push({
-      name: `Gemini 3.6 Flash #${idx + 1}`,
+      name: `Gemini 1.5 Flash #${idx + 1}`,
       type: "gemini",
       apiKey: key,
-      model: "gemini-3.6-flash",
+      model: "gemini-1.5-flash",
     });
     candidates.push({
-      name: `Gemini 3.8 Flash #${idx + 1}`,
+      name: `Gemini 2.0 Flash #${idx + 1}`,
       type: "gemini",
       apiKey: key,
-      model: "gemini-3.8-flash",
+      model: "gemini-2.0-flash",
     });
   });
 

@@ -4,30 +4,43 @@ import { NormalizedListing, ListingSchema } from "../scrapers/types";
 import { executeLLMCascade } from "./llmCascade";
 
 export const STRICT_EXTRACTION_SYSTEM_PROMPT = `
-You are a precise, strict Job Description extraction system for Siftrole.
-Your job is to parse unstructured job descriptions into a structured JSON object adhering strictly to the schema provided.
+You are an elite, highly meticulous technical recruiter and job parser for Siftrole.
+Your mission is to parse raw, messy, unstructured job descriptions into a beautiful, complete, structured JSON schema.
 
-CRITICAL INSTRUCTIONS & HARD RULES:
-1. NEVER guess, infer, or hallucinate missing information.
-2. If a field is NOT explicitly mentioned in the source JD text, you MUST set its value to null (or [] for skills).
-3. Do NOT guess deadlines, salary/stipends, or eligibility criteria. If unstated, set strictly to null.
-4. Experience Level: Only set if explicitly mentioned (e.g. "Senior", "Mid Level", "Entry Level", "Intern"), otherwise null.
-5. Employment Type: e.g. "Full time", "Part time", "Internship", "Contract". If not specified, set to null.
-6. Skills Required: Extract ONLY skills explicitly mentioned in the JD as an array of strings.
-7. Apply URL: Extract the application URL or company career link from text. If none found, provide a placeholder or company domain if mentioned, or empty string.
+CRITICAL PARSING RULES:
+1. STRIP ALL GARBAGE: Strip out scraped UI artifacts like 'info_outline', 'X', close buttons, navigation headers, or cookie banners.
+2. TITLE: Extract the clean official title (e.g. 'Software Engineering Intern, PhD (Summer 2027)'). Never include URLs or raw UI tags in the title.
+3. COMPANY: Detect the accurate company name (e.g. 'Google').
+4. LOCATION: Detect primary locations or summarize if multiple (e.g. 'United States (Multiple Locations: Mountain View, NYC, Seattle, etc.)').
+5. EMPLOYMENT TYPE: 'Internship' | 'Full time' | 'Part time' | 'Contract' | null.
+6. SALARY / STIPEND: Extract exact figures or range with currency (e.g. '$118,000 - $157,000 (USD)'). If not mentioned, set to null.
+7. DEADLINE: Extract exact deadline if mentioned (e.g. '2027-02-26' or 'February 26, 2027'). If unstated, set to null.
+8. ELIGIBILITY: Explicit degree level, graduation criteria, or work authorization (e.g. 'Pursuing a PhD program in Computer Science or a related technical field'). If unstated, set to null.
+9. EXPERIENCE LEVEL: 'Intern' | 'PhD Intern' | 'New Grad' | 'Entry Level' | 'Mid Level' | 'Senior' | null.
+10. SKILLS REQUIRED: Extract all technical skills, programming languages, and domains explicitly mentioned (e.g. ['C', 'C++', 'Java', 'Python', 'Algorithms', 'Distributed Systems', 'Machine Learning', 'Data Structures']).
+11. SUMMARY: A concise, human-readable 2-3 sentence overview explaining what the candidate will work on and why this role is exciting.
+12. RESPONSIBILITIES: Extract 4-6 clean, active bullet points of day-to-day duties.
+13. QUALIFICATIONS: Extract 4-6 clean bullet points combining minimum and preferred qualifications.
+14. BENEFITS: Extract bullet points of perks/benefits (health insurance, sick days, paid holidays, speaker series, etc.).
+15. CLEAN_DESCRIPTION: Formatted markdown representation of the job description with clear headings (## About the Role, ## Key Responsibilities, ## Qualifications & Eligibility, ## Benefits & Location). Do NOT include raw scraped junk.
 
-Return ONLY a valid JSON object strictly matching this schema:
+Output MUST be valid JSON adhering strictly to:
 {
   "title": "string",
   "company": "string",
   "location": "string",
   "employment_type": "string | null",
-  "eligibility": "string | null",
   "stipend_or_salary": "string | null",
-  "deadline": "ISO date string | null",
-  "skills_required": ["string"],
+  "deadline": "string | null",
+  "eligibility": "string | null",
   "experience_level": "string | null",
-  "apply_url": "string"
+  "skills_required": ["string"],
+  "apply_url": "string",
+  "summary": "string | null",
+  "responsibilities": ["string"],
+  "qualifications": ["string"],
+  "benefits": ["string"],
+  "clean_description": "string | null"
 }
 `;
 
@@ -258,7 +271,7 @@ export async function extractJobFromRawText(
     userPrompt: `Raw Job Description:\n\n${normalizedRaw}`,
     temperature: 0.1,
     responseFormatJson: true,
-    timeoutMs: 4200,
+    timeoutMs: 8000,
   });
 
   if (cascadeResult?.content) {
@@ -309,6 +322,19 @@ export async function extractJobFromRawText(
     raw_jd_text: normalizedRaw,
   });
 
+  // Store rich structured JSON in raw_jd_text so client components can render distinct sections
+  const structuredJdPayload = {
+    summary: extractedData.summary || null,
+    responsibilities: Array.isArray(extractedData.responsibilities) ? extractedData.responsibilities : [],
+    qualifications: Array.isArray(extractedData.qualifications) ? extractedData.qualifications : [],
+    benefits: Array.isArray(extractedData.benefits) ? extractedData.benefits : [],
+    clean_description: extractedData.clean_description || null,
+  };
+
+  const rawJdToStore = (extractedData.summary || (extractedData.responsibilities && extractedData.responsibilities.length > 0))
+    ? JSON.stringify(structuredJdPayload)
+    : (extractedData.clean_description || normalizedRaw);
+
   const listingCandidate: NormalizedListing = {
     title,
     company,
@@ -323,8 +349,13 @@ export async function extractJobFromRawText(
     source,
     status: anomaly.should_flag ? "flagged" : "active",
     raw_jd_hash: rawJdHash,
-    raw_jd_text: normalizedRaw,
+    raw_jd_text: rawJdToStore,
     normalized_key: computeNormalizedKey(company, title, location),
+    summary: extractedData.summary || null,
+    responsibilities: Array.isArray(extractedData.responsibilities) ? extractedData.responsibilities : [],
+    qualifications: Array.isArray(extractedData.qualifications) ? extractedData.qualifications : [],
+    benefits: Array.isArray(extractedData.benefits) ? extractedData.benefits : [],
+    clean_description: extractedData.clean_description || null,
     ai_flag_reasons: anomaly.flag_reasons,
     missing_fields: anomaly.missing_fields,
     is_suspicious: anomaly.is_suspicious,

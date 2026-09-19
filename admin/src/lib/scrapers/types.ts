@@ -11,6 +11,11 @@ export const ListingSchema = z.object({
   skills_required: z.array(z.string()).default([]),
   experience_level: z.string().nullable().optional(),
   apply_url: z.string().url("Valid apply URL is required"),
+  summary: z.string().nullable().optional(),
+  responsibilities: z.array(z.string()).optional().default([]),
+  qualifications: z.array(z.string()).optional().default([]),
+  benefits: z.array(z.string()).optional().default([]),
+  clean_description: z.string().nullable().optional(),
 });
 
 export type ExtractedListing = z.infer<typeof ListingSchema>;
@@ -30,6 +35,11 @@ export interface NormalizedListing {
   raw_jd_hash: string;
   raw_jd_text: string | null;
   normalized_key: string;
+  summary?: string | null;
+  responsibilities?: string[];
+  qualifications?: string[];
+  benefits?: string[];
+  clean_description?: string | null;
 }
 
 export interface AtsAdapter {

@@ -459,14 +459,31 @@ export default function AdminDashboard() {
       if (!response.ok) throw new Error(data.error || "Extraction failed");
 
       const listing = data.listing;
-      setEditableListing({ ...listing, raw_jd_text: userText });
+      const rawExtracted = data.rawExtractedJson || {};
+
+      setEditableListing({
+        ...listing,
+        stipend_or_salary: listing.stipend_or_salary || rawExtracted.stipend_or_salary || null,
+        deadline: listing.deadline || rawExtracted.deadline || null,
+        eligibility: listing.eligibility || rawExtracted.eligibility || null,
+        experience_level: listing.experience_level || rawExtracted.experience_level || null,
+        skills_required: (listing.skills_required && listing.skills_required.length > 0)
+          ? listing.skills_required
+          : (rawExtracted.skills_required || []),
+        summary: rawExtracted.summary || listing.summary || null,
+        responsibilities: rawExtracted.responsibilities || listing.responsibilities || [],
+        qualifications: rawExtracted.qualifications || listing.qualifications || [],
+        benefits: rawExtracted.benefits || listing.benefits || [],
+        clean_description: rawExtracted.clean_description || listing.clean_description || null,
+        model_used: data.modelUsed,
+      });
 
       setMessages((prev) => [
         ...prev,
         {
           id: (Date.now() + 1).toString(),
           sender: "bot",
-          text: `✨ Successfully extracted structured data for **${listing.title}** at **${listing.company}**! Review the template on the right side and click **Approve & Save** when ready.`,
+          text: `✨ Successfully extracted structured data for **${listing.title}** at **${listing.company}** via \`${data.modelUsed || "Groq LLM"}\`! Review the extracted fields on the right and click **Save & Publish Job** when ready.`,
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
           extractedListing: listing,
         },
@@ -491,10 +508,23 @@ export default function AdminDashboard() {
     if (!editableListing || isSaving) return;
     setIsSaving(true);
     try {
+      const structuredPayload = {
+        summary: editableListing.summary || null,
+        responsibilities: Array.isArray(editableListing.responsibilities) ? editableListing.responsibilities : [],
+        qualifications: Array.isArray(editableListing.qualifications) ? editableListing.qualifications : [],
+        benefits: Array.isArray(editableListing.benefits) ? editableListing.benefits : [],
+        clean_description: editableListing.clean_description || null,
+      };
+
+      const payload = {
+        ...editableListing,
+        raw_jd_text: JSON.stringify(structuredPayload),
+      };
+
       const response = await fetch("/api/listings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editableListing),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
@@ -2392,7 +2422,14 @@ export default function AdminDashboard() {
               <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200 p-5 shadow-xs min-h-[720px] flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-                    <h3 className="font-bold text-xs text-[#083327]">Review Extracted Details</h3>
+                    <div>
+                      <h3 className="font-bold text-xs text-[#083327]">Review Extracted Details</h3>
+                      {editableListing?.model_used && (
+                        <span className="text-[0.65rem] text-slate-400 font-mono">
+                          Extracted via {editableListing.model_used}
+                        </span>
+                      )}
+                    </div>
                     {editableListing && (
                       <span className="rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 text-[0.65rem] font-bold px-2 py-0.5">
                         Ready to Save
@@ -2409,7 +2446,8 @@ export default function AdminDashboard() {
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1 text-xs">
+                    <div className="space-y-3.5 max-h-[580px] overflow-y-auto pr-1 text-xs">
+                      {/* Row 1: Title & Company */}
                       <div className="grid grid-cols-2 gap-2.5">
                         <div>
                           <label className="block text-[0.7rem] font-bold text-slate-700 mb-1">Job Title *</label>
@@ -2431,6 +2469,7 @@ export default function AdminDashboard() {
                         </div>
                       </div>
 
+                      {/* Row 2: Location & Job Type */}
                       <div className="grid grid-cols-2 gap-2.5">
                         <div>
                           <label className="block text-[0.7rem] font-bold text-slate-700 mb-1">Location *</label>
@@ -2445,7 +2484,7 @@ export default function AdminDashboard() {
                           <label className="block text-[0.7rem] font-bold text-slate-700 mb-1">Job Type</label>
                           <input
                             type="text"
-                            placeholder="e.g. Internship, Full-time"
+                            placeholder="e.g. Internship, Full time"
                             value={editableListing.employment_type || ""}
                             onChange={(e) => setEditableListing({ ...editableListing, employment_type: e.target.value || null })}
                             className="w-full rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs outline-none focus:bg-white focus:border-[#083327]"
@@ -2453,6 +2492,55 @@ export default function AdminDashboard() {
                         </div>
                       </div>
 
+                      {/* Row 3: Salary & Deadline */}
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <div>
+                          <label className="block text-[0.7rem] font-bold text-slate-700 mb-1">Salary / Stipend</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. $118,000 - $157,000 (USD)"
+                            value={editableListing.stipend_or_salary || ""}
+                            onChange={(e) => setEditableListing({ ...editableListing, stipend_or_salary: e.target.value || null })}
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs outline-none focus:bg-white focus:border-[#083327]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[0.7rem] font-bold text-slate-700 mb-1">Application Deadline</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. 2027-02-26 or Feb 26, 2027"
+                            value={editableListing.deadline || ""}
+                            onChange={(e) => setEditableListing({ ...editableListing, deadline: e.target.value || null })}
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs outline-none focus:bg-white focus:border-[#083327]"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Row 4: Experience Level & Eligibility */}
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <div>
+                          <label className="block text-[0.7rem] font-bold text-slate-700 mb-1">Experience Level</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. PhD Intern, Intern, Entry Level"
+                            value={editableListing.experience_level || ""}
+                            onChange={(e) => setEditableListing({ ...editableListing, experience_level: e.target.value || null })}
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs outline-none focus:bg-white focus:border-[#083327]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[0.7rem] font-bold text-slate-700 mb-1">Eligibility / Degree</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Pursuing PhD in Computer Science"
+                            value={editableListing.eligibility || ""}
+                            onChange={(e) => setEditableListing({ ...editableListing, eligibility: e.target.value || null })}
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs outline-none focus:bg-white focus:border-[#083327]"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Application Link */}
                       <div>
                         <label className="block text-[0.7rem] font-bold text-slate-700 mb-1">Application Link *</label>
                         <input
@@ -2460,6 +2548,89 @@ export default function AdminDashboard() {
                           value={editableListing.apply_url || ""}
                           onChange={(e) => setEditableListing({ ...editableListing, apply_url: e.target.value })}
                           className="w-full rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs outline-none font-mono focus:bg-white focus:border-[#083327]"
+                        />
+                      </div>
+
+                      {/* Skills Required */}
+                      <div>
+                        <label className="block text-[0.7rem] font-bold text-slate-700 mb-1">Required Skills (Comma separated)</label>
+                        <input
+                          type="text"
+                          value={Array.isArray(editableListing.skills_required) ? editableListing.skills_required.join(", ") : ""}
+                          onChange={(e) =>
+                            setEditableListing({
+                              ...editableListing,
+                              skills_required: e.target.value
+                                .split(",")
+                                .map((s) => s.trim())
+                                .filter(Boolean),
+                            })
+                          }
+                          placeholder="e.g. C++, Python, Java, Algorithms"
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs outline-none focus:bg-white focus:border-[#083327]"
+                        />
+                      </div>
+
+                      {/* Role Summary */}
+                      <div>
+                        <label className="block text-[0.7rem] font-bold text-slate-700 mb-1">Role Summary & Overview</label>
+                        <textarea
+                          rows={2}
+                          value={editableListing.summary || ""}
+                          onChange={(e) => setEditableListing({ ...editableListing, summary: e.target.value })}
+                          placeholder="A concise 2-3 sentence overview of what this role entails..."
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2 text-xs outline-none focus:bg-white focus:border-[#083327] resize-none"
+                        />
+                      </div>
+
+                      {/* Key Responsibilities */}
+                      <div>
+                        <label className="block text-[0.7rem] font-bold text-slate-700 mb-1">Key Responsibilities (One per line)</label>
+                        <textarea
+                          rows={3}
+                          value={Array.isArray(editableListing.responsibilities) ? editableListing.responsibilities.join("\n") : ""}
+                          onChange={(e) =>
+                            setEditableListing({
+                              ...editableListing,
+                              responsibilities: e.target.value.split("\n").map((s) => s.trim()).filter(Boolean),
+                            })
+                          }
+                          placeholder="Develop scripts to automate tasks...&#10;Collaborate with cross-functional teams..."
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2 text-xs outline-none focus:bg-white focus:border-[#083327] resize-none font-mono"
+                        />
+                      </div>
+
+                      {/* Qualifications */}
+                      <div>
+                        <label className="block text-[0.7rem] font-bold text-slate-700 mb-1">Qualifications (One per line)</label>
+                        <textarea
+                          rows={3}
+                          value={Array.isArray(editableListing.qualifications) ? editableListing.qualifications.join("\n") : ""}
+                          onChange={(e) =>
+                            setEditableListing({
+                              ...editableListing,
+                              qualifications: e.target.value.split("\n").map((s) => s.trim()).filter(Boolean),
+                            })
+                          }
+                          placeholder="Minimum: Pursuing PhD in Computer Science...&#10;Preferred: Experience in Distributed Systems..."
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2 text-xs outline-none focus:bg-white focus:border-[#083327] resize-none font-mono"
+                        />
+                      </div>
+
+                      {/* Benefits */}
+                      <div>
+                        <label className="block text-[0.7rem] font-bold text-slate-700 mb-1">Benefits & Perks (One per line)</label>
+                        <textarea
+                          rows={2}
+                          value={Array.isArray(editableListing.benefits) ? editableListing.benefits.join("\n") : ""}
+                          onChange={(e) =>
+                            setEditableListing({
+                              ...editableListing,
+                              benefits: e.target.value.split("\n").map((s) => s.trim()).filter(Boolean),
+                            })
+                          }
+                          placeholder="Health, dental, vision insurance...&#10;5 discretionary sick days..."
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2 text-xs outline-none focus:bg-white focus:border-[#083327] resize-none font-mono"
                         />
                       </div>
                     </div>

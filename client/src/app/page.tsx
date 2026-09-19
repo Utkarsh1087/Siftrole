@@ -38,6 +38,7 @@ import { CompanyLogo, getCompanyDomain } from "@/components/CompanyLogo";
 import { LiquidSilkBackground } from "@/components/LiquidSilkBackground";
 import { NewsletterSection } from "@/components/NewsletterSection";
 import { SiftroleLogoMark } from "@/components/SiftroleLogo";
+import { JobDetailModal } from "@/components/JobDetailModal";
 import { useAppliedJobs } from "@/lib/appliedJobs";
 import { useAuth } from "@/lib/useAuth";
 
@@ -1059,123 +1060,10 @@ export default function LandingPage() {
       {/* ROLE DETAIL SLIDING MODAL (VIEW FULL JD) */}
       {/* ======================================================== */}
       {selectedListingModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-[28px] max-w-[700px] w-full max-h-[90vh] overflow-y-auto p-7 sm:p-9 shadow-2xl border border-neutral-200">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-start gap-4">
-                <CompanyLogo company={selectedListingModal.company} size="lg" />
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-extrabold uppercase tracking-wider text-[#3c7818]">
-                      {selectedListingModal.company}
-                    </span>
-                    <span className="rounded-full bg-[#eef8e5] border border-[#cce8be] text-[#14281a] text-[0.65rem] font-bold px-2.5 py-0.5 inline-flex items-center gap-1">
-                      <ShieldCheck className="w-3 h-3 text-[#3c7818]" /> Verified Official Feed
-                    </span>
-                  </div>
-                  <h3 className="text-2xl font-black text-[#121816] mt-1.5">
-                    {selectedListingModal.title}
-                  </h3>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setSelectedListingModal(null)}
-                className="h-9 w-9 rounded-full bg-neutral-100 hover:bg-neutral-200 flex items-center justify-center text-sm font-bold transition shrink-0"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Quick Summary Pill Bar */}
-            <div className="mt-6 flex flex-wrap gap-4 text-xs font-bold text-[#121816] bg-[#f8f7f5] rounded-2xl p-4 border border-neutral-200/80">
-              <div className="flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-[#79857f]" />
-                <span>{selectedListingModal.location}</span>
-              </div>
-              {selectedListingModal.employment_type && (
-                <div className="flex items-center gap-1.5">
-                  <Briefcase className="w-3.5 h-3.5 text-[#79857f]" />
-                  <span>{selectedListingModal.employment_type}</span>
-                </div>
-              )}
-              {selectedListingModal.stipend_or_salary && (
-                <div className="flex items-center gap-1.5 text-[#14281a]">
-                  <DollarSign className="w-3.5 h-3.5 text-[#3c7818]" />
-                  <span>{selectedListingModal.stipend_or_salary}</span>
-                </div>
-              )}
-              {selectedListingModal.experience_level && (
-                <div className="flex items-center gap-1.5 text-[#55615b]">
-                  <GraduationCap className="w-3.5 h-3.5" />
-                  <span>{selectedListingModal.experience_level}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Full Job Description Section */}
-            <div className="mt-6">
-              <div className="flex items-center gap-1.5 mb-2.5">
-                <FileText className="w-4 h-4 text-[#3c7818]" />
-                <h4 className="font-extrabold text-xs uppercase tracking-wider text-[#121816]">
-                  Job Description & Role Overview
-                </h4>
-              </div>
-              <div className="bg-[#fbfaf8] border border-neutral-200/80 rounded-2xl p-5 text-xs font-sans leading-[1.8] text-[#44504b] whitespace-pre-wrap max-h-[300px] overflow-y-auto">
-                {selectedListingModal.raw_jd_text || (
-                  <div className="space-y-3">
-                    <p>
-                      This role is actively listed and verified on {selectedListingModal.company}'s official careers ATS portal.
-                    </p>
-                    <p>
-                      Location: {selectedListingModal.location}. Employment Type: {selectedListingModal.employment_type || "Direct Hire"}.
-                    </p>
-                    <p>
-                      Click "Apply Directly on Official Portal" below to submit your application directly on the employer's portal with zero third-party intermediaries.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Skills Tags */}
-            {selectedListingModal.skills_required?.length > 0 && (
-              <div className="mt-6">
-                <h4 className="font-extrabold text-xs uppercase tracking-wider text-[#79857f] mb-2.5">
-                  Required Skills & Stack
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {selectedListingModal.skills_required.map((s) => (
-                    <span key={s} className="rounded-xl bg-[#eef8e5] text-[#14281a] font-bold text-xs px-3 py-1.5 border border-[#cce8be]">
-                      {s}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Apply CTA Button */}
-            <div className="mt-8 pt-4 border-t border-neutral-100 flex items-center justify-between gap-3">
-              <button
-                onClick={(e) => handleShare(selectedListingModal, e)}
-                className="rounded-xl border border-neutral-200/80 hover:bg-neutral-100 px-4 py-3 text-xs font-bold inline-flex items-center gap-1.5 transition"
-              >
-                <Share2 className="w-3.5 h-3.5" />
-                {copiedLink ? "Link Copied!" : "Share Link"}
-              </button>
-
-              <a
-                href={selectedListingModal.apply_url}
-                target="_blank"
-                rel="noreferrer"
-                className="flex-1 text-center rounded-[14px] bg-[#84d64f] hover:bg-[#75c73d] text-[#14281a] py-3.5 font-extrabold text-sm shadow-[0_8px_20px_rgba(132,214,79,0.3)] transition inline-flex items-center justify-center gap-2"
-              >
-                Apply on Official Portal
-                <ExternalLink className="w-4 h-4 text-[#14281a]" />
-              </a>
-            </div>
-          </div>
-        </div>
+        <JobDetailModal
+          listing={selectedListingModal as any}
+          onClose={() => setSelectedListingModal(null)}
+        />
       )}
     </main>
   );
