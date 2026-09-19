@@ -42,10 +42,35 @@ interface ProviderCandidate {
  * - OPENAI_API_KEY_1, OPENAI_API_KEY_2, OPENAI_API_KEY
  * - OPENROUTER_API_KEY
  */
+// In-memory cache for common requests (30-minute TTL)
+const responseCache = new Map<string, { content: string; provider: string; expiresAt: number }>();
+
+function getCacheKey(systemPrompt: string, userPrompt: string): string {
+  let hash = 0;
+  const str = `${systemPrompt}::${userPrompt}`;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return `llm_cache_${hash}`;
+}
+
+let rotationIndex = 0;
+
+/**
+ * Dynamically resolves all configured API keys from environment variables.
+ * Supports:
+ * - GROQ_API_KEY_1, GROQ_API_KEY_2, GROQ_API_KEY_3, GROQ_API_KEY_4, GROQ_API_KEY_5
+ * - GROQ_API_KEYS (comma-separated)
+ * - GROQ_API_KEY, AI_API_KEY
+ * - GEMINI_API_KEY_1, GEMINI_API_KEY_2, GEMINI_API_KEY_3, GEMINI_API_KEY, GOOGLE_API_KEY
+ * - OPENAI_API_KEY_1, OPENAI_API_KEY_2, OPENAI_API_KEY
+ * - OPENROUTER_API_KEY
+ */
 export function getAvailableLLMProviders(): ProviderCandidate[] {
   const candidates: ProviderCandidate[] = [];
 
-  // 1. Groq Keys (Llama 3.3 70B & Llama 3.1 8B)
+  // 1. Groq Keys (Llama 3.1 8B Instant for speed/high quotas + Llama 3.3 70B for deep reasoning)
   const groqNumberedKeys = [
     process.env.GROQ_API_KEY_1,
     process.env.GROQ_API_KEY_2,
@@ -64,34 +89,49 @@ export function getAvailableLLMProviders(): ProviderCandidate[] {
   const allGroqKeys = Array.from(new Set([...groqNumberedKeys, ...groqCsvKeys, ...groqSingleKeys]));
 
   allGroqKeys.forEach((key, idx) => {
+    // Ultra-fast Qwen 3.8 27B (High speed, versatile)
     candidates.push({
-      name: `Groq High-Capacity #${idx + 1}`,
+      name: `Groq Qwen-3.8 27B #${idx + 1}`,
+      type: "groq",
+      apiKey: key,
+      model: "qwen/qwen3.8-27b",
+    });
+    // High-capacity GPT-OSS 120B
+    candidates.push({
+      name: `Groq GPT-OSS 120B #${idx + 1}`,
       type: "groq",
       apiKey: key,
       model: "openai/gpt-oss-120b",
     });
-    candidates.push({
-      name: `Groq Compound #${idx + 1}`,
-      type: "groq",
-      apiKey: key,
-      model: "groq/compound",
-    });
   });
 
-  // 2. Google Gemini Keys (Gemini 1.5 Flash)
-  const geminiKeys = [
+  // 2. Google Gemini Keys (Gemini 3.6 Flash & 3.8 Flash)
+  const geminiNumberedKeys = [
     process.env.GEMINI_API_KEY_1,
     process.env.GEMINI_API_KEY_2,
+    process.env.GEMINI_API_KEY_3,
+    process.env.GEMINI_API_KEY_4,
+  ].filter(Boolean) as string[];
+
+  const geminiSingleKeys = [
     process.env.GEMINI_API_KEY,
     process.env.GOOGLE_API_KEY,
   ].filter(Boolean) as string[];
 
-  Array.from(new Set(geminiKeys)).forEach((key, idx) => {
+  const allGeminiKeys = Array.from(new Set([...geminiNumberedKeys, ...geminiSingleKeys]));
+
+  allGeminiKeys.forEach((key, idx) => {
     candidates.push({
-      name: `Gemini Key #${idx + 1}`,
+      name: `Gemini 3.6 Flash #${idx + 1}`,
       type: "gemini",
       apiKey: key,
-      model: "gemini-1.5-flash",
+      model: "gemini-3.6-flash",
+    });
+    candidates.push({
+      name: `Gemini 3.8 Flash #${idx + 1}`,
+      type: "gemini",
+      apiKey: key,
+      model: "gemini-3.8-flash",
     });
   });
 
@@ -141,6 +181,18 @@ export async function executeLLMCascade(
     timeoutMs = 4200,
   } = options;
 
+  // 1. Instant Cache Check (5ms Response, 0 Token Cost)
+  const cacheKey = getCacheKey(systemPrompt, userPrompt);
+  const cached = responseCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return {
+      success: true,
+      content: cached.content,
+      provider: `${cached.provider} (Cached ⚡)`,
+      keyIndex: 0,
+    };
+  }
+
   const providers = getAvailableLLMProviders();
 
   if (providers.length === 0) {
@@ -148,8 +200,16 @@ export async function executeLLMCascade(
     return null;
   }
 
-  for (let i = 0; i < providers.length; i++) {
-    const provider = providers[i];
+  // 2. Round-Robin Rotation across all incoming requests
+  const total = providers.length;
+  const startOffset = rotationIndex++ % total;
+  const rotatedProviders = [
+    ...providers.slice(startOffset),
+    ...providers.slice(0, startOffset),
+  ];
+
+  for (let i = 0; i < rotatedProviders.length; i++) {
+    const provider = rotatedProviders[i];
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -264,9 +324,24 @@ export async function executeLLMCascade(
       }
 
       if (content && content.trim().length > 0) {
+        const cleanContent = content.trim();
+
+        // Cache valid responses for 30 minutes
+        responseCache.set(cacheKey, {
+          content: cleanContent,
+          provider: provider.name,
+          expiresAt: Date.now() + 30 * 60 * 1000,
+        });
+
+        // Limit cache size to 500 entries
+        if (responseCache.size > 500) {
+          const oldestKey = responseCache.keys().next().value;
+          if (oldestKey) responseCache.delete(oldestKey);
+        }
+
         return {
           success: true,
-          content: content.trim(),
+          content: cleanContent,
           provider: provider.name,
           keyIndex: i + 1,
         };

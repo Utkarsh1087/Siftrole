@@ -148,6 +148,12 @@ export function SiftAiChat({
   });
   const [isTyping, setIsTyping] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [chatSessionId, setChatSessionId] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("siftrole_chat_session_id") || null;
+    }
+    return null;
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -357,25 +363,7 @@ export function SiftAiChat({
             localStorage.setItem("siftrole_user", JSON.stringify(updatedUser));
             window.dispatchEvent(new Event("siftrole_user_updated"));
 
-            // Sync with backend Express DB
-            fetch("http://localhost:4000/api/profile", {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                id: updatedUser.id,
-                name: updatedUser.name,
-                degree: updatedUser.degree,
-                grad_year: updatedUser.grad_year,
-                skills: updatedUser.skills,
-                resume_name: fileName,
-                github_url: updatedUser.github_url,
-                linkedin_url: updatedUser.linkedin_url,
-                phone: updatedUser.phone,
-                portfolio_url: updatedUser.portfolio_url,
-              }),
-            }).catch(() => null);
-
-            // Sync with Next.js profile route
+            // Sync with Next.js profile route (Prisma -> Neon PostgreSQL)
             fetch("/api/profile", {
               method: "PUT",
               headers: { "Content-Type": "application/json" },
@@ -383,8 +371,14 @@ export function SiftAiChat({
                 email: updatedUser.email,
                 name: updatedUser.name,
                 graduation_year: updatedUser.grad_year,
+                degree: updatedUser.degree,
                 skills: updatedUser.skills,
                 resume_url: fileName,
+                resume_name: fileName,
+                github_url: updatedUser.github_url,
+                linkedin_url: updatedUser.linkedin_url,
+                phone: updatedUser.phone,
+                portfolio_url: updatedUser.portfolio_url,
               }),
             }).catch(() => null);
           } catch (storageErr) {
@@ -529,6 +523,8 @@ export function SiftAiChat({
           history: chatHistory,
           activeResumeSkills,
           uploadedResumeName,
+          sessionId: chatSessionId,
+          userEmail: storedUserObj?.email || null,
           candidateProfile: storedUserObj,
           parsedResume: activeParsedResume
             ? {
@@ -542,6 +538,11 @@ export function SiftAiChat({
 
       if (res.ok) {
         const data = await res.json();
+        // Persist sessionId for conversation continuity
+        if (data.sessionId && data.sessionId !== chatSessionId) {
+          setChatSessionId(data.sessionId);
+          localStorage.setItem("siftrole_chat_session_id", data.sessionId);
+        }
         if (data.reply) {
           setIsTyping(false);
 

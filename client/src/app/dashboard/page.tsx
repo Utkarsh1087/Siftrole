@@ -50,120 +50,7 @@ interface TrackedApplication {
   next_step?: string;
 }
 
-const INITIAL_TRACKED_APPS: TrackedApplication[] = [
-  {
-    id: "app-1",
-    listing_id: "figma-core-swe",
-    company: "Figma",
-    title: "Software Engineer, Core Systems",
-    location: "San Francisco, CA / Hybrid",
-    stipend_or_salary: "$150K - $185K",
-    apply_url: "https://figma.com/careers",
-    status: "saved",
-    match_score: 94,
-    applied_date: "Saved 2 hrs ago",
-    notes: "Portfolio ready with WebGL/Canvas graphics projects. Applying before deadline.",
-    next_step: "Submit official application",
-  },
-  {
-    id: "app-2",
-    listing_id: "airbnb-frontend-intern",
-    company: "Airbnb",
-    title: "Frontend Engineer Intern, Summer 2026",
-    location: "San Francisco, CA / Remote",
-    stipend_or_salary: "$55/hr",
-    apply_url: "https://careers.airbnb.com",
-    status: "saved",
-    match_score: 91,
-    applied_date: "Saved yesterday",
-    notes: "Tailoring resume for design systems and React SSR experience.",
-    next_step: "Review cover letter",
-  },
-  {
-    id: "app-3",
-    listing_id: "stripe-frontend-infra",
-    company: "Stripe",
-    title: "Frontend Infrastructure Engineer",
-    location: "San Francisco, CA / Seattle, WA",
-    stipend_or_salary: "$165K - $190K",
-    apply_url: "https://stripe.com/jobs",
-    status: "applied",
-    match_score: 92,
-    applied_date: "Yesterday",
-    notes: "Applied directly on Stripe Ashby ATS with tailored resume.",
-    next_step: "Awaiting recruiter review",
-  },
-  {
-    id: "app-4",
-    listing_id: "openai-platform-mts",
-    company: "OpenAI",
-    title: "Member of Technical Staff, Platform",
-    location: "San Francisco, CA",
-    stipend_or_salary: "$210K - $285K",
-    apply_url: "https://openai.com/careers",
-    status: "applied",
-    match_score: 89,
-    applied_date: "3 days ago",
-    notes: "Submitted application via Lever with GitHub link.",
-    next_step: "Recruiter screening",
-  },
-  {
-    id: "app-5",
-    listing_id: "google-swe-2026",
-    company: "Google",
-    title: "Software Engineer Intern, Summer 2026",
-    location: "Mountain View, CA / Remote",
-    stipend_or_salary: "$58 - $64/hr",
-    apply_url: "https://careers.google.com",
-    status: "interviewing",
-    match_score: 96,
-    applied_date: "5 days ago",
-    notes: "Completed Online Assessment. Technical Round 1 scheduled for next Tuesday.",
-    next_step: "DSA & System Design prep",
-  },
-  {
-    id: "app-6",
-    listing_id: "vercel-nextjs-infra",
-    company: "Vercel",
-    title: "Next.js Framework Engineer",
-    location: "Remote (Global)",
-    stipend_or_salary: "$155K - $195K",
-    apply_url: "https://vercel.com/careers",
-    status: "interviewing",
-    match_score: 95,
-    applied_date: "1 week ago",
-    notes: "Take-home project approved. Final team round scheduled with VP Engineering.",
-    next_step: "Final team round presentation",
-  },
-  {
-    id: "app-7",
-    listing_id: "linear-product-swe",
-    company: "Linear",
-    title: "Fullstack Product Engineer",
-    location: "Remote (Global)",
-    stipend_or_salary: "$160K - $200K",
-    apply_url: "https://linear.app/careers",
-    status: "offered",
-    match_score: 98,
-    applied_date: "2 weeks ago",
-    notes: "Official offer letter received ($185k base + equity). Reviewing benefits package.",
-    next_step: "Decision by next Friday",
-  },
-  {
-    id: "app-8",
-    listing_id: "datadog-distributed-swe",
-    company: "Datadog",
-    title: "Distributed Systems Engineer",
-    location: "New York, NY / Hybrid",
-    stipend_or_salary: "$145K - $175K",
-    apply_url: "https://careers.datadoghq.com",
-    status: "rejected",
-    match_score: 87,
-    applied_date: "3 weeks ago",
-    notes: "Position filled internally. Invited to re-apply for Q3 hiring wave.",
-    next_step: "Follow up in Q3",
-  },
-];
+const INITIAL_TRACKED_APPS: TrackedApplication[] = [];
 
 const COLUMNS: { key: ApplicationStage; title: string; tone: string; pillColor: string }[] = [
   {
@@ -200,8 +87,8 @@ const COLUMNS: { key: ApplicationStage; title: string; tone: string; pillColor: 
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [userName, setUserName] = useState("Alex Morgan");
-  const [userEmail, setUserEmail] = useState("student@demo.com");
+  const [userName, setUserName] = useState("Candidate");
+  const [userEmail, setUserEmail] = useState("");
   const [viewMode, setViewMode] = useState<"kanban" | "table">("kanban");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStage, setFilterStage] = useState<string>("all");
@@ -223,6 +110,17 @@ export default function DashboardPage() {
   useEffect(() => {
     setMounted(true);
 
+    // Auto-purge stale mock tracker applications from previous legacy builds
+    if (typeof window !== "undefined") {
+      const isCleaned = localStorage.getItem("siftrole_clean_v3");
+      if (!isCleaned) {
+        localStorage.removeItem("siftrole_tracked_applications");
+        localStorage.removeItem("siftrole_applied_job_ids");
+        localStorage.removeItem("siftrole_saved_job_ids");
+        localStorage.setItem("siftrole_clean_v3", "true");
+      }
+    }
+
     // Check authentication from localStorage
     const token = localStorage.getItem("siftrole_token");
     const storedUser = localStorage.getItem("siftrole_user");
@@ -235,8 +133,8 @@ export default function DashboardPage() {
     if (storedUser) {
       try {
         const parsed = JSON.parse(storedUser);
-        setUserName(parsed.name || "Alex Morgan");
-        setUserEmail(parsed.email || "student@demo.com");
+        setUserName(parsed.name || "Candidate");
+        setUserEmail(parsed.email || "");
       } catch {
         // use default fallback
       }
@@ -261,29 +159,30 @@ export default function DashboardPage() {
   const fetchApplications = async () => {
     try {
       setLoading(true);
-      // Read local custom tracked apps first
       let localApps: TrackedApplication[] = [];
       if (typeof window !== "undefined") {
         try {
           const raw = localStorage.getItem("siftrole_tracked_applications");
           if (raw) {
             const parsed = JSON.parse(raw);
-            if (Array.isArray(parsed)) localApps = parsed;
+            if (Array.isArray(parsed)) {
+              // Strip out any stale legacy mock items
+              const mockIds = new Set([
+                "app-1", "app-2", "app-3", "app-4", "app-5", "app-6", "app-7", "app-8",
+                "figma-core-swe", "airbnb-frontend-intern", "stripe-frontend-infra",
+                "openai-platform-mts", "google-swe-2026", "vercel-nextjs-infra",
+                "linear-product-swe", "datadog-distributed-swe"
+              ]);
+              localApps = parsed.filter(
+                (a) => !mockIds.has(a.id) && (!a.listing_id || !mockIds.has(a.listing_id))
+              );
+            }
           }
         } catch {}
       }
-
-      // Merge local user-added apps with sample defaults
-      const combined = [...localApps];
-      INITIAL_TRACKED_APPS.forEach((initialApp) => {
-        if (!combined.some((a) => a.id === initialApp.id || (a.listing_id && a.listing_id === initialApp.listing_id))) {
-          combined.push(initialApp);
-        }
-      });
-
-      setApplications(combined);
+      setApplications(localApps);
     } catch {
-      setApplications(INITIAL_TRACKED_APPS);
+      setApplications([]);
     } finally {
       setLoading(false);
     }

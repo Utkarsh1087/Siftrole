@@ -7,6 +7,8 @@ interface ChatRequestPayload {
   history?: Array<{ sender: "ai" | "user"; text: string }>;
   activeResumeSkills?: string[];
   uploadedResumeName?: string | null;
+  sessionId?: string | null;
+  userEmail?: string | null;
   candidateProfile?: {
     name?: string;
     email?: string;
@@ -86,6 +88,8 @@ export async function POST(req: Request) {
       history = [],
       activeResumeSkills = [],
       uploadedResumeName = null,
+      sessionId = null,
+      userEmail = null,
       candidateProfile = null,
       parsedResume = null,
       liveListings: clientListings = [],
@@ -111,7 +115,43 @@ export async function POST(req: Request) {
       });
     }
 
-    // 2. Aggregate Complete Live Listings (Client Payload + Prisma Database Fallback)
+    const isInitialGreetingRequest = trimmedMsg === "__INITIAL_GREETING__";
+
+    // 2. Resolve or create persistent chat session (non-fatal)
+    let resolvedSessionId: string | null = sessionId;
+    if (!isInitialGreetingRequest) {
+      try {
+        if (resolvedSessionId) {
+          const existing = await (prisma as any).chatSession.findUnique({
+            where: { id: resolvedSessionId },
+          }).catch(() => null);
+          if (!existing) resolvedSessionId = null;
+        }
+        if (!resolvedSessionId) {
+          let userId: string | null = null;
+          const emailToLookup = userEmail || candidateProfile?.email;
+          if (emailToLookup) {
+            const dbUser = await (prisma as any).user.findUnique({
+              where: { email: emailToLookup },
+              select: { id: true },
+            }).catch(() => null);
+            if (dbUser) userId = dbUser.id;
+          }
+          const session = await (prisma as any).chatSession.create({
+            data: {
+              user_id: userId,
+              title: "Sift AI Chat",
+              context: { resumeFile: uploadedResumeName, skills: activeResumeSkills },
+            },
+          }).catch(() => null);
+          if (session) resolvedSessionId = session.id;
+        }
+      } catch {
+        // Non-fatal: chat still works without DB session
+      }
+    }
+
+    // 3. Aggregate Complete Live Listings (Client Payload + Prisma Database Fallback)
     let combinedListings = [...clientListings];
     if (combinedListings.length < 20) {
       try {
@@ -316,6 +356,13 @@ CORE GUIDELINES (STRICT BREVITY & CONCISENESS):
    - When asked about the candidate's degree, name, GPA, specific skills, or experience, state the exact fact directly in 1 sentence.
 6. NO EM DASHES: Do NOT use em dashes. Keep language natural, sharp, warm, and ultra-concise.`;
 
+    // Persist user message to DB (fire-and-forget)
+    if (!isInitialGreetingRequest && resolvedSessionId) {
+      (prisma as any).chatMessage.create({
+        data: { session_id: resolvedSessionId, sender: "user", text: trimmedMsg },
+      }).catch(() => null);
+    }
+
     // Format recent chat history (last 6 turns)
     const recentHistory = history
       .slice(-6)
@@ -323,7 +370,6 @@ CORE GUIDELINES (STRICT BREVITY & CONCISENESS):
       .join("\n");
 
     // Format user prompt or initial greeting request
-    const isInitialGreetingRequest = trimmedMsg === "__INITIAL_GREETING__";
     const userPrompt = isInitialGreetingRequest
       ? `Task: Generate a single spontaneous, warm, 1-to-2 sentence opening greeting for the candidate visiting Siftrole ${timeGreeting}. ${hasResume ? `Acknowledge their active resume "${uploadedResumeName}" naturally (do NOT mention any skill counts like "54 skills active") and invite them to explore matching roles.` : `Invite them to ask about tech roles, companies, or drop their resume.`}`
       : `Conversation History:
@@ -347,10 +393,23 @@ Please respond concisely and directly in 1 to 3 sentences maximum without mentio
         .replace(/\s+-\s+/g, " - ")
         .trim();
 
+      // Persist AI reply to DB (fire-and-forget)
+      if (!isInitialGreetingRequest && resolvedSessionId) {
+        (prisma as any).chatMessage.create({
+          data: {
+            session_id: resolvedSessionId,
+            sender: "ai",
+            text: sanitizedContent,
+            metadata: { provider: llmResult.provider },
+          },
+        }).catch(() => null);
+      }
+
       return NextResponse.json({
         reply: sanitizedContent,
         matchedJobs: topRelevantJobs.slice(0, 3),
         provider: llmResult.provider,
+        sessionId: resolvedSessionId,
       });
     }
 
@@ -359,6 +418,7 @@ Please respond concisely and directly in 1 to 3 sentences maximum without mentio
       reply: null,
       matchedJobs: topRelevantJobs.slice(0, 3),
       fallback: true,
+      sessionId: resolvedSessionId,
     });
   } catch (error) {
     console.error("Sift AI Chat API Error:", error);

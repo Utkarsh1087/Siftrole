@@ -101,22 +101,40 @@ export async function extractJobListingWithAI(rawJdText: string): Promise<{
   tokensUsed?: number;
   rawExtractedJson: any;
 }> {
-  const apiKey = process.env.GROQ_API_KEY || process.env.AI_API_KEY;
   let rawJson: any = null;
   let modelUsed = "local-rule-engine";
   let tokensUsed = 0;
 
-  if (apiKey) {
-    const candidateModels = [
-      "llama-3.3-70b-versatile",
-      "llama-3.1-8b-instant",
-      "openai/gpt-oss-120b",
-      "openai/gpt-oss-20b",
-      "qwen/qwen3.8-27b",
-    ];
+  // --- Build multi-key cascade (Groq keys first, then Gemini fallback) ---
+  const groqKeys = [
+    process.env.GROQ_API_KEY_1,
+    process.env.GROQ_API_KEY_2,
+    process.env.GROQ_API_KEY_3,
+    process.env.GROQ_API_KEY_4,
+    process.env.GROQ_API_KEY_5,
+    process.env.GROQ_API_KEY,
+    process.env.AI_API_KEY,
+  ].filter(Boolean) as string[];
 
-    for (const model of candidateModels) {
+  const uniqueGroqKeys = Array.from(new Set(groqKeys));
+
+  const geminiKeys = [
+    process.env.GEMINI_API_KEY_1,
+    process.env.GEMINI_API_KEY_2,
+    process.env.GEMINI_API_KEY_3,
+    process.env.GEMINI_API_KEY,
+    process.env.GOOGLE_API_KEY,
+  ].filter(Boolean) as string[];
+
+  const uniqueGeminiKeys = Array.from(new Set(geminiKeys));
+
+  // Try each Groq key with fast qwen/qwen3.8-27b first, then openai/gpt-oss-120b
+  for (const apiKey of uniqueGroqKeys) {
+    const groqModels = ["qwen/qwen3.8-27b", "openai/gpt-oss-120b"];
+    for (const model of groqModels) {
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
         const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -124,7 +142,7 @@ export async function extractJobListingWithAI(rawJdText: string): Promise<{
             Authorization: `Bearer ${apiKey}`,
           },
           body: JSON.stringify({
-            model: model,
+            model,
             messages: [
               { role: "system", content: STRICT_EXTRACTION_SYSTEM_PROMPT },
               { role: "user", content: `Raw Job Description:\n\n${rawJdText}` },
@@ -132,23 +150,78 @@ export async function extractJobListingWithAI(rawJdText: string): Promise<{
             response_format: { type: "json_object" },
             temperature: 0.1,
           }),
+          signal: controller.signal,
         });
+        clearTimeout(timeoutId);
 
         if (response.ok) {
           const completion = await response.json();
           const content = completion.choices?.[0]?.message?.content;
           if (content) {
             rawJson = JSON.parse(content);
-            modelUsed = model;
+            modelUsed = `groq/${model}`;
             tokensUsed = completion.usage?.total_tokens || 0;
             break;
           }
+        } else if (response.status === 429 || response.status === 503) {
+          console.warn(`[AI Extractor] Groq key rate-limited (${response.status}), trying next key...`);
+          break; // Move to next key
         }
-      } catch (err) {
-        console.warn(`[AI Extractor] Groq model ${model} failed, trying fallback:`, err);
+      } catch (err: any) {
+        const isAbort = err?.name === "AbortError";
+        console.warn(`[AI Extractor] Groq ${model} failed (${isAbort ? "timeout" : err?.message}), trying next...`);
       }
     }
+    if (rawJson) break;
   }
+
+  // Gemini fallback if all Groq keys failed
+  if (!rawJson) {
+    for (const apiKey of uniqueGeminiKeys) {
+      for (const geminiModel of ["gemini-3.6-flash", "gemini-3.8-flash"]) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 8000);
+          const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`;
+          const response = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [
+                {
+                  role: "user",
+                  parts: [{ text: `${STRICT_EXTRACTION_SYSTEM_PROMPT}\n\nRaw Job Description:\n\n${rawJdText}` }],
+                },
+              ],
+              generationConfig: {
+                temperature: 0.1,
+                responseMimeType: "application/json",
+              },
+            }),
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
+
+          if (response.ok) {
+            const data = await response.json();
+            const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (content) {
+              rawJson = JSON.parse(content);
+              modelUsed = `gemini/${geminiModel}`;
+              break;
+            }
+          } else if (response.status === 429) {
+            console.warn("[AI Extractor] Gemini key rate-limited, trying next...");
+          }
+        } catch (err: any) {
+          const isAbort = err?.name === "AbortError";
+          console.warn(`[AI Extractor] Gemini failed (${isAbort ? "timeout" : err?.message}), trying next...`);
+        }
+      }
+      if (rawJson) break;
+    }
+  }
+
 
   if (!rawJson) {
     rawJson = localRuleBasedExtract(rawJdText);

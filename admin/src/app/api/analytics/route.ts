@@ -1,18 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const action = searchParams.get("action");
 
-    // Fetch aggregate metrics
+    // Fetch aggregate metrics strictly from DB
     const totalEvents = await prisma.analyticsEvent.count();
     const pageViews = await prisma.analyticsEvent.count({ where: { event_type: "page_view" } });
     const buttonClicks = await prisma.analyticsEvent.count({ where: { event_type: "button_click" } });
     const applyClicks = await prisma.analyticsEvent.count({ where: { event_type: "apply_click" } });
 
-    // Section engagement duration aggregation
+    // Section engagement duration aggregation strictly from actual events
     const sectionEvents = await prisma.analyticsEvent.findMany({
       where: { event_type: "section_view", duration_ms: { not: null } },
       select: { section_name: true, duration_ms: true },
@@ -27,15 +30,6 @@ export async function GET(req: NextRequest) {
       cta: { totalMs: 0, count: 0, avgSec: 0 },
     };
 
-    // Populate baseline mock data if telemetry is fresh
-    const baselineSectionData = {
-      hero: { totalMs: 2840000, count: 540, avgSec: 5.2 },
-      features: { totalMs: 4620000, count: 480, avgSec: 9.6 },
-      job_feed: { totalMs: 14200000, count: 620, avgSec: 22.9 },
-      faq: { totalMs: 1980000, count: 290, avgSec: 6.8 },
-      cta: { totalMs: 1120000, count: 310, avgSec: 3.6 },
-    };
-
     for (const ev of sectionEvents) {
       if (ev.section_name && sectionDurations[ev.section_name]) {
         sectionDurations[ev.section_name].totalMs += ev.duration_ms || 0;
@@ -45,43 +39,80 @@ export async function GET(req: NextRequest) {
 
     const calculatedSections: any = {};
     for (const [sec, val] of Object.entries(sectionDurations)) {
-      const base = (baselineSectionData as any)[sec];
-      const count = val.count > 0 ? val.count : base.count;
-      const totalMs = val.totalMs > 0 ? val.totalMs : base.totalMs;
       calculatedSections[sec] = {
-        totalMs,
-        count,
-        avgSec: Number((totalMs / (count * 1000)).toFixed(1)),
+        totalMs: val.totalMs,
+        count: val.count,
+        avgSec: val.count > 0 ? Number((val.totalMs / (val.count * 1000)).toFixed(1)) : 0,
       };
     }
 
-    // Top button clicks ranking
-    const buttonRankings = [
-      { name: "Apply on Site (Company ATS Direct)", count: 418 + applyClicks, percentage: "48%" },
-      { name: "Explore Opportunities (Hero CTA)", count: 236, percentage: "27%" },
-      { name: "Role Type Filter Pill", count: 124, percentage: "14%" },
-      { name: "Company Dropdown Filter", count: 62, percentage: "7%" },
-      { name: "See How It Works Button", count: 35, percentage: "4%" },
-    ];
+    // Top button clicks ranking grouped from real events
+    const topButtons = await prisma.analyticsEvent.groupBy({
+      by: ["target_element"],
+      where: { event_type: "button_click", target_element: { not: null } },
+      _count: { target_element: true },
+      orderBy: { _count: { target_element: "desc" } },
+      take: 5,
+    });
 
-    // Daily visits timeline (last 7 days)
-    const dailyVisits = [
-      { day: "Mon", visits: 310, clicks: 580, applies: 142 },
-      { day: "Tue", visits: 420, clicks: 760, applies: 198 },
-      { day: "Wed", visits: 390, clicks: 710, applies: 185 },
-      { day: "Thu", visits: 510, clicks: 940, applies: 245 },
-      { day: "Fri", visits: 580, clicks: 1120, applies: 310 },
-      { day: "Sat", visits: 450, clicks: 820, applies: 220 },
-      { day: "Sun (Today)", visits: 640 + pageViews, clicks: 1280 + buttonClicks, applies: 340 + applyClicks },
-    ];
+    const buttonRankings = topButtons.map((b) => ({
+      name: b.target_element || "Button Click",
+      count: b._count?.target_element || 0,
+      percentage: buttonClicks > 0 ? `${Math.round(((b._count?.target_element || 0) / buttonClicks) * 100)}%` : "0%",
+    }));
+
+    if (buttonRankings.length === 0 && applyClicks > 0) {
+      buttonRankings.push({
+        name: "Apply on Site (Direct ATS)",
+        count: applyClicks,
+        percentage: "100%",
+      });
+    }
+
+    // Daily activity timeline for the last 7 days calculated from DB
+    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const dailyVisits: Array<{ day: string; visits: number; clicks: number; applies: number; jobsAdded: number }> = [];
+
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const startOfDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      const endOfDay = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+
+      const dayName = i === 0 ? `${days[d.getDay()]} (Today)` : days[d.getDay()];
+
+      const [dayPageViews, dayClicks, dayApplies, dayJobs] = await Promise.all([
+        prisma.analyticsEvent.count({
+          where: { event_type: "page_view", created_at: { gte: startOfDay, lte: endOfDay } },
+        }),
+        prisma.analyticsEvent.count({
+          where: { event_type: "button_click", created_at: { gte: startOfDay, lte: endOfDay } },
+        }),
+        prisma.analyticsEvent.count({
+          where: { event_type: "apply_click", created_at: { gte: startOfDay, lte: endOfDay } },
+        }),
+        prisma.listing.count({
+          where: { created_at: { gte: startOfDay, lte: endOfDay } },
+        }),
+      ]);
+
+      dailyVisits.push({
+        day: dayName,
+        visits: dayPageViews,
+        clicks: dayClicks,
+        applies: dayApplies,
+        jobsAdded: dayJobs,
+      });
+    }
 
     return NextResponse.json({
       summary: {
-        dailyVisitsTotal: 3300 + pageViews,
-        totalClicks: 6210 + buttonClicks,
-        totalApplies: 1640 + applyClicks,
-        avgSessionDuration: "3m 42s",
-        activeUsersToday: 640 + pageViews,
+        dailyVisitsTotal: pageViews,
+        totalClicks: buttonClicks,
+        totalApplies: applyClicks,
+        avgSessionDuration: sectionEvents.length > 0 ? `${(sectionEvents.reduce((acc, e) => acc + (e.duration_ms || 0), 0) / (sectionEvents.length * 1000)).toFixed(1)}s` : "0s",
+        activeUsersToday: pageViews,
       },
       dailyVisits,
       sectionDurations: calculatedSections,

@@ -50,16 +50,6 @@ db.exec(`
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP
   );
 
-  CREATE TABLE IF NOT EXISTS recruiter_submissions (
-    id TEXT PRIMARY KEY,
-    recruiter_id TEXT NOT NULL,
-    company_id TEXT,
-    company_name TEXT,
-    raw_jd TEXT,
-    status TEXT NOT NULL,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP
-  );
-
   CREATE TABLE IF NOT EXISTS notifications (
     id TEXT PRIMARY KEY,
     student_id TEXT NOT NULL,
@@ -213,17 +203,6 @@ function seedDefaults() {
         resume_url: null,
         profile_status: 'admin',
       },
-      {
-        id: 'user-recruiter',
-        name: 'Recruiter',
-        email: 'recruiter@demo.com',
-        password_hash: bcrypt.hashSync('recruit123', 10),
-        role: 'recruiter',
-        grad_year: null,
-        degree: null,
-        resume_url: null,
-        profile_status: 'verified',
-      },
     ];
 
     const insertUser = db.prepare(`
@@ -250,14 +229,6 @@ function seedDefaults() {
         ('app-1', 'user-student', 'lg-1001', 'applied', ?),
         ('app-2', 'user-student', 'lg-1002', 'interview', ?)
     `).run(new Date().toISOString(), new Date().toISOString());
-  }
-
-  const submissionCount = db.prepare('SELECT COUNT(*) AS count FROM recruiter_submissions').get().count;
-  if (submissionCount === 0) {
-    db.prepare(`
-      INSERT INTO recruiter_submissions (id, recruiter_id, company_id, company_name, raw_jd, status)
-      VALUES ('sub-1', 'user-recruiter', 'c-5', 'Nova Stack', 'We are hiring a backend engineer with Node.js, TypeScript, and SQL.', 'pending')
-    `).run();
   }
 
   const notificationCount = db.prepare('SELECT COUNT(*) AS count FROM notifications').get().count;
@@ -396,9 +367,6 @@ module.exports = {
       VALUES (@id, @student_id, @listing_id, @channel, @sent_at)
     `).run({ id, student_id, listing_id, channel, sent_at: sentAt });
     return { id, student_id, listing_id, channel, sent_at: sentAt };
-  },
-  listRecruiterSubmissions() {
-    return db.prepare('SELECT * FROM recruiter_submissions ORDER BY created_at DESC').all();
   },
   updateListingStatus(id, status) {
     db.prepare('UPDATE listings SET status = ? WHERE id = ?').run(status, id);

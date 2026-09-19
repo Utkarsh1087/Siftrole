@@ -168,8 +168,15 @@ export async function verifyCompanyWithAi(params: {
     rawJdSnippet
   );
 
-  const apiKey = process.env.GROQ_API_KEY || process.env.NEXT_PUBLIC_GROQ_API_KEY;
-  if (!apiKey) {
+  const groqKeys = [
+    process.env.GROQ_API_KEY_1,
+    process.env.GROQ_API_KEY_2,
+    process.env.GROQ_API_KEY_3,
+    process.env.GROQ_API_KEY,
+  ].filter(Boolean) as string[];
+
+  const uniqueGroqKeys = Array.from(new Set(groqKeys));
+  if (uniqueGroqKeys.length === 0) {
     return fallback;
   }
 
@@ -216,64 +223,144 @@ Return ONLY a strict JSON object with this exact structure:
 }
 `;
 
-  try {
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a strict corporate fraud analyst. You output raw JSON only with zero conversational prefix.",
-          },
-          { role: "user", content: prompt },
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.1,
-      }),
-    });
+  for (const apiKey of uniqueGroqKeys) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "qwen/qwen3.8-27b",
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are a strict corporate fraud analyst. You output raw JSON only with zero conversational prefix.",
+            },
+            { role: "user", content: prompt },
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.1,
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
 
-    if (response.ok) {
-      const data = await response.json();
-      const content = data.choices?.[0]?.message?.content;
-      if (content) {
-        const parsed = JSON.parse(content);
-        return {
-          companyName,
-          trustScore: typeof parsed.trustScore === "number" ? parsed.trustScore : fallback.trustScore,
-          verdict: ["VERIFIED", "CAUTION", "SUSPICIOUS"].includes(parsed.verdict)
-            ? parsed.verdict
-            : fallback.verdict,
-          companyProfile: {
-            summary: parsed.companyProfile?.summary || fallback.companyProfile.summary,
-            industry: parsed.companyProfile?.industry || fallback.companyProfile.industry,
-            headquarters: parsed.companyProfile?.headquarters || fallback.companyProfile.headquarters,
-            websiteOrDomain: parsed.companyProfile?.websiteOrDomain || fallback.companyProfile.websiteOrDomain,
-            atsProvider: parsed.companyProfile?.atsProvider || fallback.companyProfile.atsProvider,
-          },
-          domainAnalysis: {
-            isOfficialDomain:
-              typeof parsed.domainAnalysis?.isOfficialDomain === "boolean"
-                ? parsed.domainAnalysis.isOfficialDomain
-                : fallback.domainAnalysis.isOfficialDomain,
-            domainExtracted: parsed.domainAnalysis?.domainExtracted || fallback.domainAnalysis.domainExtracted,
-            notes: parsed.domainAnalysis?.notes || fallback.domainAnalysis.notes,
-          },
-          greenFlags: Array.isArray(parsed.greenFlags) && parsed.greenFlags.length ? parsed.greenFlags : fallback.greenFlags,
-          redFlags: Array.isArray(parsed.redFlags) ? parsed.redFlags : fallback.redFlags,
-          recommendation: parsed.recommendation || fallback.recommendation,
-          modelUsed: "llama-3.3-70b-versatile",
-        };
+      if (response.ok) {
+        const data = await response.json();
+        const content = data.choices?.[0]?.message?.content;
+        if (content) {
+          const parsed = JSON.parse(content);
+          return {
+            companyName,
+            trustScore: typeof parsed.trustScore === "number" ? parsed.trustScore : fallback.trustScore,
+            verdict: ["VERIFIED", "CAUTION", "SUSPICIOUS"].includes(parsed.verdict)
+              ? parsed.verdict
+              : fallback.verdict,
+            companyProfile: {
+              summary: parsed.companyProfile?.summary || fallback.companyProfile.summary,
+              industry: parsed.companyProfile?.industry || fallback.companyProfile.industry,
+              headquarters: parsed.companyProfile?.headquarters || fallback.companyProfile.headquarters,
+              websiteOrDomain: parsed.companyProfile?.websiteOrDomain || fallback.companyProfile.websiteOrDomain,
+              atsProvider: parsed.companyProfile?.atsProvider || fallback.companyProfile.atsProvider,
+            },
+            domainAnalysis: {
+              isOfficialDomain:
+                typeof parsed.domainAnalysis?.isOfficialDomain === "boolean"
+                  ? parsed.domainAnalysis.isOfficialDomain
+                  : fallback.domainAnalysis.isOfficialDomain,
+              domainExtracted: parsed.domainAnalysis?.domainExtracted || fallback.domainAnalysis.domainExtracted,
+              notes: parsed.domainAnalysis?.notes || fallback.domainAnalysis.notes,
+            },
+            greenFlags: Array.isArray(parsed.greenFlags) && parsed.greenFlags.length ? parsed.greenFlags : fallback.greenFlags,
+            redFlags: Array.isArray(parsed.redFlags) ? parsed.redFlags : fallback.redFlags,
+            recommendation: parsed.recommendation || fallback.recommendation,
+            modelUsed: "groq/qwen-3.8-27b",
+          };
+        }
+      } else if (response.status === 429 || response.status === 503) {
+        console.warn(`[Company Verifier] Groq key rate-limited (${response.status}), trying next key...`);
       }
+    } catch (err: any) {
+      const isAbort = err?.name === "AbortError";
+      console.warn(`[Company Verifier] Groq error (${isAbort ? "timeout" : err?.message}), trying next key...`);
     }
-  } catch (err) {
-    console.warn("[Company Verifier] Groq API error, using fallback heuristics:", err);
+  }
+
+  // Gemini fallback
+  const geminiKeys = [
+    process.env.GEMINI_API_KEY_1,
+    process.env.GEMINI_API_KEY_2,
+    process.env.GEMINI_API_KEY_3,
+    process.env.GEMINI_API_KEY,
+  ].filter(Boolean) as string[];
+
+  for (const apiKey of Array.from(new Set(geminiKeys))) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`;
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: `You are a strict corporate fraud analyst. Output raw JSON only.\n\n${prompt}` }],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.1,
+            responseMimeType: "application/json",
+          },
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        const data = await response.json();
+        const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (content) {
+          const parsed = JSON.parse(content);
+          return {
+            companyName,
+            trustScore: typeof parsed.trustScore === "number" ? parsed.trustScore : fallback.trustScore,
+            verdict: ["VERIFIED", "CAUTION", "SUSPICIOUS"].includes(parsed.verdict)
+              ? parsed.verdict
+              : fallback.verdict,
+            companyProfile: {
+              summary: parsed.companyProfile?.summary || fallback.companyProfile.summary,
+              industry: parsed.companyProfile?.industry || fallback.companyProfile.industry,
+              headquarters: parsed.companyProfile?.headquarters || fallback.companyProfile.headquarters,
+              websiteOrDomain: parsed.companyProfile?.websiteOrDomain || fallback.companyProfile.websiteOrDomain,
+              atsProvider: parsed.companyProfile?.atsProvider || fallback.companyProfile.atsProvider,
+            },
+            domainAnalysis: {
+              isOfficialDomain:
+                typeof parsed.domainAnalysis?.isOfficialDomain === "boolean"
+                  ? parsed.domainAnalysis.isOfficialDomain
+                  : fallback.domainAnalysis.isOfficialDomain,
+              domainExtracted: parsed.domainAnalysis?.domainExtracted || fallback.domainAnalysis.domainExtracted,
+              notes: parsed.domainAnalysis?.notes || fallback.domainAnalysis.notes,
+            },
+            greenFlags: Array.isArray(parsed.greenFlags) && parsed.greenFlags.length ? parsed.greenFlags : fallback.greenFlags,
+            redFlags: Array.isArray(parsed.redFlags) ? parsed.redFlags : fallback.redFlags,
+            recommendation: parsed.recommendation || fallback.recommendation,
+            modelUsed: "gemini/gemini-3.6-flash",
+          };
+        }
+      }
+    } catch (e: any) {
+      console.warn(`[Company Verifier] Gemini fallback error: ${e?.message}`);
+    }
   }
 
   return fallback;
 }
+

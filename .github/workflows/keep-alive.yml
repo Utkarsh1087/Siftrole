@@ -1,0 +1,98 @@
+name: Keep Alive & Health Check
+
+on:
+  schedule:
+    # Run every 14 minutes to prevent free-tier containers (Render, Railway, Fly.io) from sleeping
+    - cron: '*/14 * * * *'
+  workflow_dispatch:
+    inputs:
+      client_url:
+        description: 'Optional Client URL to ping (overrides secret/env)'
+        required: false
+        type: string
+      admin_url:
+        description: 'Optional Admin URL to ping (overrides secret/env)'
+        required: false
+        type: string
+      server_url:
+        description: 'Optional Server API URL to ping (overrides secret/env)'
+        required: false
+        type: string
+
+jobs:
+  ping-services:
+    name: Ping Siftrole Services
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Ping All Services & Health Checks
+        id: ping
+        env:
+          CLIENT_URL: ${{ inputs.client_url || secrets.CLIENT_URL || vars.CLIENT_URL }}
+          ADMIN_URL: ${{ inputs.admin_url || secrets.ADMIN_URL || vars.ADMIN_URL }}
+          SERVER_URL: ${{ inputs.server_url || secrets.SERVER_URL || vars.SERVER_URL }}
+        run: |
+          echo "### 🚀 Siftrole Services Health Check Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | Target Endpoint | HTTP Status | Response Time | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "| :--- | :--- | :---: | :---: | :---: |" >> $GITHUB_STEP_SUMMARY
+
+          ping_endpoint() {
+            local service_name="$1"
+            local base_url="$2"
+            local path="$3"
+
+            if [ -z "$base_url" ]; then
+              echo "⚠️ $service_name URL is not configured in GitHub Secrets / Variables."
+              echo "| $service_name | Not Configured | - | - | ⚪ Skipped (No URL set) |" >> $GITHUB_STEP_SUMMARY
+              return 0
+            fi
+
+            # Strip trailing slash if present
+            base_url="${base_url%/}"
+            local full_url="${base_url}${path}"
+
+            echo "Pinging $service_name at $full_url..."
+
+            # Perform curl with retry for cold-start tolerance (e.g. Render spin-up)
+            local response
+            response=$(curl -s -w "\n%{http_code}\n%{time_total}" \
+              --retry 3 \
+              --retry-delay 5 \
+              --max-time 35 \
+              -H "User-Agent: Siftrole-KeepAlive-Bot/1.0" \
+              "$full_url" || echo -e "\n000\n0.0")
+
+            local http_code
+            http_code=$(echo "$response" | tail -n 2 | head -n 1)
+            local time_total
+            time_total=$(echo "$response" | tail -n 1)
+
+            echo "Response code: $http_code (took ${time_total}s)"
+
+            if [[ "$http_code" =~ ^(200|204|301|302|307|308)$ ]]; then
+              echo "| $service_name | \`$path\` | **$http_code** | ${time_total}s | 🟢 Online |" >> $GITHUB_STEP_SUMMARY
+            elif [ "$http_code" == "000" ]; then
+              echo "| $service_name | \`$path\` | **Timeout / Failed** | ${time_total}s | 🔴 Offline |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| $service_name | \`$path\` | **$http_code** | ${time_total}s | 🟡 Degraded |" >> $GITHUB_STEP_SUMMARY
+            fi
+          }
+
+          echo "========================================="
+          echo "Starting Siftrole Keep-Alive Ping Cycle"
+          echo "Timestamp: $(date -u)"
+          echo "========================================="
+
+          # 1. Ping Client Web App
+          ping_endpoint "Client Web App" "$CLIENT_URL" "/api/health"
+
+          # 2. Ping Admin Dashboard & AI Agent
+          ping_endpoint "Admin Dashboard" "$ADMIN_URL" "/api/health"
+
+          # 3. Ping Backend Express API Server
+          ping_endpoint "Backend API Server" "$SERVER_URL" "/api/health"
+
+          echo "========================================="
+          echo "Keep-Alive Ping Cycle Completed"
+          echo "========================================="

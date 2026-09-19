@@ -216,7 +216,7 @@ CRITICAL: Extract actual information from the text. Do NOT invent or make up pla
       for (const key of Array.from(new Set(geminiKeys))) {
         try {
           const geminiRes = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${key}`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },

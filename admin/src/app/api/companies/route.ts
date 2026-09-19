@@ -3,6 +3,9 @@ import prisma from "@/lib/prisma";
 import { syncCompany } from "@/lib/sync/runner";
 import { AtsType } from "@prisma/client";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);

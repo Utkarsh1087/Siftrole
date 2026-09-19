@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -9,6 +12,7 @@ export async function GET(req: NextRequest) {
     const roleType = searchParams.get("roleType") || "";
     const source = searchParams.get("source") || "";
     const status = searchParams.get("status") || "active";
+    const limit = parseInt(searchParams.get("limit") || "300", 10);
 
     const where: any = {};
 
@@ -64,7 +68,7 @@ export async function GET(req: NextRequest) {
           select: { name: true, ats_type: true },
         },
       },
-      take: 100,
+      take: limit,
     });
 
     // Get unique companies list for filter dropdowns

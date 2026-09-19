@@ -1,5 +1,5 @@
 const express = require('express');
-const { getAllListings, listRecruiterSubmissions, getListingById, updateListingStatus } = require('../store');
+const { getAllListings, getListingById, updateListingStatus } = require('../store');
 
 const router = express.Router();
 
@@ -22,10 +22,6 @@ router.post('/listings/:id/approve', requireAdmin, (req, res) => {
 
   const updatedListing = updateListingStatus(target.id, 'active');
   return res.json({ listing: updatedListing });
-});
-
-router.get('/recruiter-submissions', requireAdmin, (req, res) => {
-  res.json({ submissions: listRecruiterSubmissions() });
 });
 
 // Admin-triggered scraper run on demand

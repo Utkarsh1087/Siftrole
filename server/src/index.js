@@ -52,7 +52,8 @@ app.use(express.json());
 // Global bot protection and API rate limiter
 app.use(generalApiLimiter);
 
-app.get('/health', (req, res) => res.json({ ok: true }));
+app.get('/health', (req, res) => res.json({ status: 'ok', service: 'siftrole-server', uptime: process.uptime(), timestamp: new Date().toISOString() }));
+app.get('/api/health', (req, res) => res.json({ status: 'ok', service: 'siftrole-server', uptime: process.uptime(), timestamp: new Date().toISOString() }));
 
 // Apply dedicated auth rate limiter to prevent brute force
 app.use('/api/auth', authLimiter, authRoutes);
@@ -85,7 +86,7 @@ app.get('/api/notifications', authRequired, (req, res) => {
 });
 
 app.get('/api/roles', (req, res) => {
-  res.json({ roles: ['student', 'recruiter', 'admin'] });
+  res.json({ roles: ['student', 'admin'] });
 });
 
 const { initScraperScheduler } = require('./scraperCron');

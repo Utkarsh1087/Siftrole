@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import {
   Building2,
   Users,
@@ -37,10 +38,12 @@ import {
   ArrowRight,
   PanelLeftClose,
   PanelLeftOpen,
+  LogOut,
 } from "lucide-react";
 import { CompanyLogo } from "@/components/CompanyLogo";
 import { SiftroleLogoMark } from "@/components/SiftroleLogo";
 import { NewsletterBroadcastView } from "@/components/NewsletterBroadcastView";
+import { AdminAiAgentView } from "@/components/AdminAiAgentView";
 
 interface Message {
   id: string;
@@ -84,11 +87,12 @@ interface UserItem {
 }
 
 export default function AdminDashboard() {
-  const [activeNav, setActiveNav] = useState<"dashboard" | "review_queue" | "companies" | "users" | "ai_extractor" | "analytics" | "reports" | "newsletter">("dashboard");
+  const router = useRouter();
+  const [activeNav, setActiveNav] = useState<"dashboard" | "review_queue" | "companies" | "users" | "ai_extractor" | "ai_agent" | "analytics" | "reports" | "newsletter">("dashboard");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Global Header Stats
-  const [stats, setStats] = useState({ total: 994, active: 989, pending: 0, manual: 0, flagged: 5, companies: 6 });
+  const [stats, setStats] = useState({ total: 0, active: 0, pending: 0, manual: 0, flagged: 0, companies: 0 });
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
 
@@ -169,6 +173,17 @@ export default function AdminDashboard() {
     fetchAnalytics();
     fetchPendingListings();
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth", { method: "DELETE" });
+    } catch (e) {
+      console.error("Logout error:", e);
+    } finally {
+      router.push("/login");
+      router.refresh();
+    }
+  };
 
   const fetchPendingListings = async () => {
     try {
@@ -834,6 +849,29 @@ export default function AdminDashboard() {
               )}
             </button>
 
+            {/* 4.5 Admin AI Agent (Full DB Control) */}
+            <button
+              onClick={() => setActiveNav("ai_agent")}
+              title="Admin AI Agent (Full Database Control)"
+              className={`w-full flex items-center ${
+                isSidebarCollapsed ? "justify-center px-0 py-2.5" : "justify-between px-3 py-2.5"
+              } rounded-xl text-xs font-bold transition ${
+                activeNav === "ai_agent"
+                  ? "bg-emerald-900 text-white shadow-xs"
+                  : "text-emerald-950 bg-emerald-50/60 hover:bg-emerald-100/80"
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Sparkles className={`w-4 h-4 shrink-0 ${activeNav === "ai_agent" ? "text-emerald-400" : "text-emerald-700"}`} />
+                {!isSidebarCollapsed && <span>Admin AI Agent</span>}
+              </div>
+              {!isSidebarCollapsed && (
+                <span className={`text-[0.65rem] font-extrabold px-1.5 py-0.5 rounded ${activeNav === "ai_agent" ? "bg-white/20 text-white" : "bg-emerald-200 text-emerald-900"}`}>
+                  Agent
+                </span>
+              )}
+            </button>
+
             {/* 5. Website Analytics */}
             <button
               onClick={() => setActiveNav("analytics")}
@@ -878,7 +916,7 @@ export default function AdminDashboard() {
               </div>
               {!isSidebarCollapsed && (
                 <span className={`text-[0.65rem] font-bold px-1.5 py-0.5 rounded ${activeNav === "reports" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"}`}>
-                  30+
+                  {logs.length || 0}
                 </span>
               )}
             </button>
@@ -911,21 +949,37 @@ export default function AdminDashboard() {
         {/* Bottom Profile / Account Pill */}
         {!isSidebarCollapsed ? (
           <div className="pt-4 pb-2 border-t border-slate-200 mt-6">
-            <div className="flex items-center gap-2.5 p-2 rounded-xl bg-slate-50 border border-slate-200">
-              <div className="h-8 w-8 rounded-lg bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs shrink-0">
-                <ShieldCheck className="w-4 h-4 text-[#083327]" />
+            <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-200">
+              <div className="flex items-center gap-2.5 overflow-hidden">
+                <div className="h-8 w-8 rounded-lg bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs shrink-0">
+                  <ShieldCheck className="w-4 h-4 text-[#083327]" />
+                </div>
+                <div className="overflow-hidden">
+                  <div className="text-xs font-bold text-slate-900 truncate">Administrator</div>
+                  <div className="text-[0.65rem] text-emerald-700 font-medium">Status: Active</div>
+                </div>
               </div>
-              <div className="overflow-hidden">
-                <div className="text-xs font-bold text-slate-900 truncate">Administrator</div>
-                <div className="text-[0.65rem] text-emerald-700 font-medium">Status: Active</div>
-              </div>
+              <button
+                onClick={handleLogout}
+                className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-500 hover:text-rose-600 transition cursor-pointer"
+                title="Log out of Admin Console"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
         ) : (
-          <div className="pt-4 pb-4 border-t border-slate-200 mt-6 flex justify-center" title="Administrator (Active)">
+          <div className="pt-4 pb-4 border-t border-slate-200 mt-6 flex flex-col items-center gap-2" title="Administrator (Active)">
             <div className="h-9 w-9 rounded-xl bg-slate-100 border border-slate-200 text-[#083327] font-bold flex items-center justify-center text-xs">
               <ShieldCheck className="w-4 h-4" />
             </div>
+            <button
+              onClick={handleLogout}
+              className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-500 hover:text-rose-600 transition cursor-pointer"
+              title="Log out of Admin Console"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
           </div>
         )}
       </aside>
@@ -957,6 +1011,7 @@ export default function AdminDashboard() {
                   {activeNav === "companies" && "Companies"}
                   {activeNav === "users" && "Students"}
                   {activeNav === "ai_extractor" && "Add Job with AI"}
+                  {activeNav === "ai_agent" && "Admin AI Agent (Copilot)"}
                   {activeNav === "analytics" && "Website Analytics & AI Tips"}
                   {activeNav === "reports" && "Activity Logs"}
                   {activeNav === "newsletter" && "Newsletter & Job Alert Broadcasts"}
@@ -967,6 +1022,7 @@ export default function AdminDashboard() {
                   {activeNav === "companies" && "Manage company job feeds and career page scrapers"}
                   {activeNav === "users" && "View and manage registered student candidate accounts"}
                   {activeNav === "ai_extractor" && "Paste any job posting to extract details into clean fields"}
+                  {activeNav === "ai_agent" && "Full-control assistant with live database grounding, telemetry, and platform operations"}
                   {activeNav === "analytics" && "See user activity and simple AI suggestions to improve the website"}
                   {activeNav === "reports" && "History of recent job syncs and extractions"}
                   {activeNav === "newsletter" && "Select verified tech openings and dispatch email digests directly to active subscribers via Resend"}
@@ -1036,7 +1092,7 @@ export default function AdminDashboard() {
                     <div>
                       <span className="text-[0.7rem] font-bold uppercase tracking-wider text-[#083327]">Active Job Links</span>
                       <div className="text-3xl font-black mt-1 text-[#083327] tracking-tight">
-                        {stats.total > 0 ? `${((stats.active / stats.total) * 100).toFixed(1)}%` : "100%"}
+                        {stats.total > 0 ? `${((stats.active / stats.total) * 100).toFixed(1)}%` : "0%"}
                       </div>
                     </div>
                     <div className="flex gap-1 items-end h-8">
@@ -1055,7 +1111,7 @@ export default function AdminDashboard() {
                   <div className="flex justify-between items-start">
                     <div>
                       <span className="text-[0.7rem] font-bold uppercase tracking-wider text-[#083327]">Job Applications Clicked</span>
-                      <div className="text-3xl font-black mt-1 text-[#083327] tracking-tight">{analyticsData?.summary?.totalApplies || 1640}</div>
+                      <div className="text-3xl font-black mt-1 text-[#083327] tracking-tight">{analyticsData?.summary?.totalApplies ?? 0}</div>
                     </div>
                     <div className="flex gap-1 items-end h-8">
                       <span className="w-1.5 h-3 bg-emerald-200 rounded-full" />
@@ -1065,7 +1121,12 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                   <div className="mt-3 text-[0.7rem] font-bold text-[#083327] flex items-center gap-1">
-                    <span>48% of visitors</span> click through to apply
+                    <span>
+                      {analyticsData?.summary?.dailyVisitsTotal > 0
+                        ? `${Math.round(((analyticsData?.summary?.totalApplies || 0) / analyticsData?.summary?.dailyVisitsTotal) * 100)}% of visitors`
+                        : "0% of visitors"}
+                    </span>{" "}
+                    click through to apply
                   </div>
                 </div>
               </div>
@@ -1087,31 +1148,40 @@ export default function AdminDashboard() {
 
                   {/* Bar Chart Visualization */}
                   <div className="h-44 flex items-end justify-between gap-3 pt-4 px-2">
-                    {[
-                      { day: "Mon", bar1: 65, bar2: 45 },
-                      { day: "Tue", bar1: 85, bar2: 60 },
-                      { day: "Wed", bar1: 75, bar2: 55 },
-                      { day: "Thu", bar1: 95, bar2: 70 },
-                      { day: "Fri", bar1: 100, bar2: 85 },
-                      { day: "Sat", bar1: 60, bar2: 40 },
-                      { day: "Sun (Today)", bar1: 110, bar2: 95 },
-                    ].map((item) => (
-                      <div key={item.day} className="flex-1 flex flex-col items-center gap-2">
-                        <div className="w-full flex items-end justify-center gap-1.5 h-32">
-                          <div
-                            className="w-3 bg-emerald-100 rounded-t-sm hover:bg-emerald-200 transition"
-                            style={{ height: `${(item.bar1 / 110) * 100}%` }}
-                            title={`Jobs Added: ${item.bar1}`}
-                          />
-                          <div
-                            className="w-3 bg-[#083327] rounded-t-sm"
-                            style={{ height: `${(item.bar2 / 110) * 100}%` }}
-                            title={`Student Applications: ${item.bar2}`}
-                          />
+                    {(analyticsData?.dailyVisits || [
+                      { day: "Mon", jobsAdded: 0, applies: 0 },
+                      { day: "Tue", jobsAdded: 0, applies: 0 },
+                      { day: "Wed", jobsAdded: 0, applies: 0 },
+                      { day: "Thu", jobsAdded: 0, applies: 0 },
+                      { day: "Fri", jobsAdded: 0, applies: 0 },
+                      { day: "Sat", jobsAdded: 0, applies: 0 },
+                      { day: "Sun (Today)", jobsAdded: 0, applies: 0 },
+                    ]).map((item: any) => {
+                      const maxVal = Math.max(
+                        ...((analyticsData?.dailyVisits || []).map((d: any) => Math.max(d.jobsAdded || 0, d.applies || 0))),
+                        10
+                      );
+                      const bar1Height = item.jobsAdded > 0 ? (item.jobsAdded / maxVal) * 100 : 4;
+                      const bar2Height = item.applies > 0 ? (item.applies / maxVal) * 100 : 4;
+
+                      return (
+                        <div key={item.day} className="flex-1 flex flex-col items-center gap-2">
+                          <div className="w-full flex items-end justify-center gap-1.5 h-32">
+                            <div
+                              className="w-3 bg-emerald-200 rounded-t-sm hover:bg-emerald-300 transition"
+                              style={{ height: `${bar1Height}%` }}
+                              title={`Jobs Added: ${item.jobsAdded || 0}`}
+                            />
+                            <div
+                              className="w-3 bg-[#083327] rounded-t-sm"
+                              style={{ height: `${bar2Height}%` }}
+                              title={`Student Applications: ${item.applies || 0}`}
+                            />
+                          </div>
+                          <span className="text-[0.65rem] font-bold text-[#083327]">{item.day}</span>
                         </div>
-                        <span className="text-[0.65rem] font-bold text-[#083327]">{item.day}</span>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -1122,7 +1192,7 @@ export default function AdminDashboard() {
                       Total Active Jobs
                     </span>
                     <div className="text-4xl font-black text-[#083327] mt-2 tracking-tight">
-                      994 <span className="text-sm font-bold text-emerald-600">LIVE</span>
+                      {stats.total || stats.active} <span className="text-sm font-bold text-emerald-600">LIVE</span>
                     </div>
                     <div className="mt-1 text-xs font-bold text-[#083327] flex items-center gap-1">
                       <span>No spam</span> zero duplicate postings
@@ -1135,7 +1205,9 @@ export default function AdminDashboard() {
                         <ShieldCheck className="w-4 h-4 text-[#083327]" />
                         <span>Greenhouse Jobs</span>
                       </div>
-                      <span className="font-extrabold text-[#083327]">777 jobs</span>
+                      <span className="font-extrabold text-[#083327]">
+                        {companies.filter((c) => c.ats_type === "GREENHOUSE").reduce((acc, c) => acc + (c._count?.listings || 0), 0)} jobs
+                      </span>
                     </div>
 
                     <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
@@ -1143,7 +1215,9 @@ export default function AdminDashboard() {
                         <ShieldCheck className="w-4 h-4 text-[#083327]" />
                         <span>Ashby Jobs</span>
                       </div>
-                      <span className="font-extrabold text-[#083327]">154 jobs</span>
+                      <span className="font-extrabold text-[#083327]">
+                        {companies.filter((c) => c.ats_type === "ASHBY").reduce((acc, c) => acc + (c._count?.listings || 0), 0)} jobs
+                      </span>
                     </div>
 
                     <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
@@ -1151,13 +1225,15 @@ export default function AdminDashboard() {
                         <ShieldCheck className="w-4 h-4 text-[#083327]" />
                         <span>Lever Jobs</span>
                       </div>
-                      <span className="font-extrabold text-[#083327]">62 jobs</span>
+                      <span className="font-extrabold text-[#083327]">
+                        {companies.filter((c) => c.ats_type === "LEVER").reduce((acc, c) => acc + (c._count?.listings || 0), 0)} jobs
+                      </span>
                     </div>
                   </div>
 
                   <button
                     onClick={() => setActiveNav("companies")}
-                    className="w-full rounded-xl bg-[#083327] text-white py-2.5 text-xs font-bold hover:bg-[#0c4333] transition text-center shadow-xs"
+                    className="w-full rounded-xl bg-[#083327] text-white py-2.5 text-xs font-bold hover:bg-[#0c4333] transition text-center shadow-xs cursor-pointer"
                   >
                     View All Companies
                   </button>
@@ -1194,32 +1270,40 @@ export default function AdminDashboard() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {companies.slice(0, 5).map((comp) => (
-                          <tr key={comp.id} className="hover:bg-slate-50 transition">
-                            <td className="py-2.5 px-3 font-bold text-[#083327]">
-                              <div className="flex items-center gap-2">
-                                <CompanyLogo company={comp.name} size="sm" />
-                                <span>{comp.name}</span>
-                              </div>
-                            </td>
-                            <td className="py-2.5 px-3 font-mono text-[0.7rem] text-slate-600">{comp.ats_type}</td>
-                            <td className="py-2.5 px-3 font-bold text-[#083327]">{comp._count?.listings || 0}</td>
-                            <td className="py-2.5 px-3">
-                              <span className="rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 text-[0.65rem] font-bold inline-flex items-center gap-1">
-                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" /> Active
-                              </span>
-                            </td>
-                            <td className="py-2.5 px-3 text-right">
-                              <button
-                                onClick={() => handleSyncSingleCompany(comp.id)}
-                                className="p-1 rounded hover:bg-slate-100 text-slate-700 transition"
-                                title="Sync jobs for this company"
-                              >
-                                <RefreshCw className="w-3.5 h-3.5 text-[#083327]" />
-                              </button>
+                        {companies.length === 0 ? (
+                          <tr>
+                            <td colSpan={5} className="py-8 text-center text-slate-400 font-medium">
+                              No companies added yet. Click &quot;Add Company&quot; above to register your first employer feed.
                             </td>
                           </tr>
-                        ))}
+                        ) : (
+                          companies.slice(0, 5).map((comp) => (
+                            <tr key={comp.id} className="hover:bg-slate-50 transition">
+                              <td className="py-2.5 px-3 font-bold text-[#083327]">
+                                <div className="flex items-center gap-2">
+                                  <CompanyLogo company={comp.name} size="sm" />
+                                  <span>{comp.name}</span>
+                                </div>
+                              </td>
+                              <td className="py-2.5 px-3 font-mono text-[0.7rem] text-slate-600">{comp.ats_type}</td>
+                              <td className="py-2.5 px-3 font-bold text-[#083327]">{comp._count?.listings || 0}</td>
+                              <td className="py-2.5 px-3">
+                                <span className="rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 text-[0.65rem] font-bold inline-flex items-center gap-1">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" /> Active
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 text-right">
+                                <button
+                                  onClick={() => handleSyncSingleCompany(comp.id)}
+                                  className="p-1 rounded hover:bg-slate-100 text-slate-700 transition cursor-pointer"
+                                  title="Sync jobs for this company"
+                                >
+                                  <RefreshCw className="w-3.5 h-3.5 text-[#083327]" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -1246,7 +1330,7 @@ export default function AdminDashboard() {
                       Siftrole Job Board Pipeline
                     </h3>
                     <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-                      994 active roles indexed across verified employer career feeds with automated expiration reconciliation.
+                      {stats.total || stats.active} active roles indexed across verified employer career feeds with automated expiration reconciliation.
                     </p>
                     <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
                       <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
@@ -2266,7 +2350,14 @@ export default function AdminDashboard() {
                       <div className={`max-w-[85%] rounded-2xl p-3.5 text-xs leading-relaxed ${
                         msg.sender === "user" ? "bg-[#083327] text-white" : "bg-slate-50 border border-slate-200 text-[#083327]"
                       }`}>
-                        <div className="whitespace-pre-wrap">{msg.text}</div>
+                        <div className="whitespace-pre-wrap">
+                          {msg.text.split(/(\*\*[^*]+\*\*)/g).map((part, i) => {
+                            if (part.startsWith("**") && part.endsWith("**") && part.length >= 4) {
+                              return <strong key={i} className="font-bold">{part.slice(2, -2)}</strong>;
+                            }
+                            return <React.Fragment key={i}>{part}</React.Fragment>;
+                          })}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -2510,6 +2601,13 @@ export default function AdminDashboard() {
           {/* ======================================================== */}
           {activeNav === "newsletter" && (
             <NewsletterBroadcastView />
+          )}
+
+          {/* ======================================================== */}
+          {/* TAB 8: ADMIN AI AGENT (FULL PLATFORM & DB CONTROL) */}
+          {/* ======================================================== */}
+          {activeNav === "ai_agent" && (
+            <AdminAiAgentView />
           )}
 
         </div>
