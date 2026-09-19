@@ -72,12 +72,14 @@ export async function syncCompany(companyId: string): Promise<SyncResult> {
       continue;
     }
 
-    // AI Parsing Step: Parse raw JD text and metadata through AI extraction engine first
+    // Controlled 1-by-1 ingestion: Pace AI calls to prevent saturating free-tier 15 RPM limits
     let item: NormalizedListing;
     try {
       item = await parseScrapedListingWithAi(rawItem);
+      // Breathing room between AI calls (1 request per 4.5s = ~13 RPM, well below 15 RPM limit)
+      await new Promise((resolve) => setTimeout(resolve, 4500));
     } catch (aiErr) {
-      console.warn(`[AI Parsing Error] Failed to parse scraped JD for ${rawItem.title}, using raw item:`, aiErr);
+      console.warn(`[AI Ingestion Fallback] Using raw structured item for ${rawItem.title}`);
       item = rawItem;
     }
 
