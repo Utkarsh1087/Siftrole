@@ -625,11 +625,20 @@ export default function LandingPage() {
                 Why Siftrole
               </span>
               <h2 className="mt-2 text-[2.8rem] sm:text-[3.8rem] font-black leading-[1.06] tracking-[-0.04em] text-[#121816]">
-                Built for signal, not noise.
+                Only verified jobs. Zero ghost posts.
               </h2>
             </div>
-            <div className="pt-2 lg:pt-6 text-[1.15rem] leading-[1.8] text-[#55615b]">
-              Every other platform competes on volume: more listings, more noise, more expired reposts. We compete on signal: every listing here is real, current, and verifiable directly back to its source.
+            <div className="pt-2 lg:pt-6 flex flex-col items-start gap-4">
+              <p className="text-[1.15rem] leading-[1.8] text-[#55615b]">
+                Every role links directly to official company career pages. When a position closes, it's removed immediately so you never waste time on dead links.
+              </p>
+              <Link
+                href="/jobs"
+                className="inline-flex items-center gap-2 rounded-full bg-[#14281a] hover:bg-[#1f3d27] text-[#84d64f] px-6 py-3 text-xs sm:text-sm font-bold transition shadow-xs"
+              >
+                <span>Browse Verified Jobs</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
           </div>
 
