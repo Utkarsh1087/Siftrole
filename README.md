@@ -1,5 +1,9 @@
 # Siftrole | Intelligent Tech Career Platform & ATS Pipeline
 
+### 🌐 Live Production Deployments
+- 🚀 **Candidate Web App**: [https://siftrole-user.vercel.app](https://siftrole-user.vercel.app)
+- 🛡️ **Admin Operations Console**: [https://siftrole-admin.vercel.app](https://siftrole-admin.vercel.app)
+
 Siftrole connects university students, early-career engineers, and builders directly with verified tech roles extracted from official ATS feeds (Greenhouse, Lever, Ashby, SmartRecruiters) and direct recruiter contacts.
 
 ---
