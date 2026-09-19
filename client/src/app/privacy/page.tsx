@@ -50,9 +50,9 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-base font-black text-[#121816]">4. Payment Security</h2>
+            <h2 className="text-base font-black text-[#121816]">4. Free & Open Platform Access</h2>
             <p>
-              Payments for Siftrole Pro passes are processed securely via Razorpay with industry-standard 256-bit SSL encryption. Siftrole does not store your credit card or bank details.
+              All job listings, recruiter contacts, AI career copilot tools, and cold email drafters are 100% free and open for candidates. Siftrole does not charge any mandatory fees or registration subscriptions.
             </p>
           </section>
 

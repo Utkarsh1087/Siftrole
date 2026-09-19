@@ -377,16 +377,11 @@ export const HR_CONTACTS_DATA: HRContact[] = [
   },
 ];
 
-export const FREE_CONTACTS_LIMIT = 10;
+export const FREE_CONTACTS_LIMIT = 99999;
 
 export function isProUser(): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    const pro = localStorage.getItem("siftrole_pro_unlocked");
-    return pro === "true";
-  } catch {
-    return false;
-  }
+  // All recruiter contacts and features are 100% free and unlocked
+  return true;
 }
 
 export function unlockProAccess(): void {

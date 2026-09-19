@@ -36,7 +36,6 @@ import {
   markContactAsMailed,
 } from "@/lib/hrContacts";
 import { ColdMailModal } from "@/components/ColdMailModal";
-import { ProUpgradeModal } from "@/components/ProUpgradeModal";
 import { useAuth } from "@/lib/useAuth";
 
 export default function ColdEmailPage() {
@@ -251,30 +250,12 @@ export default function ColdEmailPage() {
               </p>
             </div>
 
-            {/* Pro Status Badge / Upgrade Trigger */}
+            {/* 100% Free Access Badge */}
             <div className="shrink-0">
-              {isPro ? (
-                <div className="inline-flex items-center gap-2 rounded-2xl bg-[#14281a] text-[#84d64f] px-5 py-3 text-xs font-bold border border-[#84d64f]/30 shadow-sm">
-                  <CheckCircle2 className="w-4 h-4 text-[#84d64f]" />
-                  <span>Pro Access Active &bull; All {contacts.length}+ Contacts Unlocked</span>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setIsUpgradeModalOpen(true)}
-                  className="rounded-2xl bg-[#14281a] hover:bg-[#1f3d27] text-white p-4 sm:px-6 flex items-center gap-4 shadow-md transition cursor-pointer border border-[#84d64f]/25"
-                >
-                  <div className="h-10 w-10 rounded-xl bg-[#84d64f]/20 flex items-center justify-center text-[#84d64f]">
-                    <Sparkles className="w-5 h-5" />
-                  </div>
-                  <div className="text-left">
-                    <div className="text-xs font-black text-white flex items-center gap-1.5">
-                      <span>Unlock {contacts.length}+ Recruiter Contacts</span>
-                      <span className="bg-[#84d64f] text-[#14281a] text-[0.65rem] px-2 py-0.5 rounded-full">₹49 Only</span>
-                    </div>
-                    <div className="text-[0.7rem] text-[#eef8e5]/80">First {FREE_CONTACTS_LIMIT} contacts are free for registered builders</div>
-                  </div>
-                </button>
-              )}
+              <div className="inline-flex items-center gap-2 rounded-2xl bg-[#14281a] text-[#84d64f] px-5 py-3 text-xs font-bold border border-[#84d64f]/30 shadow-sm">
+                <CheckCircle2 className="w-4 h-4 text-[#84d64f]" />
+                <span>100% Free & Open Access &bull; All {contacts.length}+ Contacts Unlocked</span>
+              </div>
             </div>
           </div>
         </section>
@@ -393,18 +374,14 @@ export default function ColdEmailPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-              {paginatedContacts.map((contact, index) => {
-                const globalIndex = startIndex + index;
-                const isLocked = !isPro && globalIndex >= FREE_CONTACTS_LIMIT;
+              {paginatedContacts.map((contact) => {
                 const isMailed = mailedContactIds.has(contact.id);
 
                 return (
                   <div
                     key={contact.id}
                     className={`rounded-[24px] border p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all relative overflow-hidden flex flex-col justify-between ${
-                      isLocked
-                        ? "bg-[#fbfaf8] border-neutral-200/90"
-                        : isMailed
+                      isMailed
                         ? "border-[#84d64f]/70 bg-[#f7fcf3] hover:shadow-md"
                         : "border-neutral-200/90 bg-white hover:border-[#84d64f] hover:shadow-md"
                     }`}
@@ -424,37 +401,35 @@ export default function ColdEmailPage() {
                               </span>
                             </div>
                             <h3 className="text-lg font-black text-[#121816] mt-0.5">
-                              {isLocked ? `${contact.name.split(" ")[0]} ••••••` : contact.name}
+                              {contact.name}
                             </h3>
                           </div>
                         </div>
 
                         <div className="flex items-center gap-2 shrink-0">
                           {/* Interactive Mailed Checkbox Button */}
-                          {!isLocked && (
-                            <button
-                              type="button"
-                              onClick={(e) => handleToggleMailed(contact.id, e)}
-                              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition-all cursor-pointer ${
-                                isMailed
-                                  ? "bg-[#14281a] text-[#84d64f] shadow-xs hover:bg-[#1f3d27]"
-                                  : "border border-neutral-300 bg-white text-[#55615b] hover:border-[#84d64f] hover:text-[#14281a] hover:bg-[#eef8e5]"
-                              }`}
-                              title={isMailed ? "Click to unmark as mailed" : "Mark as mailed"}
-                            >
-                              {isMailed ? (
-                                <>
-                                  <CheckCircle2 className="w-3.5 h-3.5 text-[#84d64f]" />
-                                  <span>Mailed</span>
-                                </>
-                              ) : (
-                                <>
-                                  <span className="w-3.5 h-3.5 rounded border border-neutral-400 bg-white inline-block" />
-                                  <span>Mark Mailed</span>
-                                </>
-                              )}
-                            </button>
-                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => handleToggleMailed(contact.id, e)}
+                            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition-all cursor-pointer ${
+                              isMailed
+                                ? "bg-[#14281a] text-[#84d64f] shadow-xs hover:bg-[#1f3d27]"
+                                : "border border-neutral-300 bg-white text-[#55615b] hover:border-[#84d64f] hover:text-[#14281a] hover:bg-[#eef8e5]"
+                            }`}
+                            title={isMailed ? "Click to unmark as mailed" : "Mark as mailed"}
+                          >
+                            {isMailed ? (
+                              <>
+                                <CheckCircle2 className="w-3.5 h-3.5 text-[#84d64f]" />
+                                <span>Mailed</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="w-3.5 h-3.5 rounded border border-neutral-400 bg-white inline-block" />
+                                <span>Mark Mailed</span>
+                              </>
+                            )}
+                          </button>
 
                           <span className="text-[0.7rem] font-bold text-[#55615b] bg-[#f8f7f5] px-2.5 py-1 rounded-lg border border-neutral-200/60 shrink-0">
                             {contact.department}
@@ -484,84 +459,42 @@ export default function ColdEmailPage() {
                       <div className="mt-4 p-3 rounded-xl bg-[#f8f7f5] border border-neutral-200/80 flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#14281a] truncate">
                           <Mail className="w-3.5 h-3.5 text-[#3c7818] shrink-0" />
-                          <span className="truncate">
-                            {isLocked ? "••••••••••••@company.com" : contact.email}
-                          </span>
+                          <span className="truncate">{contact.email}</span>
                         </div>
 
-                        {!isLocked && (
-                          <button
-                            onClick={(e) => handleCopyEmail(contact, e)}
-                            className="p-1.5 rounded-lg hover:bg-neutral-200 text-[#55615b] transition cursor-pointer shrink-0"
-                            title="Copy email"
-                          >
-                            {copiedEmailId === contact.id ? (
-                              <Check className="w-3.5 h-3.5 text-[#3c7818]" />
-                            ) : (
-                              <Copy className="w-3.5 h-3.5" />
-                            )}
-                          </button>
-                        )}
+                        <button
+                          onClick={(e) => handleCopyEmail(contact, e)}
+                          className="p-1.5 rounded-lg hover:bg-neutral-200 text-[#55615b] transition cursor-pointer shrink-0"
+                          title="Copy email"
+                        >
+                          {copiedEmailId === contact.id ? (
+                            <Check className="w-3.5 h-3.5 text-[#3c7818]" />
+                          ) : (
+                            <Copy className="w-3.5 h-3.5" />
+                          )}
+                        </button>
                       </div>
                     </div>
 
                     {/* Bottom Action Bar */}
                     <div className="mt-5 pt-4 border-t border-neutral-100 flex items-center justify-between gap-2">
-                      {!isLocked ? (
-                        <>
-                          <button
-                            onClick={() => setSelectedContactForAi(contact)}
-                            className="inline-flex items-center gap-1.5 rounded-xl bg-[#84d64f] hover:bg-[#75c73d] text-[#14281a] px-4 py-2 text-xs font-bold transition shadow-xs cursor-pointer active:scale-[0.98]"
-                          >
-                            <Sparkles className="w-3.5 h-3.5" />
-                            <span>Draft AI Mail</span>
-                          </button>
+                      <button
+                        onClick={() => setSelectedContactForAi(contact)}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-[#84d64f] hover:bg-[#75c73d] text-[#14281a] px-4 py-2 text-xs font-bold transition shadow-xs cursor-pointer active:scale-[0.98]"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Draft AI Mail</span>
+                      </button>
 
-                          <a
-                            href={`mailto:${contact.email}?subject=${encodeURIComponent(`Quick question re: ${contact.hiring_for[0]} at ${contact.company}`)}`}
-                            onClick={() => markContactAsMailed(contact.id)}
-                            className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-300 hover:border-[#84d64f] hover:bg-[#eef8e5] text-[#121816] px-3.5 py-2 text-xs font-bold transition cursor-pointer"
-                          >
-                            <Send className="w-3.5 h-3.5 text-[#3c7818]" />
-                            <span>Direct Mail</span>
-                          </a>
-                        </>
-                      ) : (
-                        <div className="w-full flex items-center justify-between gap-3">
-                          <span className="text-[0.75rem] font-bold text-[#55615b] inline-flex items-center gap-1.5">
-                            <Lock className="w-3.5 h-3.5 text-amber-600" />
-                            <span>Pro Contact #{globalIndex + 1}</span>
-                          </span>
-
-                          <button
-                            onClick={() => setIsUpgradeModalOpen(true)}
-                            className="inline-flex items-center gap-1.5 rounded-xl bg-[#14281a] hover:bg-[#1f3d27] text-[#84d64f] px-4 py-2 text-xs font-bold transition shadow-xs cursor-pointer"
-                          >
-                            <Sparkles className="w-3.5 h-3.5" />
-                            <span>Unlock Full Contact</span>
-                          </button>
-                        </div>
-                      )}
+                      <a
+                        href={`mailto:${contact.email}?subject=${encodeURIComponent(`Quick question re: ${contact.hiring_for[0]} at ${contact.company}`)}`}
+                        onClick={() => markContactAsMailed(contact.id)}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-300 hover:border-[#84d64f] hover:bg-[#eef8e5] text-[#121816] px-3.5 py-2 text-xs font-bold transition cursor-pointer"
+                      >
+                        <Send className="w-3.5 h-3.5 text-[#3c7818]" />
+                        <span>Direct Mail</span>
+                      </a>
                     </div>
-
-                    {/* Paywall Blur Overlay for Locked Contacts */}
-                    {isLocked && (
-                      <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px] pointer-events-none flex items-center justify-center p-4">
-                        <div className="bg-[#14281a]/90 text-white rounded-2xl p-4 shadow-xl border border-[#84d64f]/40 text-center pointer-events-auto max-w-[280px]">
-                          <Lock className="w-5 h-5 text-[#84d64f] mx-auto mb-1.5" />
-                          <h4 className="text-xs font-black text-white">Pro Contact Locked</h4>
-                          <p className="text-[0.68rem] text-[#eef8e5]/80 mt-1">
-                            Upgrade to unlock this recruiter and {contacts.length}+ other verified hiring leads.
-                          </p>
-                          <button
-                            onClick={() => setIsUpgradeModalOpen(true)}
-                            className="mt-3 w-full rounded-xl bg-[#84d64f] hover:bg-[#75c73d] text-[#14281a] py-2 text-xs font-bold shadow-sm cursor-pointer"
-                          >
-                            Unlock for ₹49 only
-                          </button>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 );
               })}
@@ -631,13 +564,6 @@ export default function ColdEmailPage() {
       <ColdMailModal
         contact={selectedContactForAi}
         onClose={() => setSelectedContactForAi(null)}
-      />
-
-      {/* Pro Upgrade Modal */}
-      <ProUpgradeModal
-        isOpen={isUpgradeModalOpen}
-        onClose={() => setIsUpgradeModalOpen(false)}
-        onSuccess={() => setIsPro(true)}
       />
     </main>
   );
