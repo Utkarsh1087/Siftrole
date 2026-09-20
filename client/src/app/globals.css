@@ -1,22 +1,25 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8f7f5;
-  --foreground: #121816;
-  --muted: #55615b;
+  --background: #fff6eb;
+  --foreground: #02110c;
+  --muted: #495e54;
   --panel: #ffffff;
-  --panel-muted: #f3f2ee;
-  --panel-strong: #e9e6df;
-  --line: #e5e2db;
-  --green: #84d64f;
-  --green-hover: #75c73d;
-  --green-dark: #14281a;
-  --green-accent: #84d64f;
-  --green-emerald: #7bc838;
-  --green-light: #eef8e5;
+  --panel-muted: #faf8f5;
+  --panel-strong: #f4ede0;
+  --line: #eadecc;
+  --green: #008561;
+  --green-hover: #006e50;
+  --green-dark: #02110c;
+  --green-accent: #008561;
+  --green-emerald: #008561;
+  --green-light: #f5eedf;
+  --cream-beige: #fff6eb;
+  --olive-green: #008561;
+  --emerald-dark: #02110c;
   --pink: #ffd5df;
   --pink-text: #dc2855;
-  --black: #0d1411;
+  --black: #02110c;
   --white: #ffffff;
 }
 
@@ -33,6 +36,56 @@
 
 .font-heading {
   font-family: var(--font-heading), var(--font-sans), sans-serif;
+}
+
+.font-pochaevsk,
+.pochaevsk-regular {
+  font-family: "Pochaevsk", system-ui, -apple-system, sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.font-bodoni-moda,
+.bodoni-moda-navbar {
+  font-family: "Bodoni Moda", Georgia, serif;
+  font-optical-sizing: auto;
+  font-weight: 800;
+  font-style: italic;
+}
+
+.font-lora,
+.lora-regular {
+  font-family: "Lora", Georgia, serif;
+  font-optical-sizing: auto;
+  font-style: normal;
+}
+
+/* Subtle background textures and patterns */
+.bg-canvas-pattern {
+  background-color: #fdfcf9;
+  background-image: 
+    radial-gradient(rgba(0, 133, 97, 0.045) 1px, transparent 1px),
+    linear-gradient(180deg, #fff6eb 0px, #fff6eb 440px, #faf3e8 660px, #fbf7f0 880px, #fdfcf9 1200px, #fdfcf9 100%);
+  background-size: 24px 24px, 100% 100%;
+  background-repeat: repeat, no-repeat;
+}
+
+.bg-canvas-white {
+  background-color: #fdfcf9;
+  background-image: radial-gradient(rgba(0, 133, 97, 0.045) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.bg-dot-texture {
+  background-image: radial-gradient(rgba(2, 17, 12, 0.035) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.bg-grid-texture {
+  background-image: 
+    linear-gradient(to right, rgba(234, 222, 204, 0.4) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(234, 222, 204, 0.4) 1px, transparent 1px);
+  background-size: 32px 32px;
 }
 
 .s__code {
@@ -94,8 +147,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 ::selection {
-  background: rgba(132, 214, 79, 0.35);
-  color: #14281a;
+  background: rgba(0, 133, 97, 0.22);
+  color: #02110c;
 }
 
 details summary::-webkit-details-marker {

@@ -39,6 +39,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   LogOut,
+  MapPin,
 } from "lucide-react";
 import { CompanyLogo } from "@/components/CompanyLogo";
 import { SiftroleLogoMark } from "@/components/SiftroleLogo";
@@ -84,6 +85,83 @@ interface UserItem {
   skills: string[];
   resume_url: string | null;
   created_at: string;
+}
+
+export function formatCleanJobDescription(raw: any): string {
+  if (!raw) return "";
+  if (typeof raw !== "string") return JSON.stringify(raw, null, 2);
+  let text = raw.trim();
+
+  // 1. If JSON string, extract clean_description or format structured keys
+  if (text.startsWith("{") && text.endsWith("}")) {
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed.clean_description) return parsed.clean_description;
+      let formatted = "";
+      if (parsed.summary) formatted += `## Role Summary\n${parsed.summary}\n\n`;
+      if (parsed.responsibilities?.length) {
+        formatted += `## Key Responsibilities\n` + parsed.responsibilities.map((r: string) => `• ${r}`).join("\n") + "\n\n";
+      }
+      if (parsed.qualifications?.length) {
+        formatted += `## Qualifications & Requirements\n` + parsed.qualifications.map((q: string) => `• ${q}`).join("\n") + "\n\n";
+      }
+      if (parsed.benefits?.length) {
+        formatted += `## Benefits & Compensation\n` + parsed.benefits.map((b: string) => `• ${b}`).join("\n");
+      }
+      if (formatted.trim()) return formatted.trim();
+    } catch (_) {}
+  }
+
+  // 2. Decode double-encoded HTML entities if present (e.g. &lt;div... -> <div...)
+  if (text.includes("&lt;") || text.includes("&gt;")) {
+    text = text
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&amp;/g, "&");
+  }
+
+  // 3. Convert HTML elements & tags to clean formatted text
+  if (/<[a-z][\s\S]*>/i.test(text) || /<[a-z]+/i.test(text)) {
+    text = text
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<\/p>/gi, "\n\n")
+      .replace(/<\/div>/gi, "\n")
+      .replace(/<li[^>]*>/gi, "\n• ")
+      .replace(/<\/li>/gi, "")
+      .replace(/<\/h[1-6]>/gi, "\n\n")
+      .replace(/<h[1-6][^>]*>/gi, "\n\n### ")
+      .replace(/<[^>]+>/g, "");
+  }
+
+  // 4. Strip any incomplete, broken, or truncated trailing HTML tags (e.g. "<span style" at end)
+  text = text
+    .replace(/<[a-zA-Z\/][^>]*$/g, "")
+    .replace(/<[a-zA-Z][^>\n]*\b(?:style|class|id|href|src|color|font)\b[^>\n]*/gi, "")
+    .replace(/<[a-zA-Z0-9_\-:]+(\s+[^>]*)?$/g, "");
+
+  // 5. Decode HTML entities
+  text = text
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&mdash;/g, "—")
+    .replace(/&ndash;/g, "–")
+    .replace(/&bull;/g, "•")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&rsquo;/g, "'")
+    .replace(/&lsquo;/g, "'")
+    .replace(/&rdquo;/g, '"')
+    .replace(/&ldquo;/g, '"');
+
+  // 6. Clean excess whitespace
+  text = text
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n\s*\n\s*\n+/g, "\n\n")
+    .trim();
+
+  return text;
 }
 
 export default function AdminDashboard() {
@@ -142,7 +220,15 @@ export default function AdminDashboard() {
   });
   const [companySyncingId, setCompanySyncingId] = useState<string | null>(null);
 
-  // 3. User CRUD State
+  // 2.1 Automated ATS Discovery & Auto-Detect State
+  const [showDiscoveryModal, setShowDiscoveryModal] = useState(false);
+  const [discoveredFeeds, setDiscoveredFeeds] = useState<any[]>([]);
+  const [isDiscovering, setIsDiscovering] = useState(false);
+  const [selectedDiscoveredSlugs, setSelectedDiscoveredSlugs] = useState<string[]>([]);
+  const [isImportingDiscovered, setIsImportingDiscovered] = useState(false);
+  const [autoDetectInput, setAutoDetectInput] = useState("");
+  const [isAutoDetecting, setIsAutoDetecting] = useState(false);
+  const [autoDetectMessage, setAutoDetectMessage] = useState<string | null>(null);
   const [users, setUsers] = useState<UserItem[]>([]);
   const [userSearch, setUserSearch] = useState("");
   const [userRoleFilter, setUserRoleFilter] = useState("ALL");
@@ -544,7 +630,15 @@ export default function AdminDashboard() {
   const handleTriggerSync = async () => {
     if (isSyncing) return;
     setIsSyncing(true);
-    setSyncStatus("Triggering ATS Scrapers sync across all verified companies...");
+    setSyncStatus("⏳ Scraping & parsing all verified company feeds with Gemini AI in real-time...");
+    
+    // Live polling interval so counters & review queue update in real-time on screen
+    const interval = setInterval(() => {
+      fetchStats();
+      fetchPendingListings();
+      fetchCompanies();
+    }, 2500);
+
     try {
       const res = await fetch("/api/sync", { method: "POST" });
       const data = await res.json();
@@ -552,16 +646,99 @@ export default function AdminDashboard() {
         const totalFetched = data.results?.reduce((acc: number, r: any) => acc + (r.fetched || 0), 0) || 0;
         const totalInserted = data.results?.reduce((acc: number, r: any) => acc + (r.inserted || 0), 0) || 0;
         setSyncStatus(`✅ Sync Complete: ${data.totalCompaniesSynced} companies synced. ${totalFetched} listings fetched, ${totalInserted} inserted.`);
-        fetchStats();
-        fetchCompanies();
       } else {
         setSyncStatus(`⚠️ Sync Error: ${data.error}`);
       }
     } catch (e: any) {
       setSyncStatus(`❌ Sync Failed: ${e.message}`);
     } finally {
+      clearInterval(interval);
+      fetchStats();
+      fetchPendingListings();
+      fetchCompanies();
       setIsSyncing(false);
       setTimeout(() => setSyncStatus(null), 8000);
+    }
+  };
+
+  const handleDiscoverFeeds = async () => {
+    setIsDiscovering(true);
+    setDiscoveredFeeds([]);
+    setShowDiscoveryModal(true);
+    try {
+      const res = await fetch("/api/companies/discover?limit=25");
+      const data = await res.json();
+      if (res.ok) {
+        setDiscoveredFeeds(data.companies || []);
+        // Pre-select all companies that aren't already added
+        const unaddedSlugs = (data.companies || [])
+          .filter((c: any) => !c.isAlreadyAdded)
+          .map((c: any) => c.ats_identifier);
+        setSelectedDiscoveredSlugs(unaddedSlugs);
+      }
+    } catch (err: any) {
+      alert("Discovery error: " + err.message);
+    } finally {
+      setIsDiscovering(false);
+    }
+  };
+
+  const handleImportSelectedFeeds = async () => {
+    if (selectedDiscoveredSlugs.length === 0) return;
+    setIsImportingDiscovered(true);
+    try {
+      const companiesToImport = discoveredFeeds.filter((c) =>
+        selectedDiscoveredSlugs.includes(c.ats_identifier)
+      );
+      const res = await fetch("/api/companies/discover", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ companies: companiesToImport }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSyncStatus(`✅ ${data.message}`);
+        setShowDiscoveryModal(false);
+        fetchCompanies();
+        fetchStats();
+      } else {
+        alert("Import failed: " + data.error);
+      }
+    } catch (err: any) {
+      alert("Import error: " + err.message);
+    } finally {
+      setIsImportingDiscovered(false);
+      setTimeout(() => setSyncStatus(null), 8000);
+    }
+  };
+
+  const handleAutoDetectCompany = async () => {
+    if (!autoDetectInput.trim()) return;
+    setIsAutoDetecting(true);
+    setAutoDetectMessage(null);
+    try {
+      const res = await fetch("/api/companies/discover", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ input: autoDetectInput.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok && data.detected) {
+        setCompanyForm({
+          name: data.name || companyForm.name,
+          career_page_url: data.career_page_url || companyForm.career_page_url,
+          ats_type: data.ats_type || companyForm.ats_type,
+          ats_identifier: data.ats_identifier || companyForm.ats_identifier,
+          verified: true,
+        });
+        setAutoDetectMessage(`✅ Verified active ${data.ats_type} feed! Found ${data.activeJobsCount} live jobs.`);
+      } else {
+        setAutoDetectMessage(`⚠️ ${data.error || "Could not auto-detect ATS feed."}`);
+      }
+    } catch (err: any) {
+      setAutoDetectMessage(`❌ Error: ${err.message}`);
+    } finally {
+      setIsAutoDetecting(false);
     }
   };
 
@@ -606,8 +783,17 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleSyncSingleCompany = async (id: string) => {
+  const handleSyncSingleCompany = async (id: string, name?: string) => {
     setCompanySyncingId(id);
+    setSyncStatus(`⏳ Scraping and ingesting feeds for ${name || "company"} in real-time with Gemini AI...`);
+    
+    // Live polling interval so counters & review queue update live on screen while syncing
+    const interval = setInterval(() => {
+      fetchStats();
+      fetchPendingListings();
+      fetchCompanies();
+    }, 2500);
+
     try {
       const res = await fetch("/api/companies", {
         method: "PUT",
@@ -615,15 +801,22 @@ export default function AdminDashboard() {
         body: JSON.stringify({ id, triggerSync: true }),
       });
       const data = await res.json();
-      if (res.ok) {
-        alert(`Synced ${data.syncResult.companyName}: ${data.syncResult.fetched} fetched, ${data.syncResult.inserted} inserted.`);
-        fetchCompanies();
-        fetchStats();
+      if (res.ok && data.syncResult) {
+        const sr = data.syncResult;
+        const msg = `✅ Synced ${sr.companyName || name}: ${sr.fetched} fetched, ${sr.inserted} new jobs added, ${sr.updated} refreshed.`;
+        setSyncStatus(msg);
+      } else {
+        setSyncStatus(`⚠️ Sync warning: ${data.error || "Failed to sync company"}`);
       }
     } catch (err: any) {
-      alert("Sync error: " + err.message);
+      setSyncStatus(`❌ Sync error: ${err.message}`);
     } finally {
+      clearInterval(interval);
+      fetchCompanies();
+      fetchStats();
+      fetchPendingListings();
       setCompanySyncingId(null);
+      setTimeout(() => setSyncStatus(null), 8000);
     }
   };
 
@@ -1102,7 +1295,7 @@ export default function AdminDashboard() {
                   <div className="flex justify-between items-start">
                     <div>
                       <span className="text-[0.7rem] font-bold uppercase tracking-wider text-[#083327]">Total Live Jobs</span>
-                      <div className="text-3xl font-black mt-1 text-[#083327] tracking-tight">{stats.total}</div>
+                      <div className="text-3xl font-black mt-1 text-[#083327] tracking-tight">{stats.active || 0}</div>
                     </div>
                     <div className="flex gap-1 items-end h-8">
                       <span className="w-1.5 h-4 bg-emerald-200 rounded-full" />
@@ -1112,27 +1305,35 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                   <div className="mt-3 text-[0.7rem] font-bold text-[#083327] flex items-center gap-1">
-                    <span>100% verified</span> directly from official career pages
+                    <span>100% verified</span> active & published on live student platform
                   </div>
                 </div>
 
-                {/* Card 2: Active Job Links */}
-                <div className="rounded-2xl bg-white p-5 border border-slate-200 shadow-xs flex flex-col justify-between">
+                {/* Card 2: Pending Review Queue */}
+                <div
+                  onClick={() => {
+                    setActiveNav("review_queue");
+                    fetchPendingListings();
+                  }}
+                  className="rounded-2xl bg-white hover:bg-amber-50/30 p-5 border border-amber-200 shadow-xs flex flex-col justify-between cursor-pointer transition group"
+                  title="Click to open Review Queue"
+                >
                   <div className="flex justify-between items-start">
                     <div>
-                      <span className="text-[0.7rem] font-bold uppercase tracking-wider text-[#083327]">Active Job Links</span>
-                      <div className="text-3xl font-black mt-1 text-[#083327] tracking-tight">
-                        {stats.total > 0 ? `${((stats.active / stats.total) * 100).toFixed(1)}%` : "0%"}
+                      <span className="text-[0.7rem] font-bold uppercase tracking-wider text-amber-800">Jobs in Review Queue</span>
+                      <div className="text-3xl font-black mt-1 text-amber-900 tracking-tight">
+                        {stats.pending || 0}
                       </div>
                     </div>
                     <div className="flex gap-1 items-end h-8">
-                      <span className="w-1.5 h-5 bg-emerald-200 rounded-full" />
-                      <span className="w-1.5 h-7 bg-[#083327] rounded-full" />
-                      <span className="w-1.5 h-4 bg-emerald-300 rounded-full" />
+                      <span className="w-1.5 h-4 bg-amber-200 rounded-full" />
+                      <span className="w-1.5 h-6 bg-amber-400 rounded-full" />
+                      <span className="w-1.5 h-8 bg-amber-600 rounded-full" />
                     </div>
                   </div>
-                  <div className="mt-3 text-[0.7rem] font-bold text-[#083327] flex items-center gap-1">
-                    <span>0 dead links</span> closed jobs are removed automatically
+                  <div className="mt-3 text-[0.7rem] font-bold text-amber-800 flex items-center justify-between">
+                    <span>{stats.flagged || 0} flagged</span>
+                    <span className="text-amber-900 group-hover:underline flex items-center gap-0.5">Review now →</span>
                   </div>
                 </div>
 
@@ -1219,13 +1420,13 @@ export default function AdminDashboard() {
                 <div className="lg:col-span-4 rounded-2xl bg-white p-6 border border-slate-200 shadow-xs flex flex-col justify-between">
                   <div>
                     <span className="text-[0.7rem] font-bold uppercase tracking-wider text-[#083327]">
-                      Total Active Jobs
+                      Total Live Jobs
                     </span>
                     <div className="text-4xl font-black text-[#083327] mt-2 tracking-tight">
-                      {stats.total || stats.active} <span className="text-sm font-bold text-emerald-600">LIVE</span>
+                      {stats.active || 0} <span className="text-sm font-bold text-emerald-600">LIVE</span>
                     </div>
                     <div className="mt-1 text-xs font-bold text-[#083327] flex items-center gap-1">
-                      <span>No spam</span> zero duplicate postings
+                      <span>{stats.pending || 0} in review queue</span> • {stats.total || 0} total indexed
                     </div>
                   </div>
 
@@ -1360,7 +1561,7 @@ export default function AdminDashboard() {
                       Siftrole Job Board Pipeline
                     </h3>
                     <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-                      {stats.total || stats.active} active roles indexed across verified employer career feeds with automated expiration reconciliation.
+                      {stats.active || 0} live active roles published for candidates with {stats.pending || 0} awaiting approval in review queue.
                     </p>
                     <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
                       <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
@@ -1491,10 +1692,10 @@ export default function AdminDashboard() {
               ) : (
                 <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-50 text-[#083327] font-bold border-b border-slate-200">
+                    <table className="w-full min-w-[1050px] text-left text-xs border-collapse">
+                      <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 uppercase tracking-wider text-[0.68rem]">
                         <tr>
-                          <th className="py-3 px-4 w-10">
+                          <th className="py-3.5 px-4 w-12 text-center">
                             <input
                               type="checkbox"
                               checked={
@@ -1508,15 +1709,15 @@ export default function AdminDashboard() {
                                   setSelectedPendingIds([]);
                                 }
                               }}
-                              className="rounded border-slate-300 accent-[#083327] cursor-pointer"
+                              className="rounded border-slate-300 accent-[#083327] cursor-pointer w-4 h-4"
                             />
                           </th>
-                          <th className="py-3 px-4">Company & Role</th>
-                          <th className="py-3 px-4">Ingestion Status</th>
-                          <th className="py-3 px-4">Location</th>
-                          <th className="py-3 px-4">Stipend / Salary</th>
-                          <th className="py-3 px-4">Eligibility</th>
-                          <th className="py-3 px-4 text-right">Review Actions</th>
+                          <th className="py-3.5 px-4 min-w-[280px]">Company & Role</th>
+                          <th className="py-3.5 px-4 w-[160px]">Status</th>
+                          <th className="py-3.5 px-4 w-[140px]">Location</th>
+                          <th className="py-3.5 px-4 w-[150px]">Salary / Stipend</th>
+                          <th className="py-3.5 px-4 min-w-[200px] max-w-[260px]">Eligibility</th>
+                          <th className="py-3.5 px-4 min-w-[260px] text-right">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
@@ -1535,15 +1736,15 @@ export default function AdminDashboard() {
                             return (
                               <tr
                                 key={listing.id}
-                                className={`transition ${
+                                className={`transition-colors group ${
                                   isSelected
-                                    ? "bg-emerald-50/50"
+                                    ? "bg-emerald-50/60"
                                     : listing.status === "flagged"
-                                    ? "hover:bg-amber-50/40"
-                                    : "hover:bg-slate-50/60"
+                                    ? "hover:bg-amber-50/40 bg-amber-50/10"
+                                    : "hover:bg-slate-50/80"
                                 }`}
                               >
-                                <td className="py-3.5 px-4">
+                                <td className="py-3 px-4 text-center">
                                   <input
                                     type="checkbox"
                                     checked={isSelected}
@@ -1554,86 +1755,152 @@ export default function AdminDashboard() {
                                         setSelectedPendingIds((prev) => prev.filter((id) => id !== listing.id));
                                       }
                                     }}
-                                    className="rounded border-slate-300 accent-[#083327] cursor-pointer"
+                                    className="rounded border-slate-300 accent-[#083327] cursor-pointer w-4 h-4"
                                   />
                                 </td>
 
-                                <td className="py-3.5 px-4 font-bold text-[#083327]">
-                                  <div className="flex items-center gap-2.5">
-                                    <CompanyLogo company={listing.company} size="sm" />
-                                    <div>
-                                      <div className="font-bold text-slate-900">{listing.title}</div>
-                                      <div className="text-[0.68rem] text-slate-500 font-normal flex items-center gap-1.5">
-                                        <span>{listing.company}</span>
+                                <td className="py-3 px-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className="shrink-0">
+                                      <CompanyLogo company={listing.company} size="sm" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex items-center gap-1.5">
+                                        <div
+                                          className="font-bold text-slate-900 text-xs leading-snug truncate max-w-[240px]"
+                                          title={listing.title}
+                                        >
+                                          {listing.title}
+                                        </div>
+                                        {listing.apply_url && (
+                                          <a
+                                            href={listing.apply_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="p-1 rounded-md text-slate-400 hover:text-[#083327] hover:bg-emerald-50 transition shrink-0 inline-flex items-center"
+                                            title="Open official company job posting in new tab"
+                                          >
+                                            <ExternalLink className="w-3.5 h-3.5 text-slate-500 hover:text-[#083327]" />
+                                          </a>
+                                        )}
+                                      </div>
+                                      <div className="text-[0.68rem] text-slate-500 font-medium flex items-center gap-1.5 mt-0.5">
+                                        <span className="text-slate-700 font-semibold">{listing.company}</span>
                                         {listing.employment_type && (
-                                          <span className="text-slate-400">• {listing.employment_type}</span>
+                                          <span className="inline-flex items-center px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-semibold text-[0.62rem]">
+                                            {listing.employment_type}
+                                          </span>
                                         )}
                                       </div>
                                     </div>
                                   </div>
                                 </td>
 
-                                <td className="py-3.5 px-4">
+                                <td className="py-3 px-4 whitespace-nowrap">
                                   {listing.status === "flagged" ? (
-                                    <span className="inline-flex items-center gap-1 rounded bg-amber-50 border border-amber-200 text-amber-800 px-2 py-0.5 text-[0.65rem] font-bold">
-                                      <ShieldCheck className="w-3 h-3 text-amber-600" /> AI Flagged Anomaly
+                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 px-2.5 py-1 text-[0.68rem] font-bold shadow-2xs">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                      AI Flagged
                                     </span>
                                   ) : (
-                                    <span className="inline-flex items-center gap-1 rounded bg-blue-50 border border-blue-200 text-blue-800 px-2 py-0.5 text-[0.65rem] font-bold">
-                                      <Clock className="w-3 h-3 text-blue-600" /> Scraped • Pending Check
+                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-50 border border-sky-200 text-sky-800 px-2.5 py-1 text-[0.68rem] font-bold shadow-2xs">
+                                      <Clock className="w-3 h-3 text-sky-600" />
+                                      Scraped • Pending
                                     </span>
                                   )}
                                 </td>
 
-                                <td className="py-3.5 px-4 font-medium text-slate-700">{listing.location || "Remote"}</td>
-
-                                <td className="py-3.5 px-4 font-bold text-slate-900">
-                                  {listing.stipend_or_salary || <span className="text-slate-400 font-normal italic">Unspecified</span>}
+                                <td className="py-3 px-4 whitespace-nowrap">
+                                  <div className="flex items-center gap-1 text-slate-700 font-medium text-xs">
+                                    <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                                    <span className="truncate max-w-[120px]" title={listing.location || "Remote"}>
+                                      {listing.location || "Remote"}
+                                    </span>
+                                  </div>
                                 </td>
 
-                                <td className="py-3.5 px-4 text-slate-700">
-                                  {listing.eligibility || <span className="text-slate-400 italic">Not set</span>}
+                                <td className="py-3 px-4 whitespace-nowrap">
+                                  {listing.stipend_or_salary ? (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200/70 text-emerald-900 font-bold text-[0.72rem]">
+                                      {listing.stipend_or_salary}
+                                    </span>
+                                  ) : (
+                                    <span className="text-slate-400 font-normal italic text-[0.72rem]">Unspecified</span>
+                                  )}
                                 </td>
 
-                                <td className="py-3.5 px-4 text-right">
-                                  <div className="inline-flex items-center gap-1.5">
+                                <td className="py-3 px-4">
+                                  {listing.eligibility ? (
+                                    <div
+                                      className="text-[0.7rem] text-slate-600 line-clamp-2 leading-relaxed max-w-[240px]"
+                                      title={listing.eligibility}
+                                    >
+                                      {listing.eligibility}
+                                    </div>
+                                  ) : (
+                                    <span className="text-slate-400 italic text-[0.7rem]">Not specified</span>
+                                  )}
+                                </td>
+
+                                <td className="py-3 px-4 text-right whitespace-nowrap">
+                                  <div className="inline-flex items-center justify-end gap-1.5">
                                     <button
                                       onClick={() => handleDeepVerifyCompany(listing)}
                                       disabled={isVerifyingCompanyId === listing.id || isVerifyingCompanyId === listing.company}
-                                      className="rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 px-2.5 py-1.5 text-xs font-bold inline-flex items-center gap-1 shadow-xs transition cursor-pointer disabled:opacity-50"
-                                      title="Run deep AI verification on company existence and legitimacy"
+                                      className="h-8 px-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200/80 text-xs font-semibold inline-flex items-center gap-1 shadow-2xs transition cursor-pointer disabled:opacity-50"
+                                      title="Run deep AI verification on company existence"
                                     >
-                                      <ShieldCheck className={`w-3 h-3 text-indigo-600 ${isVerifyingCompanyId === listing.id ? "animate-spin" : ""}`} />
-                                      {isVerifyingCompanyId === listing.id ? "Verifying..." : "Verify Co."}
+                                      <ShieldCheck className={`w-3.5 h-3.5 text-indigo-600 ${isVerifyingCompanyId === listing.id ? "animate-spin" : ""}`} />
+                                      <span>Verify</span>
                                     </button>
+
                                     <button
                                       onClick={() => {
-                                        setEditingPendingListing(listing);
-                                        handleRefineWithAi(listing);
+                                        const cleanDesc = formatCleanJobDescription(listing.raw_jd_text || listing.clean_description);
+                                        const cleanedListing = {
+                                          ...listing,
+                                          raw_jd_text: cleanDesc,
+                                          clean_description: cleanDesc,
+                                        };
+                                        setEditingPendingListing(cleanedListing);
+                                        handleRefineWithAi(cleanedListing);
                                       }}
-                                      className="rounded-lg bg-emerald-50 hover:bg-emerald-100 text-[#083327] border border-emerald-200 px-2.5 py-1.5 text-xs font-bold inline-flex items-center gap-1 shadow-xs transition cursor-pointer"
-                                      title="Refine role details with Groq AI"
+                                      className="h-8 px-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-[#083327] border border-emerald-200/80 text-xs font-semibold inline-flex items-center gap-1 shadow-2xs transition cursor-pointer"
+                                      title="Refine role details with AI"
                                     >
-                                      <Sparkles className="w-3 h-3 text-emerald-700" /> AI Refine
+                                      <Sparkles className="w-3.5 h-3.5 text-emerald-700" />
+                                      <span>AI Refine</span>
                                     </button>
+
                                     <button
-                                      onClick={() => setEditingPendingListing(listing)}
-                                      className="rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 px-2.5 py-1.5 text-xs font-bold inline-flex items-center gap-1 shadow-xs transition cursor-pointer"
+                                      onClick={() => {
+                                        const cleanDesc = formatCleanJobDescription(listing.raw_jd_text || listing.clean_description);
+                                        setEditingPendingListing({
+                                          ...listing,
+                                          raw_jd_text: cleanDesc,
+                                          clean_description: cleanDesc,
+                                        });
+                                      }}
+                                      className="h-8 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold inline-flex items-center gap-1 shadow-2xs transition cursor-pointer"
                                       title="Edit fields manually"
                                     >
-                                      <Edit2 className="w-3 h-3" /> Edit
+                                      <Edit2 className="w-3.5 h-3.5" />
+                                      <span>Edit</span>
                                     </button>
+
                                     <button
                                       onClick={() => handleApproveListing(listing.id)}
                                       disabled={isApprovingId === listing.id}
-                                      className="rounded-lg bg-[#083327] hover:bg-[#0c4333] text-white px-3 py-1.5 text-xs font-bold inline-flex items-center gap-1 shadow-xs transition cursor-pointer disabled:opacity-50"
+                                      className="h-8 px-3 rounded-xl bg-[#083327] hover:bg-[#0c4333] active:scale-95 text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-50"
                                       title="Approve immediately to live platform"
                                     >
-                                      <CheckCircle className="w-3.5 h-3.5" /> Approve
+                                      <CheckCircle className="w-3.5 h-3.5 text-emerald-300" />
+                                      <span>Approve</span>
                                     </button>
+
                                     <button
                                       onClick={() => handleRejectListing(listing.id)}
-                                      className="p-1.5 rounded-lg hover:bg-rose-50 text-rose-600 transition cursor-pointer"
+                                      className="h-8 w-8 rounded-xl hover:bg-rose-50 border border-transparent hover:border-rose-200 text-rose-500 hover:text-rose-700 inline-flex items-center justify-center transition cursor-pointer"
                                       title="Reject and delete"
                                     >
                                       <Trash2 className="w-3.5 h-3.5" />
@@ -1654,39 +1921,52 @@ export default function AdminDashboard() {
           {/* Quick Review and AI Refinement Modal for Pending Scraped Roles */}
           {editingPendingListing && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
-              <div className="w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
-                <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-emerald-100 text-[#083327] flex items-center justify-center font-bold">
-                      <Sparkles className="w-5 h-5 text-[#083327]" />
+              <div className="w-full max-w-4xl rounded-2xl border border-slate-200 bg-white p-7 shadow-2xl relative max-h-[92vh] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                <div className="flex items-center justify-between pb-4 mb-5 border-b border-slate-100 gap-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 text-[#083327] flex items-center justify-center font-bold shrink-0">
+                      <Sparkles className="w-5 h-5 text-emerald-700" />
                     </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-[#083327]">Review & Refine Scraped Job</h3>
-                      <p className="text-[0.7rem] text-slate-500">Edit fields manually or trigger Groq AI to auto-structure compensation and requirements</p>
+                    <div className="min-w-0">
+                      <h3 className="text-base font-bold text-[#083327] truncate">Review & Refine Scraped Job</h3>
+                      <p className="text-xs text-slate-500 mt-0.5 truncate">Review structured fields, inspect full JD text, or trigger AI refinement before publishing</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0">
+                    {editingPendingListing.apply_url && (
+                      <a
+                        href={editingPendingListing.apply_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="h-9 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-xs font-semibold inline-flex items-center gap-1.5 transition cursor-pointer shadow-2xs whitespace-nowrap"
+                        title="Open official company job posting in new tab"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
+                        <span>Live Post</span>
+                      </a>
+                    )}
                     <button
                       type="button"
                       onClick={() => handleDeepVerifyCompany(editingPendingListing)}
                       disabled={isVerifyingCompanyId === editingPendingListing.id}
-                      className="rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-900 px-3 py-1.5 text-xs font-bold inline-flex items-center gap-1.5 shadow-xs transition cursor-pointer disabled:opacity-50"
+                      className="h-9 px-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-900 text-xs font-semibold inline-flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50 shadow-2xs whitespace-nowrap"
                     >
                       <ShieldCheck className={`w-3.5 h-3.5 text-indigo-600 ${isVerifyingCompanyId === editingPendingListing.id ? "animate-spin" : ""}`} />
-                      {isVerifyingCompanyId === editingPendingListing.id ? "Verifying..." : "Verify Company"}
+                      <span>{isVerifyingCompanyId === editingPendingListing.id ? "Verifying..." : "Verify Company"}</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => handleRefineWithAi(editingPendingListing)}
                       disabled={isRefiningAi}
-                      className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 text-xs font-bold inline-flex items-center gap-1.5 shadow-xs transition cursor-pointer disabled:opacity-50"
+                      className="h-9 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-xs transition cursor-pointer disabled:opacity-50 whitespace-nowrap"
                     >
                       <Sparkles className={`w-3.5 h-3.5 ${isRefiningAi ? "animate-spin" : ""}`} />
-                      {isRefiningAi ? "Refining with AI..." : "Refine with AI"}
+                      <span>{isRefiningAi ? "Refining with AI..." : "Refine with AI"}</span>
                     </button>
                     <button
                       onClick={() => setEditingPendingListing(null)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 cursor-pointer"
+                      className="h-9 w-9 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center transition cursor-pointer shrink-0 ml-1"
+                      title="Close"
                     >
                       ✕
                     </button>
@@ -1765,6 +2045,7 @@ export default function AdminDashboard() {
                         : [],
                       experience_level: editingPendingListing.experience_level,
                       apply_url: editingPendingListing.apply_url,
+                      raw_jd_text: editingPendingListing.raw_jd_text || editingPendingListing.clean_description || null,
                       status: "active",
                     });
                   }}
@@ -1876,13 +2157,67 @@ export default function AdminDashboard() {
                   </div>
 
                   <div>
-                    <label className="block text-[0.7rem] font-bold text-slate-700 mb-1">Official Apply URL *</label>
-                    <input
-                      type="url"
-                      required
-                      value={editingPendingListing.apply_url || ""}
-                      onChange={(e) => setEditingPendingListing({ ...editingPendingListing, apply_url: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-mono outline-none focus:bg-white focus:border-[#083327]"
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-[0.7rem] font-bold text-slate-700">Official Apply / Career Page URL *</label>
+                      {editingPendingListing.apply_url && (
+                        <a
+                          href={editingPendingListing.apply_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs font-bold text-emerald-800 hover:text-emerald-950 inline-flex items-center gap-1 hover:underline"
+                        >
+                          Visit Career Page <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
+                    </div>
+                    <div className="relative flex items-center">
+                      <input
+                        type="url"
+                        required
+                        value={editingPendingListing.apply_url || ""}
+                        onChange={(e) => setEditingPendingListing({ ...editingPendingListing, apply_url: e.target.value })}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-3 pr-24 py-2 text-xs font-mono outline-none focus:bg-white focus:border-[#083327]"
+                      />
+                      {editingPendingListing.apply_url && (
+                        <a
+                          href={editingPendingListing.apply_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="absolute right-1.5 px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-[0.7rem] font-bold text-slate-700 inline-flex items-center gap-1 shadow-2xs transition"
+                        >
+                          Open <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Full Job Description Viewer & Editor */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-[0.7rem] font-bold text-slate-700 flex items-center gap-1.5">
+                        <FileText className="w-3.5 h-3.5 text-slate-500" />
+                        Full Job Description & Role Overview
+                      </label>
+                      <span className="text-[0.68rem] text-slate-400">
+                        Full text parsed from company career feed
+                      </span>
+                    </div>
+                    <textarea
+                      rows={8}
+                      value={formatCleanJobDescription(
+                        editingPendingListing.raw_jd_text ||
+                        editingPendingListing.clean_description ||
+                        ""
+                      )}
+                      onChange={(e) =>
+                        setEditingPendingListing({
+                          ...editingPendingListing,
+                          raw_jd_text: e.target.value,
+                          clean_description: e.target.value,
+                        })
+                      }
+                      placeholder="Full job description, key responsibilities, requirements, and benefits..."
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-xs leading-relaxed outline-none focus:bg-white focus:border-[#083327] font-sans resize-y"
                     />
                   </div>
 
@@ -1903,6 +2238,7 @@ export default function AdminDashboard() {
                           : [],
                         experience_level: editingPendingListing.experience_level,
                         apply_url: editingPendingListing.apply_url,
+                        raw_jd_text: editingPendingListing.raw_jd_text || editingPendingListing.clean_description || null,
                         status: "active",
                       })}
                       className="rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 px-4 py-2 text-xs font-bold inline-flex items-center gap-1.5 transition cursor-pointer"
@@ -1937,7 +2273,7 @@ export default function AdminDashboard() {
           {/* Standalone Deep Company Verification Report Modal */}
           {activeVerificationModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
-              <div className="w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto space-y-4">
+              <div className="w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                   <div className="flex items-center gap-2.5">
                     <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-900 flex items-center justify-center font-bold">
@@ -2123,9 +2459,43 @@ export default function AdminDashboard() {
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs outline-none focus:bg-white focus:border-slate-800"
                   />
                 </div>
-                <span className="text-xs font-bold text-slate-500">
-                  {filteredCompanies.length} Active Companies
-                </span>
+                
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <button
+                    onClick={handleDiscoverFeeds}
+                    title="Automatically discover verified tech company feeds with live active jobs"
+                    className="rounded-xl bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-2 text-xs font-bold inline-flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+                  >
+                    <Search className="w-3.5 h-3.5 text-emerald-400" />
+                    Auto-Discover Feeds
+                  </button>
+
+                  <button
+                    onClick={handleTriggerSync}
+                    disabled={isSyncing}
+                    className="rounded-xl bg-emerald-50 hover:bg-emerald-100 text-[#083327] border border-emerald-300 px-3.5 py-2 text-xs font-bold inline-flex items-center gap-2 shadow-xs transition disabled:opacity-50 cursor-pointer"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin text-[#083327]" : ""}`} />
+                    {isSyncing ? "Scraping All Feeds..." : "⚡ Run All Scrapers"}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setEditingCompany(null);
+                      setCompanyForm({ name: "", career_page_url: "", ats_type: "GREENHOUSE", ats_identifier: "", verified: true });
+                      setAutoDetectInput("");
+                      setAutoDetectMessage(null);
+                      setShowCompanyModal(true);
+                    }}
+                    className="rounded-xl bg-[#083327] hover:bg-[#0c4333] text-white px-3.5 py-2 text-xs font-bold inline-flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Add Company
+                  </button>
+
+                  <span className="text-xs font-bold text-slate-500 pl-2">
+                    {filteredCompanies.length} Active Companies
+                  </span>
+                </div>
               </div>
 
               <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
@@ -2164,10 +2534,10 @@ export default function AdminDashboard() {
                         <td className="py-3.5 px-5 text-right">
                           <div className="inline-flex items-center gap-2">
                             <button
-                              onClick={() => handleSyncSingleCompany(c.id)}
+                              onClick={() => handleSyncSingleCompany(c.id, c.name)}
                               disabled={companySyncingId === c.id}
-                              title="Sync jobs now"
-                              className="p-1.5 rounded-lg hover:bg-slate-100 transition text-slate-700"
+                              title={`Scrape and sync jobs for ${c.name}`}
+                              className="p-1.5 rounded-lg hover:bg-emerald-50 hover:text-[#083327] transition text-slate-700 cursor-pointer"
                             >
                               <RefreshCw className={`w-3.5 h-3.5 ${companySyncingId === c.id ? "animate-spin text-[#083327]" : ""}`} />
                             </button>
@@ -2800,10 +3170,57 @@ export default function AdminDashboard() {
       {/* ======================================================== */}
       {showCompanyModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200">
-            <h3 className="text-sm font-bold text-slate-900 mb-4">
-              {editingCompany ? "Edit Company" : "Add Company"}
-            </h3>
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-sm font-bold text-slate-900">
+                {editingCompany ? "Edit Company Feed" : "Add Company ATS Feed"}
+              </h3>
+              <button
+                onClick={() => setShowCompanyModal(false)}
+                className="text-slate-400 hover:text-slate-700 text-xs font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Quick Auto-Detect Box */}
+            {!editingCompany && (
+              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                <div className="text-[0.7rem] font-bold text-[#083327] flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                  Smart ATS & Slug Auto-Detector
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={autoDetectInput}
+                    onChange={(e) => setAutoDetectInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAutoDetectCompany();
+                      }
+                    }}
+                    placeholder="Enter website, career URL, or company name (e.g. OpenAI, linear.app)..."
+                    className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs outline-none focus:border-[#083327]"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAutoDetectCompany}
+                    disabled={isAutoDetecting || !autoDetectInput.trim()}
+                    className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition disabled:opacity-50 shrink-0 cursor-pointer"
+                  >
+                    {isAutoDetecting ? "Detecting..." : "Auto-Detect"}
+                  </button>
+                </div>
+                {autoDetectMessage && (
+                  <div className={`text-[0.7rem] font-medium ${autoDetectMessage.startsWith("✅") ? "text-emerald-700" : "text-amber-700"}`}>
+                    {autoDetectMessage}
+                  </div>
+                )}
+              </div>
+            )}
+
             <form onSubmit={handleSaveCompany} className="space-y-3 text-xs">
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Company Name *</label>
@@ -2861,18 +3278,157 @@ export default function AdminDashboard() {
                 <button
                   type="button"
                   onClick={() => setShowCompanyModal(false)}
-                  className="rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 px-4 py-2 font-bold"
+                  className="rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 px-4 py-2 font-bold cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-xl bg-[#083327] hover:bg-[#0c4333] text-white px-5 py-2 font-bold shadow-xs"
+                  className="rounded-xl bg-[#083327] hover:bg-[#0c4333] text-white px-5 py-2 font-bold shadow-xs cursor-pointer"
                 >
-                  Save Company
+                  Save Company Feed
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* BULK ATS DISCOVERY MODAL */}
+      {/* ======================================================== */}
+      {showDiscoveryModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+            <div className="p-5 border-b border-slate-200 flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-bold text-[#083327] flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-emerald-600" />
+                  Auto-Discover Verified Tech Feeds
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Direct API handshake tests Greenhouse, Ashby, and Lever feeds with live active jobs.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowDiscoveryModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="flex-1 p-5 overflow-y-auto space-y-3 text-xs">
+              {isDiscovering ? (
+                <div className="py-20 flex flex-col items-center justify-center gap-3 text-slate-500">
+                  <RefreshCw className="w-6 h-6 animate-spin text-[#083327]" />
+                  <p className="font-bold">Testing live ATS endpoints & verifying active jobs...</p>
+                </div>
+              ) : discoveredFeeds.length === 0 ? (
+                <div className="py-20 text-center text-slate-400">
+                  No new feeds discovered. All top tech companies may already be in your database.
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-100 text-slate-600 font-bold">
+                    <span>Select Feeds to Import ({selectedDiscoveredSlugs.length} selected)</span>
+                    <button
+                      onClick={() => {
+                        if (selectedDiscoveredSlugs.length === discoveredFeeds.filter((c) => !c.isAlreadyAdded).length) {
+                          setSelectedDiscoveredSlugs([]);
+                        } else {
+                          setSelectedDiscoveredSlugs(discoveredFeeds.filter((c) => !c.isAlreadyAdded).map((c) => c.ats_identifier));
+                        }
+                      }}
+                      className="text-xs text-[#083327] hover:underline cursor-pointer"
+                    >
+                      {selectedDiscoveredSlugs.length > 0 ? "Deselect All" : "Select All Available"}
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {discoveredFeeds.map((feed) => {
+                      const isSelected = selectedDiscoveredSlugs.includes(feed.ats_identifier);
+                      return (
+                        <div
+                          key={feed.ats_identifier}
+                          onClick={() => {
+                            if (feed.isAlreadyAdded) return;
+                            if (isSelected) {
+                              setSelectedDiscoveredSlugs(selectedDiscoveredSlugs.filter((s) => s !== feed.ats_identifier));
+                            } else {
+                              setSelectedDiscoveredSlugs([...selectedDiscoveredSlugs, feed.ats_identifier]);
+                            }
+                          }}
+                          className={`p-3 rounded-xl border transition flex items-start justify-between cursor-pointer ${
+                            feed.isAlreadyAdded
+                              ? "bg-slate-50 border-slate-200 opacity-60 cursor-not-allowed"
+                              : isSelected
+                              ? "bg-emerald-50/70 border-emerald-300 ring-1 ring-emerald-500"
+                              : "bg-white border-slate-200 hover:border-slate-300"
+                          }`}
+                        >
+                          <div className="space-y-1 overflow-hidden pr-2">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-slate-900 truncate">{feed.name}</span>
+                              <span className="px-1.5 py-0.5 rounded text-[0.65rem] font-mono font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                                {feed.ats_type}
+                              </span>
+                            </div>
+                            <div className="text-[0.68rem] text-slate-500 font-mono truncate">
+                              slug: {feed.ats_identifier}
+                            </div>
+                            <div className="text-[0.7rem] font-bold text-emerald-700">
+                              🟢 {feed.activeJobsCount} live active jobs
+                            </div>
+                          </div>
+
+                          <div className="shrink-0 pt-0.5">
+                            {feed.isAlreadyAdded ? (
+                              <span className="text-[0.65rem] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
+                                Added
+                              </span>
+                            ) : (
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => {}}
+                                className="w-4 h-4 rounded text-[#083327] accent-[#083327]"
+                              />
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
+              <div className="text-xs text-slate-500 font-medium">
+                Imported companies will immediately be available for scraping.
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowDiscoveryModal(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs cursor-pointer"
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={handleImportSelectedFeeds}
+                  disabled={isImportingDiscovered || selectedDiscoveredSlugs.length === 0}
+                  className="px-5 py-2 rounded-xl bg-[#083327] hover:bg-[#0c4333] text-white font-bold text-xs shadow-xs transition disabled:opacity-50 cursor-pointer"
+                >
+                  {isImportingDiscovered
+                    ? "Importing..."
+                    : `Import (${selectedDiscoveredSlugs.length}) Feeds`}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

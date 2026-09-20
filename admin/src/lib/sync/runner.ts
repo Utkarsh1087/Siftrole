@@ -49,74 +49,91 @@ export async function syncCompany(companyId: string): Promise<SyncResult> {
   let flagged = 0;
   const currentScrapedHashes = new Set<string>();
 
-  for (const rawItem of scrapedListings) {
-    currentScrapedHashes.add(rawItem.raw_jd_hash);
+  const BATCH_SIZE = 2; // Small batch size of 2 concurrent LLM calls
 
-    const exactMatch = await prisma.listing.findFirst({
-      where: {
-        raw_jd_hash: rawItem.raw_jd_hash,
-      },
-    });
+  for (let i = 0; i < scrapedListings.length; i += BATCH_SIZE) {
+    const batch = scrapedListings.slice(i, i + BATCH_SIZE);
 
-    if (exactMatch) {
-      if (exactMatch.status === "expired") {
-        await prisma.listing.update({
-          where: { id: exactMatch.id },
-          data: {
-            status: "active",
-            updated_at: new Date(),
+    await Promise.all(
+      batch.map(async (rawItem) => {
+        currentScrapedHashes.add(rawItem.raw_jd_hash);
+
+        const exactMatch = await prisma.listing.findFirst({
+          where: {
+            raw_jd_hash: rawItem.raw_jd_hash,
           },
         });
-        updated++;
-      }
-      continue;
+
+        if (exactMatch) {
+          if (exactMatch.status === "expired") {
+            await prisma.listing.update({
+              where: { id: exactMatch.id },
+              data: {
+                status: "active",
+                updated_at: new Date(),
+              },
+            });
+            updated++;
+          }
+          return;
+        }
+
+        // Full AI Parsing: Every listing is enriched through Gemini / LLM
+        let item: NormalizedListing;
+        try {
+          item = await parseScrapedListingWithAi(rawItem);
+        } catch (aiErr) {
+          console.warn(`[AI Parsing Error for ${rawItem.title}] Retrying with raw fallback:`, aiErr);
+          item = rawItem;
+        }
+
+        const nearMatch = await prisma.listing.findFirst({
+          where: {
+            normalized_key: item.normalized_key,
+            status: "active",
+          },
+        });
+
+        const status = nearMatch ? "flagged" : "pending_approval";
+        if (nearMatch) {
+          flagged++;
+        }
+
+        let enrichedJdText = item.raw_jd_text || "";
+        if (item.ai_flag_reasons && item.ai_flag_reasons.length > 0) {
+          const header = `--- AI ANOMALY REPORT ---\nFlags:\n${item.ai_flag_reasons.map((f: string) => `• ${f}`).join("\n")}\nConfidence: ${item.confidence_score || 70}%\n-------------------------\n\n`;
+          enrichedJdText = header + enrichedJdText;
+        }
+
+        await prisma.listing.create({
+          data: {
+            company_id: company.id,
+            title: item.title,
+            company: item.company,
+            location: item.location,
+            employment_type: item.employment_type,
+            eligibility: item.eligibility,
+            stipend_or_salary: item.stipend_or_salary,
+            deadline: item.deadline ? new Date(item.deadline) : null,
+            skills_required: item.skills_required,
+            experience_level: item.experience_level,
+            apply_url: item.apply_url,
+            source: item.source || "scraped",
+            status: status,
+            raw_jd_hash: item.raw_jd_hash,
+            raw_jd_text: enrichedJdText,
+            normalized_key: item.normalized_key,
+          },
+        });
+
+        inserted++;
+      })
+    );
+
+    // Pacing delay between batches (1200ms) to ensure Gemini/Groq RPM limits are never exceeded
+    if (i + BATCH_SIZE < scrapedListings.length) {
+      await new Promise((resolve) => setTimeout(resolve, 1200));
     }
-
-    // Controlled 1-by-1 ingestion: Pace AI calls to prevent saturating free-tier 15 RPM limits
-    let item: NormalizedListing;
-    try {
-      item = await parseScrapedListingWithAi(rawItem);
-      // Breathing room between AI calls (1 request per 4.5s = ~13 RPM, well below 15 RPM limit)
-      await new Promise((resolve) => setTimeout(resolve, 4500));
-    } catch (aiErr) {
-      console.warn(`[AI Ingestion Fallback] Using raw structured item for ${rawItem.title}`);
-      item = rawItem;
-    }
-
-    const nearMatch = await prisma.listing.findFirst({
-      where: {
-        normalized_key: item.normalized_key,
-        status: "active",
-      },
-    });
-
-    const status = nearMatch ? "flagged" : "pending_approval";
-    if (nearMatch) {
-      flagged++;
-    }
-
-    await prisma.listing.create({
-      data: {
-        company_id: company.id,
-        title: item.title,
-        company: item.company,
-        location: item.location,
-        employment_type: item.employment_type,
-        eligibility: item.eligibility,
-        stipend_or_salary: item.stipend_or_salary,
-        deadline: item.deadline ? new Date(item.deadline) : null,
-        skills_required: item.skills_required,
-        experience_level: item.experience_level,
-        apply_url: item.apply_url,
-        source: item.source || "scraped",
-        status: status,
-        raw_jd_hash: item.raw_jd_hash,
-        raw_jd_text: item.raw_jd_text,
-        normalized_key: item.normalized_key,
-      },
-    });
-
-    inserted++;
   }
 
   const existingCompanyListings = await prisma.listing.findMany({

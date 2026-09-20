@@ -78,7 +78,7 @@ export function CompanyLogo({ company, size = "md", className = "" }: CompanyLog
 
   return (
     <div
-      className={`${sizeClasses} shrink-0 bg-white border border-neutral-200/90 shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex items-center justify-center overflow-hidden transition-all group-hover:border-[#84d64f] group-hover:shadow-[0_4px_12px_rgba(132,214,79,0.2)] ${className}`}
+      className={`${sizeClasses} shrink-0 bg-white border border-neutral-200/90 shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex items-center justify-center overflow-hidden transition-all group-hover:border-[#1a422f] group-hover:shadow-[0_4px_12px_rgba(26,66,47,0.15)] ${className}`}
     >
       {!imgError ? (
         <img
@@ -89,7 +89,7 @@ export function CompanyLogo({ company, size = "md", className = "" }: CompanyLog
           loading="lazy"
         />
       ) : (
-        <div className="flex h-full w-full items-center justify-center bg-[#eef8e5] rounded-xl font-black text-[#14281a]">
+        <div className="flex h-full w-full items-center justify-center bg-[#f3ebd6]/60 rounded-xl font-black text-[#02110c]">
           {initials}
         </div>
       )}

@@ -405,6 +405,38 @@ export function unlockProAccess(): void {
   } catch {}
 }
 
+export function getStoredUserEmail(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem("siftrole_user");
+    if (!raw) return null;
+    const u = JSON.parse(raw);
+    return u?.email || null;
+  } catch {
+    return null;
+  }
+}
+
+export async function syncMailedContactsFromDatabase(): Promise<Set<string>> {
+  if (typeof window === "undefined") return new Set();
+  const email = getStoredUserEmail();
+  if (!email) return getMailedContactIds();
+
+  try {
+    const res = await fetch(`/api/hr-contacts/mailed?email=${encodeURIComponent(email)}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data.mailedContactIds)) {
+        const set = new Set<string>(data.mailedContactIds);
+        localStorage.setItem("siftrole_mailed_hr_ids", JSON.stringify(data.mailedContactIds));
+        window.dispatchEvent(new Event("siftrole-mailed-change"));
+        return set;
+      }
+    }
+  } catch {}
+  return getMailedContactIds();
+}
+
 export function getMailedContactIds(): Set<string> {
   if (typeof window === "undefined") return new Set();
   try {
@@ -431,6 +463,21 @@ export function toggleMailedContactId(id: string): boolean {
     }
     localStorage.setItem("siftrole_mailed_hr_ids", JSON.stringify(Array.from(current)));
     window.dispatchEvent(new Event("siftrole-mailed-change"));
+
+    // Sync to PostgreSQL database
+    const email = getStoredUserEmail();
+    if (email) {
+      fetch("/api/hr-contacts/mailed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          contactId: id,
+          action: isMailed ? "mark" : "unmark",
+        }),
+      }).catch(() => null);
+    }
+
     return isMailed;
   } catch {
     return false;
@@ -445,6 +492,20 @@ export function markContactAsMailed(id: string): void {
       current.add(id);
       localStorage.setItem("siftrole_mailed_hr_ids", JSON.stringify(Array.from(current)));
       window.dispatchEvent(new Event("siftrole-mailed-change"));
+
+      // Sync to PostgreSQL database
+      const email = getStoredUserEmail();
+      if (email) {
+        fetch("/api/hr-contacts/mailed", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            contactId: id,
+            action: "mark",
+          }),
+        }).catch(() => null);
+      }
     }
   } catch {}
 }

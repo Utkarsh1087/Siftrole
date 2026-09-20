@@ -60,7 +60,7 @@ export function TopProgressBar() {
       aria-hidden="true"
     >
       <div
-        className="h-full bg-gradient-to-r from-[#84d64f] via-[#9fe86d] to-[#4fa320] shadow-[0_0_12px_rgba(132,214,79,0.75)]"
+        className="h-full bg-gradient-to-r from-[#008561] via-[#00a87a] to-[#008561] shadow-[0_0_12px_rgba(0,133,97,0.5)]"
         style={{
           width: `${progress}%`,
           transition: progress === 100 ? "width 200ms ease-out, opacity 250ms ease 100ms" : "width 400ms cubic-bezier(0.1, 0.9, 0.2, 1)",

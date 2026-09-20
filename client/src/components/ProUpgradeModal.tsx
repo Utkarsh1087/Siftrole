@@ -162,11 +162,11 @@ export function ProUpgradeModal({ isOpen, onClose, onSuccess }: ProUpgradeModalP
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-[#14281a] text-white rounded-[32px] max-w-[620px] w-full border border-[#84d64f]/30 shadow-[0_25px_60px_rgba(0,0,0,0.5)] p-6 sm:p-10 relative overflow-hidden">
+      <div className="bg-[#02110c] text-white rounded-[32px] max-w-[620px] w-full border border-[#008561]/60 shadow-[0_25px_60px_rgba(0,0,0,0.5)] p-6 sm:p-10 relative overflow-hidden">
         
         {/* Glow ambient background */}
-        <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-[#84d64f]/15 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-[#84d64f]/10 blur-3xl pointer-events-none" />
+        <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-[#008561]/30 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-[#fff6eb]/10 blur-3xl pointer-events-none" />
 
         {/* Close Button */}
         <button
@@ -179,34 +179,34 @@ export function ProUpgradeModal({ isOpen, onClose, onSuccess }: ProUpgradeModalP
         {!isSuccess ? (
           <div>
             {/* Header Badge */}
-            <div className="inline-flex items-center gap-2 rounded-full bg-[#84d64f]/20 border border-[#84d64f]/40 px-3.5 py-1 text-xs font-bold text-[#84d64f] mb-4">
-              <Sparkles className="w-3.5 h-3.5" /> Siftrole Pro Outreach Pass
+            <div className="inline-flex items-center gap-2 rounded-full bg-[#008561]/40 border border-[#008561] px-3.5 py-1 text-xs font-bold text-[#fff6eb] mb-4">
+              <Sparkles className="w-3.5 h-3.5 text-[#008561]" /> Siftrole Pro Outreach Pass
             </div>
 
             {/* Title */}
-            <h2 className="text-[2.2rem] sm:text-[2.6rem] font-black tracking-[-0.03em] leading-[1.1] text-white">
+            <h2 className="text-[2.2rem] sm:text-[2.6rem] font-pochaevsk font-bold tracking-tight leading-[1.1] text-white">
               Unlock All {recruiterCount}+ Verified Tech Recruiter Contacts
             </h2>
-            <p className="mt-3 text-sm text-[#eef8e5]/80 leading-relaxed">
+            <p className="mt-3 text-sm text-[#fff6eb]/80 leading-relaxed">
               Skip third-party job queues. Reach directly into the inboxes of talent partners and engineering hiring managers across Stripe, OpenAI, Figma, Linear, and top tier tech teams.
             </p>
 
             {/* Feature Checklist */}
             <div className="mt-6 space-y-3.5 bg-white/5 p-5 rounded-2xl border border-white/10">
-              <div className="flex items-start gap-3 text-xs sm:text-sm font-semibold text-[#eef8e5]">
-                <CheckCircle2 className="w-4 h-4 text-[#84d64f] shrink-0 mt-0.5" />
+              <div className="flex items-start gap-3 text-xs sm:text-sm font-semibold text-[#fff6eb]">
+                <CheckCircle2 className="w-4 h-4 text-[#008561] shrink-0 mt-0.5" />
                 <span><strong className="text-white">{recruiterCount}+ Direct Recruiter & HR Emails:</strong> 100% verified work inboxes, updated continuously.</span>
               </div>
-              <div className="flex items-start gap-3 text-xs sm:text-sm font-semibold text-[#eef8e5]">
-                <CheckCircle2 className="w-4 h-4 text-[#84d64f] shrink-0 mt-0.5" />
+              <div className="flex items-start gap-3 text-xs sm:text-sm font-semibold text-[#fff6eb]">
+                <CheckCircle2 className="w-4 h-4 text-[#008561] shrink-0 mt-0.5" />
                 <span><strong className="text-white">Unlimited AI Cold Mail Generation:</strong> High-response human drafts powered by Groq LLM.</span>
               </div>
-              <div className="flex items-start gap-3 text-xs sm:text-sm font-semibold text-[#eef8e5]">
-                <CheckCircle2 className="w-4 h-4 text-[#84d64f] shrink-0 mt-0.5" />
+              <div className="flex items-start gap-3 text-xs sm:text-sm font-semibold text-[#fff6eb]">
+                <CheckCircle2 className="w-4 h-4 text-[#008561] shrink-0 mt-0.5" />
                 <span><strong className="text-white">One-Click Mailto Deep Links:</strong> Instantly opens pre-filled outreach in Gmail or Apple Mail.</span>
               </div>
-              <div className="flex items-start gap-3 text-xs sm:text-sm font-semibold text-[#eef8e5]">
-                <CheckCircle2 className="w-4 h-4 text-[#84d64f] shrink-0 mt-0.5" />
+              <div className="flex items-start gap-3 text-xs sm:text-sm font-semibold text-[#fff6eb]">
+                <CheckCircle2 className="w-4 h-4 text-[#008561] shrink-0 mt-0.5" />
                 <span><strong className="text-white">Lifetime Access & Updates:</strong> Zero recurring monthly subscriptions.</span>
               </div>
             </div>
@@ -222,7 +222,7 @@ export function ProUpgradeModal({ isOpen, onClose, onSuccess }: ProUpgradeModalP
               <div>
                 <div className="flex items-baseline gap-2">
                   <span className="text-3xl font-black text-white">₹49</span>
-                  <span className="text-xs font-bold text-[#84d64f]">only (lifetime access)</span>
+                  <span className="text-xs font-bold text-[#fff6eb]/90">only (lifetime access)</span>
                   <span className="text-xs line-through text-neutral-400">₹499</span>
                 </div>
                 <div className="text-[0.7rem] text-neutral-300 mt-0.5">Secure payment via Razorpay • 30-day guarantee</div>
@@ -231,11 +231,11 @@ export function ProUpgradeModal({ isOpen, onClose, onSuccess }: ProUpgradeModalP
               <button
                 onClick={handlePayment}
                 disabled={isProcessing}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#84d64f] hover:bg-[#75c73d] text-[#14281a] px-8 py-4 text-sm font-heading font-extrabold shadow-[0_12px_28px_rgba(132,214,79,0.35)] transition active:scale-[0.98] cursor-pointer disabled:opacity-60"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#008561] hover:bg-[#006e50] text-white px-8 py-4 text-sm font-bold shadow-[0_12px_28px_rgba(0,133,97,0.4)] transition active:scale-[0.98] cursor-pointer disabled:opacity-60"
               >
                 {isProcessing ? (
                   <>
-                    <div className="h-4 w-4 rounded-full border-2 border-[#14281a] border-t-transparent animate-spin" />
+                    <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
                     <span>Processing via Razorpay...</span>
                   </>
                 ) : (
@@ -249,11 +249,11 @@ export function ProUpgradeModal({ isOpen, onClose, onSuccess }: ProUpgradeModalP
           </div>
         ) : (
           <div className="py-12 text-center">
-            <div className="h-16 w-16 rounded-full bg-[#84d64f]/20 border border-[#84d64f] text-[#84d64f] flex items-center justify-center mx-auto mb-4">
+            <div className="h-16 w-16 rounded-full bg-[#008561]/50 border border-[#008561] text-white flex items-center justify-center mx-auto mb-4">
               <CheckCircle2 className="w-8 h-8" />
             </div>
-            <h3 className="text-2xl font-black text-white">Pro Access Unlocked!</h3>
-            <p className="text-sm text-[#eef8e5]/80 mt-1">
+            <h3 className="text-2xl font-pochaevsk font-bold text-white">Pro Access Unlocked!</h3>
+            <p className="text-sm text-[#fff6eb]/80 mt-1">
               All {recruiterCount}+ verified recruiter contacts and unlimited AI drafts are now available.
             </p>
           </div>

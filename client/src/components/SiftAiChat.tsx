@@ -105,7 +105,7 @@ function renderFormattedMessage(text: string, isUser: boolean) {
         if (isBullet) {
           return (
             <div key={lineIdx} className="flex items-start gap-1.5 pl-1">
-              <span className={`text-[0.65rem] mt-0.5 ${isUser ? "text-white/80" : "text-[#3c7818]"}`}>•</span>
+              <span className={`text-[0.65rem] mt-0.5 ${isUser ? "text-white/80" : "text-[#008561]"}`}>•</span>
               <div className="flex-1">{formattedLine}</div>
             </div>
           );
@@ -726,8 +726,8 @@ export function SiftAiChat({
         }
       }}
       className={`rounded-[26px] border ${
-        isDragging ? "border-[#84d64f] bg-[#eef8e5]/70 ring-2 ring-[#84d64f]" : "border-neutral-200/90 bg-white"
-      } shadow-sm flex flex-col h-[600px] sm:h-[640px] overflow-hidden transition-all`}
+        isDragging ? "border-[#008561] bg-[#faf8f5] ring-2 ring-[#008561]/30" : "border-[#eadecc] bg-white"
+      } shadow-[0_4px_20px_rgba(2,17,12,0.03)] flex flex-col h-[600px] sm:h-[640px] overflow-hidden transition-all`}
     >
       {/* Hidden File Input */}
       <input
@@ -743,7 +743,7 @@ export function SiftAiChat({
       />
 
       {/* Header */}
-      <div className="p-4 border-b border-neutral-100 bg-[#fbfaf8] flex items-center justify-between gap-3 shrink-0">
+      <div className="p-4 border-b border-[#eadecc] bg-[#faf8f5] flex items-center justify-between gap-3 shrink-0">
         <div className="flex items-center gap-2">
           <div className="h-7 w-7 relative flex items-center justify-center shrink-0">
             <Image
@@ -757,10 +757,10 @@ export function SiftAiChat({
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <h3 className="text-xs sm:text-sm font-black text-[#121816]">Sift AI</h3>
-              <span className="inline-block h-2 w-2 rounded-full bg-[#84d64f] animate-pulse" />
+              <h3 className="text-xs sm:text-sm font-pochaevsk font-bold text-[#02110c]">Sift AI</h3>
+              <span className="inline-block h-2 w-2 rounded-full bg-[#008561] animate-pulse" />
             </div>
-            <p className="text-[0.65rem] sm:text-[0.7rem] font-semibold text-[#55615b]">
+            <p className="text-[0.65rem] sm:text-[0.7rem] font-semibold text-[#495e54]">
               Resume Matcher & Live Job Query
             </p>
           </div>
@@ -769,25 +769,25 @@ export function SiftAiChat({
         {/* Upload Button */}
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 px-3 py-1.5 text-xs font-bold text-[#121816] shadow-2xs transition cursor-pointer"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-[#eadecc] bg-white hover:bg-[#faf8f5] px-3 py-1.5 text-xs font-bold text-[#02110c] shadow-2xs transition cursor-pointer"
         >
-          <Paperclip className="w-3.5 h-3.5 text-neutral-500" />
+          <Paperclip className="w-3.5 h-3.5 text-[#008561]" />
           <span className="hidden sm:inline">Drop Resume</span>
         </button>
       </div>
 
       {/* Active Resume Status Bar */}
       {uploadedResumeName && (
-        <div className="px-4 py-2 bg-[#18201c] text-white text-xs flex items-center justify-between gap-2 border-b border-neutral-800 shrink-0">
+        <div className="px-4 py-2 bg-[#02110c] text-white text-xs flex items-center justify-between gap-2 border-b border-[#008561]/40 shrink-0">
           <div className="flex items-center gap-2 min-w-0">
-            <FileText className="w-3.5 h-3.5 text-[#84d64f] shrink-0" />
-            <span className="truncate font-semibold text-[0.72rem] text-neutral-200">
+            <FileText className="w-3.5 h-3.5 text-[#008561] shrink-0" />
+            <span className="truncate font-semibold text-[0.72rem] text-white/80">
               <span className="text-white font-bold">{uploadedResumeName}</span> attached
             </span>
           </div>
           <button
             onClick={onClearResume}
-            className="text-[0.68rem] text-neutral-400 hover:text-white hover:underline font-bold shrink-0 cursor-pointer"
+            className="text-[0.68rem] text-white/70 hover:text-white hover:underline font-bold shrink-0 cursor-pointer"
           >
             Clear
           </button>
@@ -813,23 +813,23 @@ export function SiftAiChat({
             <div
               className={`max-w-[88%] rounded-2xl p-3.5 ${
                 m.sender === "user"
-                  ? "bg-[#14281a] text-white rounded-br-xs shadow-xs"
-                  : "bg-[#f4f3f0] text-[#121816] rounded-bl-xs border border-neutral-200/60"
+                  ? "bg-[#02110c] text-white rounded-br-xs shadow-xs"
+                  : "bg-[#faf8f5] text-[#02110c] rounded-bl-xs border border-[#eadecc]"
               }`}
             >
               <div>{renderFormattedMessage(m.text, m.sender === "user")}</div>
 
               {/* Extracted Skills Pill Cloud */}
               {m.extractedSkills && (
-                <div className="mt-3 pt-2.5 border-t border-neutral-300/60">
-                  <span className="text-[0.65rem] font-bold uppercase tracking-wider text-[#55615b] block mb-1.5">
+                <div className="mt-3 pt-2.5 border-t border-[#eadecc]">
+                  <span className="text-[0.65rem] font-bold uppercase tracking-wider text-[#495e54] block mb-1.5">
                     Detected Skills:
                   </span>
                   <div className="flex flex-wrap gap-1">
                     {m.extractedSkills.map((s) => (
                       <span
                         key={s}
-                        className="rounded-md bg-[#eef8e5] text-[#14281a] px-2 py-0.5 text-[0.68rem] font-bold border border-[#cce8be]"
+                        className="rounded-md bg-white text-[#008561] px-2 py-0.5 text-[0.68rem] font-bold border border-[#008561]/25 shadow-2xs"
                       >
                         {s}
                       </span>
@@ -840,9 +840,9 @@ export function SiftAiChat({
 
               {/* Recommended Mini Job Cards */}
               {m.recommendedJobs && m.recommendedJobs.length > 0 && (
-                <div className="mt-3 space-y-2 pt-2.5 border-t border-neutral-300/60">
+                <div className="mt-3 space-y-2 pt-2.5 border-t border-[#eadecc]">
                   <div className="flex items-center justify-between">
-                    <span className="text-[0.65rem] font-bold uppercase tracking-wider text-[#55615b] block">
+                    <span className="text-[0.65rem] font-bold uppercase tracking-wider text-[#495e54] block">
                       Top Previews ({Math.min(3, m.recommendedJobs.length)}{m.totalMatchesCount ? ` of ${m.totalMatchesCount}` : ""}):
                     </span>
                   </div>
@@ -852,11 +852,11 @@ export function SiftAiChat({
                       href={`/jobs/${j.id}`}
                       onClick={(e) => {
                         if (onSelectListing) {
-                           e.preventDefault();
+                          e.preventDefault();
                           onSelectListing(j);
                         }
                       }}
-                      className="rounded-xl border border-neutral-200/90 bg-white p-2.5 hover:border-[#84d64f] hover:shadow-xs transition cursor-pointer flex items-center justify-between gap-2 block"
+                      className="rounded-xl border border-[#eadecc] bg-white p-2.5 hover:border-[#008561] hover:shadow-xs transition cursor-pointer flex items-center justify-between gap-2 block"
                     >
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
@@ -865,18 +865,18 @@ export function SiftAiChat({
                             size="sm"
                             className="!h-3.5 !w-3.5 !p-0 border-0 bg-transparent"
                           />
-                          <span className="text-[0.65rem] font-bold text-[#14281a] truncate">
+                          <span className="text-[0.65rem] font-bold text-[#008561] truncate">
                             {j.company}
                           </span>
                         </div>
-                        <h5 className="font-extrabold text-[0.75rem] text-[#121816] truncate mt-0.5">
+                        <h5 className="font-extrabold text-[0.75rem] text-[#02110c] truncate mt-0.5">
                           {j.title}
                         </h5>
-                        <span className="text-[0.65rem] text-[#79857f] block">
+                        <span className="text-[0.65rem] text-[#495e54] block">
                           {j.location} • {j.stipend_or_salary || "$140k"}
                         </span>
                       </div>
-                      <ArrowRight className="w-3.5 h-3.5 text-[#3c7818]" />
+                      <ArrowRight className="w-3.5 h-3.5 text-[#008561]" />
                     </Link>
                   ))}
 
@@ -890,12 +890,12 @@ export function SiftAiChat({
                           el.scrollIntoView({ behavior: "smooth", block: "start" });
                         }
                       }}
-                      className="w-full mt-2 rounded-xl bg-[#eef8e5] hover:bg-[#84d64f] border border-[#cce8be] hover:border-[#84d64f] p-2.5 text-[0.72rem] font-black text-[#14281a] transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs group active:scale-[0.98]"
+                      className="w-full mt-2 rounded-xl bg-[#008561]/10 hover:bg-[#008561] border border-[#008561]/25 hover:border-[#008561] p-2.5 text-[0.72rem] font-black text-[#008561] hover:text-white transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs group active:scale-[0.98]"
                     >
                       <span>
                         View all {m.totalMatchesCount || m.recommendedJobs.length} roles on main checklist
                       </span>
-                      <ArrowRight className="w-3.5 h-3.5 text-[#3c7818] group-hover:text-[#14281a] group-hover:translate-x-0.5 transition-transform" />
+                      <ArrowRight className="w-3.5 h-3.5 text-[#008561] group-hover:text-white group-hover:translate-x-0.5 transition-transform" />
                     </button>
                   )}
                 </div>
@@ -903,26 +903,26 @@ export function SiftAiChat({
 
               {/* Account Registration Action Button */}
               {m.requiresAuth && (
-                <div className="mt-3 pt-2.5 border-t border-neutral-300/60">
+                <div className="mt-3 pt-2.5 border-t border-[#eadecc]">
                   <Link
                     href="/login?mode=signup"
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#84d64f] hover:bg-[#75c73d] px-3.5 py-2 text-xs font-black text-[#14281a] shadow-xs transition active:scale-[0.98] cursor-pointer"
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#008561] hover:bg-[#006e50] px-3.5 py-2 text-xs font-black text-white shadow-xs transition active:scale-[0.98] cursor-pointer"
                   >
                     <span>Create Free Account / Sign In</span>
-                    <ArrowRight className="w-3.5 h-3.5 text-[#14281a]" />
+                    <ArrowRight className="w-3.5 h-3.5 text-white" />
                   </Link>
                 </div>
               )}
             </div>
-            <span className="text-[0.6rem] text-[#79857f] mt-1 px-1">{m.timestamp}</span>
+            <span className="text-[0.6rem] text-[#495e54] mt-1 px-1">{m.timestamp}</span>
           </div>
         ))}
 
         {isTyping && (
-          <div className="flex items-center gap-1.5 bg-[#f4f3f0] p-3 rounded-2xl w-16">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#84d64f] animate-bounce" />
-            <span className="h-1.5 w-1.5 rounded-full bg-[#84d64f] animate-bounce [animation-delay:0.2s]" />
-            <span className="h-1.5 w-1.5 rounded-full bg-[#84d64f] animate-bounce [animation-delay:0.4s]" />
+          <div className="flex items-center gap-1.5 bg-[#faf8f5] border border-[#eadecc] p-3 rounded-2xl w-16">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#008561] animate-bounce" />
+            <span className="h-1.5 w-1.5 rounded-full bg-[#008561] animate-bounce [animation-delay:0.2s]" />
+            <span className="h-1.5 w-1.5 rounded-full bg-[#008561] animate-bounce [animation-delay:0.4s]" />
           </div>
         )}
         <div ref={messagesEndRef} />
@@ -931,7 +931,7 @@ export function SiftAiChat({
       {/* Suggested Quick Prompt Chips */}
       <div
         data-lenis-prevent="true"
-        className="px-3 py-2 border-t border-neutral-100 bg-[#fbfaf8] flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0"
+        className="px-3 py-2 border-t border-[#eadecc] bg-[#faf8f5] flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0"
         style={{ overscrollBehavior: "contain" }}
       >
         {[
@@ -943,7 +943,7 @@ export function SiftAiChat({
           <button
             key={chip}
             onClick={() => handleSendMessage(chip)}
-            className="rounded-lg border border-neutral-200/80 bg-white px-2.5 py-1 text-[0.68rem] font-bold text-[#55615b] hover:border-[#84d64f] hover:text-[#3c7818] transition shrink-0 whitespace-nowrap cursor-pointer"
+            className="rounded-lg border border-[#eadecc] bg-white px-2.5 py-1 text-[0.68rem] font-bold text-[#495e54] hover:border-[#008561] hover:text-[#008561] hover:bg-[#faf8f5] transition shrink-0 whitespace-nowrap cursor-pointer shadow-2xs"
           >
             {chip}
           </button>
@@ -956,13 +956,13 @@ export function SiftAiChat({
           e.preventDefault();
           handleSendMessage();
         }}
-        className="p-3 border-t border-neutral-200/80 bg-white flex items-center gap-2"
+        className="p-3 border-t border-[#eadecc] bg-white flex items-center gap-2"
       >
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
           title="Attach PDF resume"
-          className="h-9 w-9 rounded-xl border border-neutral-200/80 hover:bg-neutral-100 text-[#55615b] flex items-center justify-center transition shrink-0"
+          className="h-9 w-9 rounded-xl border border-[#eadecc] bg-[#faf8f5] hover:bg-white text-[#495e54] hover:text-[#008561] flex items-center justify-center transition shrink-0 cursor-pointer"
         >
           <Paperclip className="w-4 h-4" />
         </button>
@@ -972,15 +972,15 @@ export function SiftAiChat({
           value={inputVal}
           onChange={(e) => setInputVal(e.target.value)}
           placeholder="Ask Sift AI or drop your resume..."
-          className="flex-1 rounded-xl border border-neutral-200/80 bg-[#fbfaf8] px-3.5 py-2 text-xs font-medium outline-none focus:border-[#84d64f] focus:bg-white"
+          className="flex-1 rounded-xl border border-[#eadecc] bg-[#faf8f5] px-3.5 py-2 text-xs font-medium outline-none hover:border-[#008561]/40 focus:border-[#008561] focus:bg-white text-[#02110c]"
         />
 
         <button
           type="submit"
           disabled={!inputVal.trim()}
-          className="h-9 w-9 rounded-xl bg-[#84d64f] hover:bg-[#75c73d] disabled:opacity-40 disabled:hover:bg-[#84d64f] text-[#14281a] flex items-center justify-center transition shrink-0 shadow-xs"
+          className="h-9 w-9 rounded-xl bg-[#008561] hover:bg-[#006e50] disabled:opacity-40 disabled:hover:bg-[#008561] text-white flex items-center justify-center transition shrink-0 shadow-xs cursor-pointer"
         >
-          <Send className="w-4 h-4 text-[#14281a]" />
+          <Send className="w-4 h-4 text-white" />
         </button>
       </form>
     </div>

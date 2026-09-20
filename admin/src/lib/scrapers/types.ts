@@ -40,6 +40,10 @@ export interface NormalizedListing {
   qualifications?: string[];
   benefits?: string[];
   clean_description?: string | null;
+  ai_flag_reasons?: string[];
+  missing_fields?: string[];
+  is_suspicious?: boolean;
+  confidence_score?: number;
 }
 
 export interface AtsAdapter {

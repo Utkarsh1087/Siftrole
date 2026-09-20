@@ -3,14 +3,13 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import {
   Eye,
   EyeOff,
-  Sparkles,
   ChevronLeft,
 } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
+import { LiquidSilkBackground } from "@/components/LiquidSilkBackground";
 
 function LoginForm() {
   const router = useRouter();
@@ -125,32 +124,27 @@ function LoginForm() {
   }
 
   return (
-    <main className="h-screen w-full grid lg:grid-cols-[1.1fr_0.9fr] bg-white font-sans selection:bg-[#8cd64f]/30 overflow-hidden">
-      {/* Left Column: Fixed-Dimension 3D Workspace Scene */}
-      <div className="relative hidden lg:flex flex-col justify-between p-10 xl:p-14 bg-[#d1e8bf] overflow-hidden h-full max-h-screen select-none">
-        {/* 3D Render Image strictly fixed */}
-        <div className="absolute inset-0 w-full h-full">
-          <Image
-            src="/images/auth_3d_workspace.jpg"
-            alt="Siftrole 3D Workspace"
-            fill
-            sizes="55vw"
-            priority
-            className="object-cover object-center pointer-events-none select-none"
-          />
-        </div>
-
-        {/* Subtle Gradient overlay for contrast */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#162a1e]/35 via-transparent to-black/10 pointer-events-none" />
+    <main className="h-screen w-full grid lg:grid-cols-[1.1fr_0.9fr] bg-white font-sans selection:bg-[#008561]/20 overflow-hidden">
+      {/* Left Column: Background Image with Liquid Silk Effect & Centered Siftrole Brand */}
+      <div className="relative hidden lg:flex flex-col justify-between p-10 xl:p-14 bg-[#02110c] overflow-hidden h-full max-h-screen select-none">
+        {/* Liquid Silk Background with user's background image */}
+        <LiquidSilkBackground imageSrc="/images/auth_fern_frame.jpg" />
 
         {/* Top Return link */}
-        <div className="relative z-10">
+        <div className="relative z-20">
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 rounded-full bg-white/90 backdrop-blur-md px-4 py-2 text-xs font-heading font-bold text-[#162a1e] shadow-sm hover:bg-white hover:shadow-md transition"
+            className="group inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/15 px-4 py-2 text-xs font-bold text-white shadow-[0_8px_24px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.65)] backdrop-blur-xl backdrop-saturate-150 transition hover:border-white/60 hover:bg-white/25 hover:shadow-[0_10px_28px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.8)]"
           >
-            <ChevronLeft className="w-3.5 h-3.5 text-[#589c2c]" /> Back to Home
+            <ChevronLeft className="w-3.5 h-3.5 text-[#b9ffe5] transition-transform group-hover:-translate-x-0.5" /> Back to Home
           </Link>
+        </div>
+
+        {/* Centred Siftrole Brand written in the middle */}
+        <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+          <span className="font-bodoni-moda text-[4.5rem] xl:text-[5.5rem] font-extrabold italic tracking-[-0.03em] text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.5)] select-none">
+            Sift<span className="text-[#00D793]">role</span>
+          </span>
         </div>
       </div>
 
@@ -160,35 +154,26 @@ function LoginForm() {
         {/* Mobile top navigation */}
         <div className="flex items-center justify-between lg:hidden mb-4">
           <Link href="/" className="inline-flex items-center group">
-            <span className="font-heading text-xl font-bold tracking-tight text-[#162a1e]">
-              sift<span className="text-[#58a826]">role</span>
+            <span className="font-bodoni-moda text-[1.65rem] font-extrabold italic tracking-[-0.02em] text-[#02110c]">
+              Sift<span className="text-[#008561] transition-colors group-hover:text-[#02110c]">role</span>
             </span>
           </Link>
           <Link
             href="/"
-            className="inline-flex items-center gap-1 text-xs font-heading font-bold text-[#556958] hover:text-[#162a1e]"
+            className="inline-flex items-center gap-1 text-xs font-lora font-bold text-[#556958] hover:text-[#02110c] transition-colors"
           >
-            <ChevronLeft className="w-3.5 h-3.5 text-[#58a826]" /> Back
+            <ChevronLeft className="w-3.5 h-3.5 text-[#008561]" /> Back
           </Link>
         </div>
 
         {/* Centered Auth Card Form Area */}
         <div className="w-full max-w-[420px] mx-auto my-auto py-2 sm:py-4">
-          
-          {/* Top Logo (Desktop) */}
-          <div className="hidden lg:flex flex-col items-center justify-center text-center">
-            <Link href="/" className="inline-flex items-center group">
-              <span className="font-heading text-2xl sm:text-[1.75rem] font-bold tracking-tight text-[#162a1e]">
-                sift<span className="text-[#58a826]">role</span>
-              </span>
-            </Link>
-          </div>
 
           <div className="text-center mt-2 lg:mt-5 transition-all duration-300">
-            <h1 className="font-heading text-2xl sm:text-3xl font-bold text-[#162a1e] tracking-tight transition-opacity duration-200">
+            <h1 className="font-pochaevsk text-2xl sm:text-3xl font-bold text-[#02110c] tracking-tight transition-opacity duration-200">
               {isSignUp ? "Create account" : "Welcome back"}
             </h1>
-            <p className="mt-1.5 text-xs sm:text-sm text-[#718276] font-normal transition-opacity duration-200">
+            <p className="mt-1.5 text-xs sm:text-sm text-[#718276] font-lora font-normal transition-opacity duration-200">
               {isSignUp
                 ? "Start tracking verified roles with smart AI match scores."
                 : "Sign in to access your saved roles and checklist."}
@@ -212,7 +197,7 @@ function LoginForm() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Full name"
-                  className="w-full rounded-full border border-[#e2e8df] bg-[#fafcfa] px-5 py-3 text-xs sm:text-sm font-medium text-[#162a1e] placeholder:text-[#9aa99c] outline-none transition focus:border-[#8cd64f] focus:bg-white focus:ring-3 focus:ring-[#8cd64f]/20"
+                  className="w-full rounded-full border border-[#eadecc] bg-[#faf8f5] px-5 py-3 text-xs sm:text-sm font-medium text-[#02110c] placeholder:text-neutral-400 outline-none transition focus:border-[#008561] focus:bg-white focus:ring-2 focus:ring-[#008561]/15"
                 />
               </div>
             </div>
@@ -224,7 +209,7 @@ function LoginForm() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email address"
-                className="w-full rounded-full border border-[#e2e8df] bg-[#fafcfa] px-5 py-3 text-xs sm:text-sm font-medium text-[#162a1e] placeholder:text-[#9aa99c] outline-none transition focus:border-[#8cd64f] focus:bg-white focus:ring-3 focus:ring-[#8cd64f]/20"
+                className="w-full rounded-full border border-[#eadecc] bg-[#faf8f5] px-5 py-3 text-xs sm:text-sm font-medium text-[#02110c] placeholder:text-neutral-400 outline-none transition focus:border-[#008561] focus:bg-white focus:ring-2 focus:ring-[#008561]/15"
               />
             </div>
 
@@ -235,12 +220,12 @@ function LoginForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
-                className="w-full rounded-full border border-[#e2e8df] bg-[#fafcfa] pl-5 pr-12 py-3 text-xs sm:text-sm font-medium text-[#162a1e] placeholder:text-[#9aa99c] outline-none transition focus:border-[#8cd64f] focus:bg-white focus:ring-3 focus:ring-[#8cd64f]/20"
+                className="w-full rounded-full border border-[#eadecc] bg-[#faf8f5] pl-5 pr-12 py-3 text-xs sm:text-sm font-medium text-[#02110c] placeholder:text-neutral-400 outline-none transition focus:border-[#008561] focus:bg-white focus:ring-2 focus:ring-[#008561]/15"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-[#9aa99c] hover:text-[#162a1e] transition cursor-pointer p-1"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-[#9aa99c] hover:text-[#02110c] transition cursor-pointer p-1"
               >
                 {showPassword ? (
                   <EyeOff className="w-4 h-4" />
@@ -274,17 +259,17 @@ function LoginForm() {
                       setAgreedToTerms(e.target.checked);
                       if (error) setError("");
                     }}
-                    className="mt-0.5 h-4 w-4 rounded border-neutral-300 text-[#3c7818] focus:ring-[#8cd64f] accent-[#3c7818] cursor-pointer"
+                    className="mt-0.5 h-4 w-4 rounded border-neutral-300 text-[#008561] focus:ring-[#008561] accent-[#008561] cursor-pointer"
                     required={isSignUp}
                   />
                   <label htmlFor="terms-checkbox" className="text-[0.75rem] text-[#55615b] leading-relaxed cursor-pointer select-none">
                     I have read and agree to Siftrole&apos;s{" "}
-                    <Link href="/terms" target="_blank" className="text-[#3c7818] font-bold underline hover:text-[#14281a]">
+                    <Link href="/terms" target="_blank" className="text-[#008561] font-bold underline hover:text-[#02110c]">
                       Terms of Use
                     </Link>{" "}
                     and{" "}
                     <span className="whitespace-nowrap">
-                      <Link href="/privacy" target="_blank" className="text-[#3c7818] font-bold underline hover:text-[#14281a]">
+                      <Link href="/privacy" target="_blank" className="text-[#008561] font-bold underline hover:text-[#02110c]">
                         Privacy Policy
                       </Link>
                       .<span className="text-red-500 font-bold ml-0.5">*</span>
@@ -298,7 +283,7 @@ function LoginForm() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-full bg-[#8cd64f] hover:bg-[#7ec942] text-[#14261b] font-heading font-bold text-sm sm:text-base py-3 shadow-md shadow-[#8cd64f]/30 transition active:scale-[0.98] disabled:opacity-60 cursor-pointer mt-2"
+              className="w-full rounded-full bg-[#008561] hover:bg-[#006e50] text-white font-lora font-bold text-sm sm:text-base py-3 shadow-md shadow-[#008561]/20 transition active:scale-[0.98] disabled:opacity-60 cursor-pointer mt-2"
             >
               {loading
                 ? "Authenticating..."
@@ -310,7 +295,7 @@ function LoginForm() {
 
           {/* Social / Alternative Divider */}
           <div className="mt-5 text-center">
-            <p className="text-[0.78rem] font-medium text-[#849688] transition-opacity duration-200">
+            <p className="text-[0.78rem] font-lora font-medium text-[#849688] transition-opacity duration-200">
               {isSignUp ? "or sign up with" : "or sign in with"}
             </p>
 
@@ -321,7 +306,7 @@ function LoginForm() {
                 type="button"
                 onClick={() => fillDemo("student")}
                 title="Sign in with Google (Student demo)"
-                className="w-9 h-9 rounded-xl border border-[#d9ebd0] bg-[#f2faed] hover:bg-[#e4f5da] flex items-center justify-center transition cursor-pointer text-[#162a1e] font-bold text-xs shadow-2xs"
+                className="w-9 h-9 rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 flex items-center justify-center transition cursor-pointer text-[#162a1e] font-bold text-xs shadow-2xs"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24">
                   <path
@@ -348,7 +333,7 @@ function LoginForm() {
                 type="button"
                 onClick={() => fillDemo("admin")}
                 title="Sign in with Microsoft (Admin demo)"
-                className="w-9 h-9 rounded-xl border border-[#d9ebd0] bg-[#f2faed] hover:bg-[#e4f5da] flex items-center justify-center transition cursor-pointer text-[#162a1e] font-bold text-xs shadow-2xs"
+                className="w-9 h-9 rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 flex items-center justify-center transition cursor-pointer text-[#162a1e] font-bold text-xs shadow-2xs"
               >
                 <div className="grid grid-cols-2 gap-0.5 w-3.5 h-3.5">
                   <div className="bg-[#f25022] rounded-[1px]" />
@@ -371,11 +356,11 @@ function LoginForm() {
             <div className="overflow-hidden">
               <p className="text-[0.72rem] text-center text-[#7b8d80] leading-relaxed">
                 By creating an account you agree to Siftrole&apos;s{" "}
-                <Link href="/terms" className="text-[#3c7818] font-semibold hover:underline">
+                <Link href="/terms" className="text-[#008561] font-semibold hover:underline">
                   Terms of Service
                 </Link>{" "}
                 and{" "}
-                <Link href="/privacy" className="text-[#3c7818] font-semibold hover:underline">
+                <Link href="/privacy" className="text-[#008561] font-semibold hover:underline">
                   Privacy Policy
                 </Link>
                 .
@@ -385,14 +370,14 @@ function LoginForm() {
 
           {/* Bottom Switcher */}
           <div className="mt-4 pt-4 border-t border-[#f0f4ee] text-center">
-            <p className="text-xs sm:text-sm text-[#697d6e]">
+            <p className="text-xs sm:text-sm font-lora text-[#697d6e]">
               {isSignUp ? (
                 <>
                   Have an account?{" "}
                   <button
                     type="button"
                     onClick={() => toggleMode(false)}
-                    className="font-bold text-[#3c7818] hover:text-[#2d5d11] hover:underline transition cursor-pointer"
+                    className="font-lora font-bold text-[#008561] hover:text-[#02110c] hover:underline transition cursor-pointer"
                   >
                     Log in
                   </button>
@@ -403,7 +388,7 @@ function LoginForm() {
                   <button
                     type="button"
                     onClick={() => toggleMode(true)}
-                    className="font-bold text-[#3c7818] hover:text-[#2d5d11] hover:underline transition cursor-pointer"
+                    className="font-lora font-bold text-[#008561] hover:text-[#02110c] hover:underline transition cursor-pointer"
                   >
                     Sign up
                   </button>
@@ -415,7 +400,7 @@ function LoginForm() {
         </div>
 
         {/* Subtle bottom note with safe spacing */}
-        <div className="text-center text-[0.7rem] text-[#9aa99c] pt-4 pb-2">
+        <div className="text-center text-[0.7rem] font-lora text-[#9aa99c] pt-4 pb-2">
           © {new Date().getFullYear()} Siftrole. Verified opportunities for builders.
         </div>
       </div>

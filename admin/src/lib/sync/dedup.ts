@@ -52,14 +52,56 @@ export function extractSkillsFromText(text: string): string[] {
 
 export function stripHtml(html: string): string {
   if (!html) return "";
-  return html
-    .replace(/<[^>]*>/g, " ")
+  let text = html;
+
+  // 1. Decode double-encoded HTML entities if present (e.g. &lt;div... -> <div...)
+  if (text.includes("&lt;") || text.includes("&gt;")) {
+    text = text
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&amp;/g, "&");
+  }
+
+  // 2. Convert block elements & breaks to markdown/newlines
+  text = text
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n\n")
+    .replace(/<\/div>/gi, "\n")
+    .replace(/<li[^>]*>/gi, "\n• ")
+    .replace(/<\/li>/gi, "")
+    .replace(/<\/h[1-6]>/gi, "\n\n")
+    .replace(/<h[1-6][^>]*>/gi, "\n\n### ");
+
+  // 3. Strip all remaining HTML tags
+  text = text.replace(/<[^>]+>/g, "");
+
+  // 4. Strip any broken, truncated, or unclosed HTML tags (e.g. "<span style" at end)
+  text = text
+    .replace(/<[a-zA-Z\/][^>]*$/g, "")
+    .replace(/<[a-zA-Z][^>\n]*\b(?:style|class|id|href|src|color|font)\b[^>\n]*/gi, "")
+    .replace(/<[a-zA-Z0-9_\-:]+(\s+[^>]*)?$/g, "");
+
+  // 5. Decode common HTML entities
+  text = text
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
+    .replace(/&mdash;/g, "—")
+    .replace(/&ndash;/g, "–")
+    .replace(/&bull;/g, "•")
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
-    .replace(/\s+/g, " ")
+    .replace(/&rsquo;/g, "'")
+    .replace(/&lsquo;/g, "'")
+    .replace(/&rdquo;/g, '"')
+    .replace(/&ldquo;/g, '"');
+
+  // 5. Clean up whitespace & line breaks cleanly
+  text = text
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n\s*\n\s*\n+/g, "\n\n")
     .trim();
+
+  return text;
 }

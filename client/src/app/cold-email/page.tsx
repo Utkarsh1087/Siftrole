@@ -34,8 +34,10 @@ import {
   getMailedContactIds,
   toggleMailedContactId,
   markContactAsMailed,
+  syncMailedContactsFromDatabase,
 } from "@/lib/hrContacts";
 import { ColdMailModal } from "@/components/ColdMailModal";
+import { AuthGateModal } from "@/components/AuthGateModal";
 import { useAuth } from "@/lib/useAuth";
 
 export default function ColdEmailPage() {
@@ -46,8 +48,14 @@ export default function ColdEmailPage() {
   const [selectedContactForAi, setSelectedContactForAi] = useState<HRContact | null>(null);
   const [isPro, setIsPro] = useState(false);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
-  const [copiedEmailId, setCopiedEmailId] = useState<string | null>(null);
   const [mailedContactIds, setMailedContactIds] = useState<Set<string>>(new Set());
+  const [authGateConfig, setAuthGateConfig] = useState<{
+    isOpen: boolean;
+    title?: string;
+    description?: string;
+    badge?: string;
+    primaryCta?: string;
+  }>({ isOpen: false });
 
   // Pagination state
   const PAGE_SIZE = 6;
@@ -58,6 +66,9 @@ export default function ColdEmailPage() {
   useEffect(() => {
     setIsPro(isProUser());
     setMailedContactIds(getMailedContactIds());
+    if (isLoggedIn) {
+      syncMailedContactsFromDatabase().then((ids) => setMailedContactIds(ids));
+    }
 
     const handleProChange = () => {
       setIsPro(isProUser());
@@ -78,20 +89,50 @@ export default function ColdEmailPage() {
       window.removeEventListener("storage", handleProChange);
       window.removeEventListener("storage", handleMailedChange);
     };
-  }, []);
+  }, [isLoggedIn]);
 
-  const handleCopyEmail = (contact: HRContact, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(contact.email);
-      setCopiedEmailId(contact.id);
-      setTimeout(() => setCopiedEmailId(null), 2000);
+  const handleDraftAiMail = (contact: HRContact) => {
+    if (!isLoggedIn) {
+      setAuthGateConfig({
+        isOpen: true,
+        title: "Sign in to Use AI Cold Email Drafter",
+        description: "Create a free account or sign in to generate personalized, high-converting cold outreach emails to verified tech recruiters.",
+        badge: "Free Instant Access",
+        primaryCta: "Sign In to Draft AI Email",
+      });
+      return;
     }
+    setSelectedContactForAi(contact);
+  };
+
+  const handleDirectMail = (contact: HRContact, e: React.MouseEvent) => {
+    if (!isLoggedIn) {
+      e.preventDefault();
+      setAuthGateConfig({
+        isOpen: true,
+        title: "Sign in for Direct Recruiter Outreach",
+        description: "Create a free account or sign in to reach verified tech recruiter contacts and track your outreach history.",
+        badge: "Free Instant Access",
+        primaryCta: "Sign In for Direct Outreach",
+      });
+      return;
+    }
+    markContactAsMailed(contact.id);
   };
 
   const handleToggleMailed = (contactId: string, e?: React.MouseEvent) => {
     if (e) {
       e.stopPropagation();
+    }
+    if (!isLoggedIn) {
+      setAuthGateConfig({
+        isOpen: true,
+        title: "Sign in to Track Outreach",
+        description: "Create a free account or sign in to mark recruiter conversations as mailed, track your response pipeline, and keep your applications organized.",
+        badge: "Free Instant Access",
+        primaryCta: "Sign In to Track Outreach",
+      });
+      return;
     }
     toggleMailedContactId(contactId);
   };
@@ -134,6 +175,19 @@ export default function ColdEmailPage() {
 
   const handlePageChange = (page: number) => {
     if (page < 1 || page > totalPages) return;
+    if (!isLoggedIn && page > 1) {
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("siftrole_redirect_after_auth", window.location.pathname + window.location.search);
+      }
+      setAuthGateConfig({
+        isOpen: true,
+        title: `Unlock All ${contacts.length}+ Verified Recruiter Leads`,
+        description: "Free account registration is required to discover recruiter contacts past page 1 and use AI cold emailing for all roles.",
+        badge: "Free Instant Access",
+        primaryCta: "Unlock All Recruiter Leads (Free)",
+      });
+      return;
+    }
     setCurrentPage(page);
     const el = document.getElementById("hr-contacts-heading");
     if (el) {
@@ -160,10 +214,10 @@ export default function ColdEmailPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#f8f7f5] text-[#121816] font-sans antialiased selection:bg-[#84d64f]/30 selection:text-[#14281a]">
-      {/* Background Ambient Glow */}
+    <main className="min-h-screen bg-[#fdfcf9] bg-canvas-white text-[#02110c] font-sans antialiased selection:bg-[#008561]/20 selection:text-[#02110c]">
+      {/* Ambient background glow */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute -top-[20%] left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-gradient-to-b from-[#84d64f]/15 via-[#84d64f]/5 to-transparent blur-3xl opacity-70" />
+        <div className="absolute -top-[20%] left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-gradient-to-b from-[#008561]/8 via-transparent to-transparent blur-3xl opacity-50" />
       </div>
 
       <div className="relative z-10 mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-12 pt-4 pb-20">
@@ -171,38 +225,39 @@ export default function ColdEmailPage() {
         {/* ======================================================== */}
         {/* TOP NAVBAR */}
         {/* ======================================================== */}
-        <header className="sticky top-4 z-50 rounded-[20px] border border-neutral-200/80 bg-white/85 backdrop-blur-md px-5 py-3 shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-all">
+        <header className="sticky top-4 z-50 rounded-[20px] border border-[#eadecc] bg-white/95 backdrop-blur-md px-5 py-3 shadow-[0_8px_30px_rgba(2,17,12,0.04)] transition-all">
           <div className="flex items-center justify-between gap-4">
             {/* Logo & Back */}
-            <div className="flex items-center gap-3 sm:gap-4">
-              <Link
-                href="/"
-                className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-neutral-200/90 bg-[#fbfaf8] hover:bg-neutral-100/80 px-3.5 py-1.5 text-xs font-bold text-[#55615b] hover:text-[#121816] transition-colors"
-              >
-                <ChevronLeft className="w-3.5 h-3.5 text-[#3c7818]" />
-                <span>Home</span>
-              </Link>
+            <div className="flex items-center gap-4">
+              {!isLoggedIn && (
+                <Link
+                  href="/"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#faf8f5] hover:bg-white border border-[#eadecc] px-3.5 py-2 text-xs font-lora font-bold text-[#02110c] transition"
+                >
+                  <ChevronLeft className="w-4 h-4 text-[#008561]" /> Home
+                </Link>
+              )}
 
               <Link href="/" className="flex items-center gap-2.5 group">
                 <SiftroleLogoMark size={28} />
-                <span className="text-[1.7rem] font-black tracking-[-0.04em] text-[#121816]">
-                  Sift<span className="text-[#58a826] transition-colors group-hover:text-[#4a911e]">role</span>
+                <span className="font-bodoni-moda text-[1.85rem] font-extrabold italic tracking-[-0.02em] text-[#02110c]">
+                  Sift<span className="text-[#008561] transition-colors group-hover:text-[#02110c]">role</span>
                 </span>
               </Link>
             </div>
 
             {/* Nav Links */}
-            <nav className="hidden md:flex items-center gap-8 text-[0.95rem] font-semibold text-[#55615b]">
-              <Link href="/jobs" className="hover:text-[#121816] transition-colors">
+            <nav className="hidden md:flex items-center gap-8 text-[1rem] font-lora font-medium text-[#083D2E]/85">
+              <Link href="/jobs" className="hover:text-[#083D2E] transition-colors">
                 All Jobs
               </Link>
-              <Link href="/cold-email" className="text-[#3c7818] font-bold hover:text-[#58a826] transition-colors">
+              <Link href="/cold-email" className="text-[#083D2E] font-bold hover:text-[#008561] transition-colors">
                 HR Outreach
               </Link>
-              <Link href="/about" className="hover:text-[#121816] transition-colors">
+              <Link href="/about" className="hover:text-[#083D2E] transition-colors">
                 About
               </Link>
-              <Link href="/#faq" className="hover:text-[#121816] transition-colors">
+              <Link href="/#faq" className="hover:text-[#083D2E] transition-colors">
                 FAQ
               </Link>
             </nav>
@@ -212,23 +267,23 @@ export default function ColdEmailPage() {
               {isLoggedIn ? (
                 <Link
                   href="/dashboard"
-                  className="rounded-full bg-[#84d64f] hover:bg-[#75c73d] px-5 py-2.5 text-xs sm:text-[0.9rem] font-heading font-bold text-[#14281a] shadow-md shadow-[#84d64f]/25 transition active:scale-[0.98] inline-flex items-center gap-2"
+                  className="rounded-full bg-[#00D793] hover:bg-[#00bf83] px-5 py-2.5 text-xs sm:text-[0.92rem] font-lora font-bold text-[#083D2E] shadow-md shadow-[#00D793]/25 transition active:scale-[0.98] inline-flex items-center gap-2"
                 >
-                  Go to Dashboard <ArrowRight className="w-3.5 h-3.5 text-[#14281a]" />
+                  Go to Dashboard <ArrowRight className="w-3.5 h-3.5 text-[#083D2E]" />
                 </Link>
               ) : (
                 <>
                   <Link
                     href="/login"
-                    className="text-xs sm:text-[0.9rem] font-bold text-[#55615b] hover:text-[#121816] px-3 py-2 transition"
+                    className="text-xs sm:text-[0.92rem] font-lora font-bold text-[#083D2E] hover:text-[#008561] px-3 py-2 transition"
                   >
                     Sign In
                   </Link>
                   <Link
                     href="/login?mode=signup"
-                    className="rounded-full bg-[#84d64f] hover:bg-[#75c73d] px-4 sm:px-5 py-2.5 text-xs sm:text-[0.9rem] font-heading font-bold text-[#14281a] shadow-md shadow-[#84d64f]/25 transition active:scale-[0.98] inline-flex items-center gap-1.5"
+                    className="rounded-full bg-[#00D793] hover:bg-[#00bf83] px-4 sm:px-5 py-2.5 text-xs sm:text-[0.92rem] font-lora font-bold text-[#083D2E] shadow-md shadow-[#00D793]/25 transition active:scale-[0.98] inline-flex items-center gap-1.5"
                   >
-                    Sign Up <ArrowRight className="w-3.5 h-3.5 text-[#14281a]" />
+                    Sign Up <ArrowRight className="w-3.5 h-3.5 text-[#083D2E]" />
                   </Link>
                 </>
               )}
@@ -242,19 +297,19 @@ export default function ColdEmailPage() {
         <section className="mt-8 sm:mt-12 pb-4">
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
             <div>
-              <h1 className="text-[2.8rem] sm:text-[3.8rem] font-black leading-[1.05] tracking-[-0.04em] text-[#121816]">
+              <h1 className="font-pochaevsk text-[3rem] sm:text-[4.2rem] leading-[1.05] tracking-[-0.02em] text-[#02110c]">
                 Direct HR Outreach Hub
               </h1>
-              <p className="mt-2.5 text-sm sm:text-base text-[#55615b] max-w-[680px]">
+              <p className="mt-2.5 text-sm sm:text-base text-[#495e54] max-w-[680px]">
                 Connect directly with technical recruiters and university talent leads. Generate punchy, human-sounding cold emails with AI in one click and track sent applications.
               </p>
             </div>
 
             {/* Directory Count Badge */}
             <div className="shrink-0">
-              <div className="inline-flex items-center gap-2 rounded-xl border border-neutral-200/90 bg-white px-3.5 py-2 text-xs text-[#55615b] shadow-2xs">
-                <span className="h-2 w-2 rounded-full bg-[#3c7818]" />
-                <span className="font-semibold text-[#121816]">{contacts.length}+ Verified Contacts</span>
+              <div className="inline-flex items-center gap-2 rounded-xl border border-[#eadecc] bg-white px-3.5 py-2 text-xs text-[#495e54] shadow-2xs">
+                <span className="h-2 w-2 rounded-full bg-[#008561]" />
+                <span className="font-semibold text-[#02110c]">{contacts.length}+ Verified Contacts</span>
               </div>
             </div>
           </div>
@@ -264,22 +319,22 @@ export default function ColdEmailPage() {
         {/* STATS STRIP */}
         {/* ======================================================== */}
         <section className="my-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="rounded-[22px] border border-neutral-200/80 bg-white p-5 shadow-sm">
-            <div className="text-2xl sm:text-3xl font-black text-[#121816]">{contacts.length}+</div>
-            <div className="text-xs font-bold text-[#14281a] mt-1">Direct HR & Recruiter Emails</div>
-            <div className="text-[0.7rem] text-[#55615b]">Verified across Stripe, OpenAI, Figma, Spotify, Linear</div>
+          <div className="rounded-[22px] border border-[#eadecc] bg-white p-5 shadow-[0_2px_12px_rgba(2,17,12,0.03)]">
+            <div className="text-2xl sm:text-3xl font-black text-[#02110c]">{contacts.length}+</div>
+            <div className="text-xs font-bold text-[#02110c] mt-1">Direct HR & Recruiter Emails</div>
+            <div className="text-[0.7rem] text-[#495e54]">Verified across Stripe, OpenAI, Figma, Spotify, Linear</div>
           </div>
-          <div className="rounded-[22px] border border-neutral-200/80 bg-white p-5 shadow-sm">
-            <div className="text-2xl sm:text-3xl font-black text-[#121816]">3.4x</div>
-            <div className="text-xs font-bold text-[#14281a] mt-1">Higher Response Rate</div>
-            <div className="text-[0.7rem] text-[#55615b]">Short, human-form AI emails vs generic cover letters</div>
+          <div className="rounded-[22px] border border-[#eadecc] bg-white p-5 shadow-[0_2px_12px_rgba(2,17,12,0.03)]">
+            <div className="text-2xl sm:text-3xl font-black text-[#02110c]">3.4x</div>
+            <div className="text-xs font-bold text-[#02110c] mt-1">Higher Response Rate</div>
+            <div className="text-[0.7rem] text-[#495e54]">Short, human-form AI emails vs generic cover letters</div>
           </div>
-          <div className="rounded-[22px] border border-neutral-200/80 bg-white p-5 shadow-sm">
-            <div className="text-2xl sm:text-3xl font-black text-[#121816]">
+          <div className="rounded-[22px] border border-[#eadecc] bg-white p-5 shadow-[0_2px_12px_rgba(2,17,12,0.03)]">
+            <div className="text-2xl sm:text-3xl font-black text-[#02110c]">
               {mailedContactIds.size} Mailed
             </div>
-            <div className="text-xs font-bold text-[#14281a] mt-1">Your Outreach Progress</div>
-            <div className="text-[0.7rem] text-[#55615b]">Real-time tracking of sent recruiter emails</div>
+            <div className="text-xs font-bold text-[#02110c] mt-1">Your Outreach Progress</div>
+            <div className="text-[0.7rem] text-[#495e54]">Real-time tracking of sent recruiter emails</div>
           </div>
         </section>
 
@@ -287,16 +342,16 @@ export default function ColdEmailPage() {
         {/* SEARCH & FILTERS */}
         {/* ======================================================== */}
         <section className="my-6">
-          <div className="rounded-[22px] border border-neutral-200/80 bg-white p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="rounded-[22px] border border-[#eadecc] bg-white p-4 shadow-[0_2px_12px_rgba(2,17,12,0.03)] flex flex-col md:flex-row items-center justify-between gap-4">
             {/* Search Input */}
             <div className="relative w-full md:w-[420px]">
-              <Search className="w-4 h-4 text-[#79857f] absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-[#495e54]/60 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search recruiter, company, or target role..."
-                className="w-full rounded-xl border border-neutral-200/80 bg-[#fbfaf8] pl-10 pr-4 py-2.5 text-xs font-medium outline-none transition focus:border-[#84d64f] focus:bg-white focus:ring-2 focus:ring-[#84d64f]/20"
+                className="w-full rounded-xl border border-[#eadecc] bg-[#faf8f5] pl-10 pr-4 py-2.5 text-xs font-medium outline-none transition hover:border-[#008561]/40 focus:border-[#008561] focus:bg-white focus:ring-2 focus:ring-[#008561]/15 text-[#02110c]"
               />
             </div>
 
@@ -307,7 +362,7 @@ export default function ColdEmailPage() {
                 <select
                   value={selectedDepartment}
                   onChange={(e) => setSelectedDepartment(e.target.value)}
-                  className="appearance-none rounded-xl border border-neutral-200/90 bg-white hover:bg-[#fbfaf8] hover:border-neutral-300 pl-3.5 pr-8 py-2.5 text-xs font-bold text-[#121816] shadow-2xs outline-none transition focus:border-[#84d64f] focus:ring-2 focus:ring-[#84d64f]/20 cursor-pointer"
+                  className="appearance-none rounded-xl border border-[#eadecc] bg-white hover:bg-[#faf8f5] hover:border-[#008561] pl-3.5 pr-8 py-2.5 text-xs font-bold text-[#02110c] shadow-2xs outline-none transition focus:border-[#008561] focus:ring-2 focus:ring-[#008561]/15 cursor-pointer"
                 >
                   <option value="all">All Departments</option>
                   <option value="Engineering">Engineering Talent</option>
@@ -315,7 +370,7 @@ export default function ColdEmailPage() {
                   <option value="AI & Research">AI & Research</option>
                   <option value="Product & Design">Product & Design</option>
                 </select>
-                <ChevronDown className="w-3.5 h-3.5 text-[#55615b] pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" />
+                <ChevronDown className="w-3.5 h-3.5 text-[#495e54] pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" />
               </div>
 
               {/* Status (Mailed vs Unmailed) */}
@@ -323,13 +378,13 @@ export default function ColdEmailPage() {
                 <select
                   value={mailedFilter}
                   onChange={(e) => setMailedFilter(e.target.value as "all" | "unmailed" | "mailed")}
-                  className="appearance-none rounded-xl border border-neutral-200/90 bg-white hover:bg-[#fbfaf8] hover:border-neutral-300 pl-3.5 pr-8 py-2.5 text-xs font-bold text-[#121816] shadow-2xs outline-none transition focus:border-[#84d64f] focus:ring-2 focus:ring-[#84d64f]/20 cursor-pointer"
+                  className="appearance-none rounded-xl border border-[#eadecc] bg-white hover:bg-[#faf8f5] hover:border-[#008561] pl-3.5 pr-8 py-2.5 text-xs font-bold text-[#02110c] shadow-2xs outline-none transition focus:border-[#008561] focus:ring-2 focus:ring-[#008561]/15 cursor-pointer"
                 >
                   <option value="all">Status: All Contacts</option>
                   <option value="unmailed">Status: Not Mailed Yet</option>
                   <option value="mailed">Status: Mailed ({mailedContactIds.size})</option>
                 </select>
-                <ChevronDown className="w-3.5 h-3.5 text-[#55615b] pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" />
+                <ChevronDown className="w-3.5 h-3.5 text-[#495e54] pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" />
               </div>
 
               {(searchQuery.trim() || selectedDepartment !== "all" || mailedFilter !== "all") && (
@@ -339,7 +394,7 @@ export default function ColdEmailPage() {
                     setSelectedDepartment("all");
                     setMailedFilter("all");
                   }}
-                  className="rounded-xl bg-neutral-100 hover:bg-neutral-200 text-[#121816] px-3 py-2.5 text-xs font-bold transition cursor-pointer"
+                  className="rounded-xl bg-[#faf8f5] hover:bg-white border border-[#eadecc] text-[#02110c] px-3 py-2.5 text-xs font-bold transition cursor-pointer"
                 >
                   Reset
                 </button>
@@ -353,12 +408,12 @@ export default function ColdEmailPage() {
         {/* ======================================================== */}
         <div id="hr-contacts-heading" className="scroll-mt-24">
           {filteredContacts.length === 0 ? (
-            <div className="rounded-[24px] border border-dashed border-neutral-300 bg-white p-12 text-center">
-              <div className="h-12 w-12 rounded-full bg-neutral-100 flex items-center justify-center mx-auto text-[#55615b] mb-3">
+            <div className="rounded-[24px] border border-dashed border-[#eadecc] bg-white p-12 text-center">
+              <div className="h-12 w-12 rounded-full bg-[#faf8f5] flex items-center justify-center mx-auto text-[#495e54] mb-3">
                 <Search className="w-6 h-6" />
               </div>
-              <h3 className="text-base font-black text-[#121816]">No matching HR contacts found</h3>
-              <p className="text-xs text-[#55615b] mt-1 max-w-sm mx-auto">
+              <h3 className="text-base font-black text-[#02110c]">No matching HR contacts found</h3>
+              <p className="text-xs text-[#495e54] mt-1 max-w-sm mx-auto">
                 Try searching for a different company name, department, or keyword to find verified recruiter leads.
               </p>
               <button
@@ -367,7 +422,7 @@ export default function ColdEmailPage() {
                   setSelectedDepartment("all");
                   setMailedFilter("all");
                 }}
-                className="mt-4 rounded-xl bg-[#14281a] text-[#84d64f] px-4 py-2 text-xs font-bold shadow-xs cursor-pointer hover:bg-[#1f3d27] transition"
+                className="mt-4 rounded-xl bg-[#02110c] text-white px-4 py-2 text-xs font-bold shadow-xs cursor-pointer hover:bg-[#008561] transition"
               >
                 Clear all filters
               </button>
@@ -380,10 +435,10 @@ export default function ColdEmailPage() {
                 return (
                   <div
                     key={contact.id}
-                    className={`rounded-[24px] border p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all relative overflow-hidden flex flex-col justify-between ${
+                    className={`rounded-[24px] border p-6 shadow-[0_2px_12px_rgba(2,17,12,0.03)] transition-all relative overflow-hidden flex flex-col justify-between ${
                       isMailed
-                        ? "border-[#84d64f]/70 bg-[#f7fcf3] hover:shadow-md"
-                        : "border-neutral-200/90 bg-white hover:border-[#84d64f] hover:shadow-md"
+                        ? "border-[#008561]/40 bg-[#faf8f5] hover:shadow-md"
+                        : "border-[#eadecc] bg-white hover:border-[#008561] hover:shadow-md"
                     }`}
                   >
                     <div>
@@ -393,14 +448,14 @@ export default function ColdEmailPage() {
                           <CompanyLogo company={contact.company} size="md" />
                           <div>
                             <div className="flex items-center gap-2">
-                              <span className="text-xs font-extrabold uppercase tracking-wider text-[#3c7818]">
+                              <span className="text-xs font-extrabold uppercase tracking-wider text-[#008561]">
                                 {contact.company}
                               </span>
-                              <span className="rounded-full bg-[#eef8e5] border border-[#cce8be] text-[#14281a] text-[0.65rem] font-bold px-2 py-0.5 inline-flex items-center gap-1">
-                                <ShieldCheck className="w-3 h-3 text-[#3c7818]" /> Verified HR
+                              <span className="rounded-full bg-[#00D793]/15 border border-[#00D793]/40 text-[#083D2E] text-[0.65rem] font-bold px-2 py-0.5 inline-flex items-center gap-1">
+                                <ShieldCheck className="w-3 h-3 text-[#008561]" /> Verified HR
                               </span>
                             </div>
-                            <h3 className="text-lg font-black text-[#121816] mt-0.5">
+                            <h3 className="font-lora text-xl font-bold text-[#02110c] mt-0.5 tracking-tight">
                               {contact.name}
                             </h3>
                           </div>
@@ -413,25 +468,25 @@ export default function ColdEmailPage() {
                             onClick={(e) => handleToggleMailed(contact.id, e)}
                             className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition-all cursor-pointer ${
                               isMailed
-                                ? "bg-[#14281a] text-[#84d64f] shadow-xs hover:bg-[#1f3d27]"
-                                : "border border-neutral-300 bg-white text-[#55615b] hover:border-[#84d64f] hover:text-[#14281a] hover:bg-[#eef8e5]"
+                                ? "bg-[#02110c] text-white shadow-xs hover:bg-[#008561]"
+                                : "border border-[#eadecc] bg-white text-[#495e54] hover:border-[#008561] hover:text-[#02110c] hover:bg-[#faf8f5]"
                             }`}
                             title={isMailed ? "Click to unmark as mailed" : "Mark as mailed"}
                           >
                             {isMailed ? (
                               <>
-                                <CheckCircle2 className="w-3.5 h-3.5 text-[#84d64f]" />
+                                <CheckCircle2 className="w-3.5 h-3.5 text-white" />
                                 <span>Mailed</span>
                               </>
                             ) : (
                               <>
-                                <span className="w-3.5 h-3.5 rounded border border-neutral-400 bg-white inline-block" />
+                                <span className="w-3.5 h-3.5 rounded border border-[#eadecc] bg-white inline-block" />
                                 <span>Mark Mailed</span>
                               </>
                             )}
                           </button>
 
-                          <span className="text-[0.7rem] font-bold text-[#55615b] bg-[#f8f7f5] px-2.5 py-1 rounded-lg border border-neutral-200/60 shrink-0">
+                          <span className="text-[0.7rem] font-bold text-[#495e54] bg-[#faf8f5] px-2.5 py-1 rounded-lg border border-[#eadecc] shrink-0">
                             {contact.department}
                           </span>
                         </div>
@@ -439,8 +494,8 @@ export default function ColdEmailPage() {
 
                       {/* Role Title & Location */}
                       <div className="mt-3">
-                        <p className="text-xs font-semibold text-[#121816]">{contact.title}</p>
-                        <p className="text-[0.75rem] text-[#55615b] mt-0.5">{contact.location}</p>
+                        <p className="text-xs font-semibold text-[#02110c]">{contact.title}</p>
+                        <p className="text-[0.75rem] text-[#495e54] mt-0.5">{contact.location}</p>
                       </div>
 
                       {/* Hiring For Tags */}
@@ -448,7 +503,7 @@ export default function ColdEmailPage() {
                         {contact.hiring_for.map((tag) => (
                           <span
                             key={tag}
-                            className="rounded-full border border-neutral-200 bg-[#f8f7f5] px-3 py-0.5 text-[0.7rem] font-semibold text-[#14281a]"
+                            className="rounded-full border border-[#eadecc] bg-[#faf8f5] px-3 py-0.5 text-[0.7rem] font-semibold text-[#02110c]"
                           >
                             {tag}
                           </span>
@@ -456,42 +511,28 @@ export default function ColdEmailPage() {
                       </div>
 
                       {/* Email Row */}
-                      <div className="mt-4 p-3 rounded-xl bg-[#f8f7f5] border border-neutral-200/80 flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#14281a] truncate">
-                          <Mail className="w-3.5 h-3.5 text-[#3c7818] shrink-0" />
-                          <span className="truncate">{contact.email}</span>
-                        </div>
-
-                        <button
-                          onClick={(e) => handleCopyEmail(contact, e)}
-                          className="p-1.5 rounded-lg hover:bg-neutral-200 text-[#55615b] transition cursor-pointer shrink-0"
-                          title="Copy email"
-                        >
-                          {copiedEmailId === contact.id ? (
-                            <Check className="w-3.5 h-3.5 text-[#3c7818]" />
-                          ) : (
-                            <Copy className="w-3.5 h-3.5" />
-                          )}
-                        </button>
+                      <div className="mt-4 p-3 rounded-xl bg-[#faf8f5] border border-[#eadecc] flex items-center gap-2">
+                        <Mail className="w-3.5 h-3.5 text-[#008561] shrink-0" />
+                        <span className="text-xs font-mono font-bold text-[#02110c] truncate">{contact.email}</span>
                       </div>
                     </div>
 
                     {/* Bottom Action Bar */}
-                    <div className="mt-5 pt-4 border-t border-neutral-100 flex items-center justify-between gap-2">
+                    <div className="mt-5 pt-4 border-t border-[#eadecc]/60 flex items-center justify-between gap-2">
                       <button
-                        onClick={() => setSelectedContactForAi(contact)}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-[#84d64f] hover:bg-[#75c73d] text-[#14281a] px-4 py-2 text-xs font-bold transition shadow-xs cursor-pointer active:scale-[0.98]"
+                        onClick={() => handleDraftAiMail(contact)}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-[#008561] hover:bg-[#006e50] text-white px-4 py-2 text-xs font-bold transition shadow-xs cursor-pointer active:scale-[0.98]"
                       >
-                        <Sparkles className="w-3.5 h-3.5" />
+                        <Sparkles className="w-3.5 h-3.5 text-white" />
                         <span>Draft AI Mail</span>
                       </button>
 
                       <a
-                        href={`mailto:${contact.email}?subject=${encodeURIComponent(`Quick question re: ${contact.hiring_for[0]} at ${contact.company}`)}`}
-                        onClick={() => markContactAsMailed(contact.id)}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-300 hover:border-[#84d64f] hover:bg-[#eef8e5] text-[#121816] px-3.5 py-2 text-xs font-bold transition cursor-pointer"
+                        href={isLoggedIn ? `mailto:${contact.email}?subject=${encodeURIComponent(`Quick question re: ${contact.hiring_for[0]} at ${contact.company}`)}` : "#"}
+                        onClick={(e) => handleDirectMail(contact, e)}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-[#eadecc] hover:border-[#008561] hover:bg-[#faf8f5] text-[#02110c] px-3.5 py-2 text-xs font-bold transition cursor-pointer"
                       >
-                        <Send className="w-3.5 h-3.5 text-[#3c7818]" />
+                        <Send className="w-3.5 h-3.5 text-[#008561]" />
                         <span>Direct Mail</span>
                       </a>
                     </div>
@@ -506,7 +547,7 @@ export default function ColdEmailPage() {
         {/* PAGINATION CONTROLS BAR */}
         {/* ======================================================== */}
         {filteredContacts.length > 0 && totalPages > 1 && (
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-[22px] border border-neutral-200/80 bg-white p-4 sm:px-6 shadow-sm">
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-[22px] border border-[#eedfc9] bg-white p-4 sm:px-6 shadow-sm">
             {/* Status counter */}
             <div className="text-xs font-semibold text-[#55615b]">
               Showing <span className="font-extrabold text-[#121816]">{startIndex + 1} to {endIndex}</span> of{" "}
@@ -518,9 +559,9 @@ export default function ColdEmailPage() {
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200/90 bg-white px-3.5 py-2 text-xs font-bold text-[#121816] shadow-2xs hover:bg-neutral-50 hover:border-[#84d64f] transition disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:border-neutral-200 disabled:hover:bg-white cursor-pointer"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[#eedfc9] bg-white px-3.5 py-2 text-xs font-bold text-[#121816] shadow-2xs hover:bg-[#fff6eb] hover:border-[#008561] transition disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:border-[#eedfc9] disabled:hover:bg-white cursor-pointer"
               >
-                <ChevronLeft className="w-4 h-4 text-[#3c7818]" />
+                <ChevronLeft className="w-4 h-4 text-[#008561]" />
                 <span className="hidden sm:inline">Previous</span>
               </button>
 
@@ -532,8 +573,8 @@ export default function ColdEmailPage() {
                       onClick={() => handlePageChange(page)}
                       className={`h-9 w-9 rounded-xl text-xs font-black transition-all flex items-center justify-center cursor-pointer ${
                         currentPage === page
-                          ? "bg-[#14281a] text-white shadow-sm scale-105"
-                          : "bg-white border border-neutral-200/90 text-[#55615b] hover:border-[#84d64f] hover:text-[#14281a] shadow-2xs"
+                          ? "bg-[#008561] text-white shadow-sm scale-105"
+                          : "bg-white border border-[#eedfc9] text-[#55615b] hover:border-[#008561] hover:text-[#02110c] shadow-2xs"
                       }`}
                     >
                       {page}
@@ -549,10 +590,10 @@ export default function ColdEmailPage() {
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200/90 bg-white px-3.5 py-2 text-xs font-bold text-[#121816] shadow-2xs hover:bg-neutral-50 hover:border-[#84d64f] transition disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:border-neutral-200 disabled:hover:bg-white cursor-pointer"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[#eedfc9] bg-white px-3.5 py-2 text-xs font-bold text-[#121816] shadow-2xs hover:bg-[#fff6eb] hover:border-[#008561] transition disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:border-[#eedfc9] disabled:hover:bg-white cursor-pointer"
               >
                 <span className="hidden sm:inline">Next</span>
-                <ChevronRight className="w-4 h-4 text-[#3c7818]" />
+                <ChevronRight className="w-4 h-4 text-[#008561]" />
               </button>
             </div>
           </div>
@@ -564,6 +605,16 @@ export default function ColdEmailPage() {
       <ColdMailModal
         contact={selectedContactForAi}
         onClose={() => setSelectedContactForAi(null)}
+      />
+
+      {/* Auth Gate Modal */}
+      <AuthGateModal
+        isOpen={authGateConfig.isOpen}
+        onClose={() => setAuthGateConfig({ isOpen: false })}
+        title={authGateConfig.title}
+        description={authGateConfig.description}
+        badge={authGateConfig.badge}
+        primaryCta={authGateConfig.primaryCta}
       />
     </main>
   );

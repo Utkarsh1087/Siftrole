@@ -1,32 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" fill="none">
   <defs>
-    <linearGradient id="siftrole-green-grad" x1="10%" y1="0%" x2="90%" y2="100%">
-      <stop offset="0%" stop-color="#93e85e" />
-      <stop offset="50%" stop-color="#84d64f" />
-      <stop offset="100%" stop-color="#4ea020" />
+    <linearGradient id="outer" x1="160" y1="110" x2="820" y2="900" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00D793"/>
+      <stop offset="1" stop-color="#008561"/>
     </linearGradient>
-    <linearGradient id="siftrole-accent-grad" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#3c7818" />
-      <stop offset="100%" stop-color="#84d64f" />
+    <linearGradient id="middle" x1="330" y1="210" x2="760" y2="700" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00A87A"/>
+      <stop offset="1" stop-color="#006E50"/>
+    </linearGradient>
+    <linearGradient id="shadow" x1="380" y1="300" x2="690" y2="780" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#083D2E"/>
+      <stop offset="1" stop-color="#02110C"/>
     </linearGradient>
   </defs>
-
-  <!-- Top / Left Sweeping Wing -->
-  <path
-    d="M 58 12 C 34 12 18 30 18 52 C 18 64 24 74 34 81 C 30 72 31 59 40 51 C 49 42 66 43 83 29 C 87 25 89 20 89 19 C 80 14 70 12 58 12 Z"
-    fill="url(#siftrole-green-grad)"
-  />
-
-  <!-- Bottom Sweeping Crescent Wing -->
-  <path
-    d="M 36 61 C 42 67 52 71 65 71 C 78 71 89 63 94 54 C 95 62 92 73 83 81 C 71 91 53 93 38 88 C 28 85 22 79 19 72 C 24 70 31 66 36 61 Z"
-    fill="url(#siftrole-accent-grad)"
-  />
-
-  <!-- Center Dynamic Sweep Link -->
-  <path
-    d="M 37 62 C 48 70 68 70 88 56 C 89 55 86 63 79 70 C 68 81 50 82 37 76 C 32 73 28 68 26 62 C 30 63 33 63 37 62 Z"
-    fill="url(#siftrole-green-grad)"
-    opacity="0.9"
-  />
+  <path fill="url(#outer)" d="M640 112C365 116 145 324 145 585c0 177 91 321 237 394-56-81-72-190-30-291 49-117 154-191 282-224 91-24 168-70 224-157-49-116-129-195-218-195Zm-34 102c-70 39-139 103-174 188-47 113-22 243 53 331-68-64-103-151-91-245 16-128 98-232 212-274Z"/>
+  <path fill="url(#shadow)" d="M626 130c-105 50-189 130-224 235-42 128 11 277 127 348 101 62 237 51 319-28 61-59 88-137 86-211-49 81-114 125-193 143-104 24-205-19-250-99-55-97-32-221 52-298 37-35 77-62 120-90-13 0-25 0-37 0Z"/>
+  <path fill="#FFF6EB" d="M687 137c-65 43-116 93-143 155-36 83-11 177 57 231 67 54 165 58 236 12 55-36 93-92 103-155-27 39-67 69-116 84-72 22-149 2-193-50-51-61-51-147-4-212 17-24 37-45 60-65Z"/>
+  <path fill="url(#middle)" d="M319 546c49 72 137 116 234 111 133-7 240-83 300-196-4 109-54 216-143 278-116 80-277 74-375-13-46-41-77-91-92-145 24 0 51-13 76-35Z"/>
+  <path fill="#02110C" d="M337 633c71 76 186 105 295 74 91-26 162-85 209-165-22 105-92 192-191 231-112 44-242 19-322-62-30-30-52-64-66-101 24 12 49 20 75 23Z"/>
+  <path fill="#FFF6EB" d="M340 693c81 58 192 70 291 31 80-31 145-87 192-159-34 102-107 184-207 218-101 34-214 10-291-58-22-19-42-41-57-66 23 14 47 26 72 34Z"/>
 </svg>

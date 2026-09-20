@@ -188,37 +188,37 @@ export function ColdMailModal({ contact, onClose }: ColdMailModalProps) {
       >
         
         {/* Header */}
-        <div className="flex items-start justify-between gap-4 pb-5 border-b border-neutral-100">
+        <div className="flex items-start justify-between gap-4 pb-5 border-b border-[#eadecc]">
           <div className="flex items-center gap-3.5">
             <CompanyLogo company={contact.company} size="md" className="shrink-0" />
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-extrabold uppercase tracking-wider text-[#3c7818]">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-[#008561]">
                   AI Outreach Drafter
                 </span>
-                <span className="rounded-full bg-[#eef8e5] border border-[#cce8be] text-[#14281a] text-[0.68rem] font-black px-2.5 py-0.5 inline-flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-[#58a826]" /> Groq AI Human Mode
+                <span className="rounded-full bg-[#008561]/10 border border-[#008561]/25 text-[#008561] text-[0.68rem] font-bold px-2.5 py-0.5 inline-flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-[#008561]" /> Groq AI Human Mode
                 </span>
               </div>
-              <h3 className="text-xl sm:text-2xl font-black text-[#121816] mt-0.5">
+              <h3 className="text-xl sm:text-2xl font-pochaevsk font-bold text-[#02110c] mt-0.5">
                 Draft Cold Mail for {contact.name}
               </h3>
               <p className="text-xs text-[#55615b] mt-0.5">
-                {contact.title} at <span className="font-bold text-[#121816]">{contact.company}</span> &bull; {contact.email}
+                {contact.title} at <span className="font-bold text-[#02110c]">{contact.company}</span> &bull; {contact.email}
               </p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="h-9 w-9 rounded-full bg-neutral-100 hover:bg-neutral-200 flex items-center justify-center text-sm font-bold transition shrink-0 cursor-pointer"
+            className="h-9 w-9 rounded-full bg-[#faf8f5] hover:bg-[#eadecc] flex items-center justify-center text-sm font-bold transition shrink-0 cursor-pointer border border-[#eadecc]"
           >
             <X className="w-4 h-4 text-[#55615b]" />
           </button>
         </div>
 
         {/* Customization Inputs Grid */}
-        <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3.5 bg-[#f8f7f5] p-4 rounded-2xl border border-neutral-200/80">
+        <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3.5 bg-[#faf8f5] p-4 rounded-2xl border border-[#eadecc]">
           <div>
             <label className="block text-[0.7rem] font-black uppercase tracking-wider text-[#55615b] mb-1">
               Your Name
@@ -228,7 +228,7 @@ export function ColdMailModal({ contact, onClose }: ColdMailModalProps) {
               value={candidateName}
               onChange={(e) => setCandidateName(e.target.value)}
               placeholder="e.g. Alex"
-              className="w-full rounded-xl border border-neutral-300 bg-white px-3.5 py-2 text-xs font-semibold text-[#121816] outline-none focus:border-[#84d64f]"
+              className="w-full rounded-xl border border-[#eadecc] bg-white px-3.5 py-2 text-xs font-semibold text-[#02110c] outline-none focus:border-[#008561]"
             />
           </div>
 
@@ -241,7 +241,7 @@ export function ColdMailModal({ contact, onClose }: ColdMailModalProps) {
               value={targetRole}
               onChange={(e) => setTargetRole(e.target.value)}
               placeholder="e.g. SWE Intern Summer 2026"
-              className="w-full rounded-xl border border-neutral-300 bg-white px-3.5 py-2 text-xs font-semibold text-[#121816] outline-none focus:border-[#84d64f]"
+              className="w-full rounded-xl border border-[#eadecc] bg-white px-3.5 py-2 text-xs font-semibold text-[#02110c] outline-none focus:border-[#008561]"
             />
           </div>
 
@@ -254,7 +254,7 @@ export function ColdMailModal({ contact, onClose }: ColdMailModalProps) {
               value={highlight}
               onChange={(e) => setHighlight(e.target.value)}
               placeholder="e.g. built a WebGL real-time renderer with 50k monthly users"
-              className="w-full rounded-xl border border-neutral-300 bg-white px-3.5 py-2 text-xs font-semibold text-[#121816] outline-none focus:border-[#84d64f]"
+              className="w-full rounded-xl border border-[#eadecc] bg-white px-3.5 py-2 text-xs font-semibold text-[#02110c] outline-none focus:border-[#008561]"
             />
           </div>
 
@@ -265,7 +265,7 @@ export function ColdMailModal({ contact, onClose }: ColdMailModalProps) {
             <button
               onClick={() => handleGenerate()}
               disabled={isGenerating}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[#14281a] hover:bg-[#1f3d27] text-[#84d64f] px-4 py-2 text-xs font-bold transition shadow-xs cursor-pointer disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[#02110c] hover:bg-[#008561] text-white px-4 py-2 text-xs font-bold transition shadow-xs cursor-pointer disabled:opacity-50"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isGenerating ? "animate-spin" : ""}`} />
               <span>{isGenerating ? "Drafting..." : "Regenerate Draft"}</span>
@@ -286,7 +286,7 @@ export function ColdMailModal({ contact, onClose }: ColdMailModalProps) {
               type="text"
               value={generatedSubject}
               onChange={(e) => setGeneratedSubject(e.target.value)}
-              className="w-full rounded-xl border border-neutral-300 bg-[#fdfdfd] px-3.5 py-2.5 text-xs font-bold text-[#121816] outline-none focus:border-[#84d64f]"
+              className="w-full rounded-xl border border-[#eadecc] bg-white px-3.5 py-2.5 text-xs font-bold text-[#02110c] outline-none focus:border-[#008561]"
             />
           </div>
 
@@ -296,7 +296,7 @@ export function ColdMailModal({ contact, onClose }: ColdMailModalProps) {
               <label className="text-[0.7rem] font-black uppercase tracking-wider text-[#55615b]">
                 Email Body
               </label>
-              <span className="text-[0.68rem] font-bold text-[#3c7818] bg-[#eef8e5] px-2 py-0.5 rounded-md">
+              <span className="text-[0.68rem] font-bold text-[#008561] bg-[#008561]/10 px-2 py-0.5 rounded-md border border-[#008561]/20">
                 ~{generatedBody.split(/\s+/).filter(Boolean).length} words &bull; High Response Format
               </span>
             </div>
@@ -306,22 +306,22 @@ export function ColdMailModal({ contact, onClose }: ColdMailModalProps) {
               onWheel={(e) => e.stopPropagation()}
               value={generatedBody}
               onChange={(e) => setGeneratedBody(e.target.value)}
-              className="w-full rounded-xl border border-neutral-300 bg-[#fdfdfd] p-3.5 text-xs font-mono leading-relaxed text-[#24302a] outline-none focus:border-[#84d64f] overscroll-contain resize-none"
+              className="w-full rounded-xl border border-[#eadecc] bg-white p-3.5 text-xs font-mono leading-relaxed text-[#24302a] outline-none focus:border-[#008561] overscroll-contain resize-none"
               style={{ overscrollBehavior: "contain" }}
             />
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-neutral-100">
+        <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-[#eadecc]">
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <button
               onClick={handleCopy}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-neutral-300 bg-white hover:bg-neutral-50 px-5 py-3 text-xs font-bold text-[#121816] transition shadow-2xs cursor-pointer active:scale-[0.98]"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-[#eadecc] bg-white hover:bg-[#faf8f5] px-5 py-3 text-xs font-bold text-[#121816] transition shadow-2xs cursor-pointer active:scale-[0.98]"
             >
               {copied ? (
                 <>
-                  <Check className="w-4 h-4 text-[#3c7818]" />
+                  <Check className="w-4 h-4 text-[#008561]" />
                   <span>Copied to Clipboard!</span>
                 </>
               ) : (
@@ -343,7 +343,7 @@ export function ColdMailModal({ contact, onClose }: ColdMailModalProps) {
                 markContactAsMailed(contact.id);
               }
             }}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#84d64f] hover:bg-[#75c73d] text-[#14281a] px-7 py-3 text-xs sm:text-sm font-heading font-extrabold shadow-md shadow-[#84d64f]/25 transition active:scale-[0.98] cursor-pointer"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#008561] hover:bg-[#006e50] text-white px-7 py-3 text-xs sm:text-sm font-bold shadow-md shadow-[#008561]/25 transition active:scale-[0.98] cursor-pointer"
           >
             <Send className="w-4 h-4" />
             <span>Open in Email App (Gmail/Mail)</span>

@@ -70,7 +70,7 @@ export async function notifyAdminApiLimitReached(details: {
           .detail-item strong { color: #111827; }
           .action-box { background-color: #f0fdf4; border: 1px solid #dcfce7; border-radius: 12px; padding: 16px; margin-top: 20px; }
           .action-title { font-size: 13px; font-weight: 700; color: #166534; margin-bottom: 6px; }
-          .action-text { font-size: 12px; color: #15803d; margin: 0; }
+          .action-text { font-size: 12px; color: #1a422f; margin: 0; }
           .footer { font-size: 12px; color: #9ca3af; text-align: center; margin-top: 24px; font-weight: 500; }
         </style>
       </head>

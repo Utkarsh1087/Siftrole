@@ -70,44 +70,7 @@ let rotationIndex = 0;
 export function getAvailableLLMProviders(): ProviderCandidate[] {
   const candidates: ProviderCandidate[] = [];
 
-  // 1. Groq Keys (Llama 3.1 8B Instant for speed/high quotas + Llama 3.3 70B for deep reasoning)
-  const groqNumberedKeys = [
-    process.env.GROQ_API_KEY_1,
-    process.env.GROQ_API_KEY_2,
-    process.env.GROQ_API_KEY_3,
-    process.env.GROQ_API_KEY_4,
-    process.env.GROQ_API_KEY_5,
-  ].filter(Boolean) as string[];
-
-  const groqCsvKeys = (process.env.GROQ_API_KEYS || "")
-    .split(",")
-    .map((k) => k.trim())
-    .filter(Boolean);
-
-  const groqSingleKeys = [process.env.GROQ_API_KEY, process.env.AI_API_KEY].filter(Boolean) as string[];
-
-  const allGroqKeys = Array.from(new Set([...groqNumberedKeys, ...groqCsvKeys, ...groqSingleKeys]))
-    .map((k) => k.replace(/^["']|["']$/g, "").trim())
-    .filter(Boolean);
-
-  allGroqKeys.forEach((key, idx) => {
-    // High-capacity GPT-OSS 120B (High reasoning & structured extraction)
-    candidates.push({
-      name: `Groq GPT-OSS 120B #${idx + 1}`,
-      type: "groq",
-      apiKey: key,
-      model: "openai/gpt-oss-120b",
-    });
-    // Ultra-fast Qwen 3.8 27B (High speed, versatile)
-    candidates.push({
-      name: `Groq Qwen-3.8 27B #${idx + 1}`,
-      type: "groq",
-      apiKey: key,
-      model: "qwen/qwen3.8-27b",
-    });
-  });
-
-  // 2. Google Gemini Keys (Gemini 1.5 Flash & 2.0 Flash)
+  // 1. Google Gemini Keys (Gemini 1.5 Flash & 2.0 Flash) - Top Priority
   const geminiNumberedKeys = [
     process.env.GEMINI_API_KEY_1,
     process.env.GEMINI_API_KEY_2,
@@ -136,6 +99,41 @@ export function getAvailableLLMProviders(): ProviderCandidate[] {
       type: "gemini",
       apiKey: key,
       model: "gemini-2.0-flash",
+    });
+  });
+
+  // 2. Groq Keys (Failover)
+  const groqNumberedKeys = [
+    process.env.GROQ_API_KEY_1,
+    process.env.GROQ_API_KEY_2,
+    process.env.GROQ_API_KEY_3,
+    process.env.GROQ_API_KEY_4,
+    process.env.GROQ_API_KEY_5,
+  ].filter(Boolean) as string[];
+
+  const groqCsvKeys = (process.env.GROQ_API_KEYS || "")
+    .split(",")
+    .map((k) => k.trim())
+    .filter(Boolean);
+
+  const groqSingleKeys = [process.env.GROQ_API_KEY, process.env.AI_API_KEY].filter(Boolean) as string[];
+
+  const allGroqKeys = Array.from(new Set([...groqNumberedKeys, ...groqCsvKeys, ...groqSingleKeys]))
+    .map((k) => k.replace(/^["']|["']$/g, "").trim())
+    .filter(Boolean);
+
+  allGroqKeys.forEach((key, idx) => {
+    candidates.push({
+      name: `Groq GPT-OSS 120B #${idx + 1}`,
+      type: "groq",
+      apiKey: key,
+      model: "openai/gpt-oss-120b",
+    });
+    candidates.push({
+      name: `Groq Qwen-3.8 27B #${idx + 1}`,
+      type: "groq",
+      apiKey: key,
+      model: "qwen/qwen3.8-27b",
     });
   });
 

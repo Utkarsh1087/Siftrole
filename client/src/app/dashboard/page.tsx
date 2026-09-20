@@ -62,8 +62,8 @@ const COLUMNS: { key: ApplicationStage; title: string; tone: string; pillColor: 
   {
     key: "applied",
     title: "Applied",
-    tone: "border-[#84d64f]/40 bg-[#eef8e5] text-[#14281a]",
-    pillColor: "bg-[#84d64f]/20 text-[#14281a]",
+    tone: "border-[#1a422f]/30 bg-[#f3ebd6]/30 text-[#02110c]",
+    pillColor: "bg-[#1a422f]/10 text-[#02110c]",
   },
   {
     key: "interviewing",
@@ -74,8 +74,8 @@ const COLUMNS: { key: ApplicationStage; title: string; tone: string; pillColor: 
   {
     key: "offered",
     title: "Offer Received",
-    tone: "border-[#84d64f] bg-[#d7f3be] text-[#14281a]",
-    pillColor: "bg-[#84d64f] text-[#14281a]",
+    tone: "border-[#1a422f] bg-[#f3ebd6] text-[#02110c]",
+    pillColor: "bg-[#1a422f] text-[#f3ebd6]",
   },
   {
     key: "rejected",
@@ -358,10 +358,10 @@ export default function DashboardPage() {
   }, [userName, stats, mounted]);
 
   return (
-    <main className="min-h-screen bg-[#f8f7f5] text-[#121816] font-sans antialiased selection:bg-[#84d64f]/30 pb-20">
+    <main className="min-h-screen bg-[#f8f7f5] text-[#121816] font-sans antialiased selection:bg-[#1a422f]/20 pb-20">
       {/* Background Ambient Glow */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute -top-[20%] left-1/2 -translate-x-1/2 w-[1100px] h-[550px] bg-gradient-to-b from-[#84d64f]/15 via-[#84d64f]/5 to-transparent blur-3xl opacity-75" />
+        <div className="absolute -top-[20%] left-1/2 -translate-x-1/2 w-[1100px] h-[550px] bg-gradient-to-b from-[#1a422f]/10 via-[#f3ebd6]/20 to-transparent blur-3xl opacity-75" />
       </div>
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-6">
@@ -374,14 +374,14 @@ export default function DashboardPage() {
                 href="/"
                 className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-neutral-200/90 bg-[#fbfaf8] hover:bg-neutral-100/80 px-3.5 py-1.5 text-xs font-bold text-[#55615b] hover:text-[#121816] transition-colors"
               >
-                <ChevronLeft className="w-3.5 h-3.5 text-[#3c7818]" />
+                <ChevronLeft className="w-3.5 h-3.5 text-[#1a422f]" />
                 <span>Home</span>
               </Link>
 
               <Link href="/" className="flex items-center gap-2.5 group">
                 <SiftroleLogoMark size={28} />
-                <span className="text-[1.7rem] font-black tracking-[-0.04em] text-[#121816]">
-                  Sift<span className="text-[#58a826] transition-colors group-hover:text-[#4a911e]">role</span>
+                <span className="text-[1.7rem] font-black tracking-[-0.04em] text-[#02110c]">
+                  Sift<span className="text-[#1a422f] transition-colors group-hover:text-[#02110c]">role</span>
                 </span>
               </Link>
             </div>
@@ -405,7 +405,7 @@ export default function DashboardPage() {
             {/* Right Buttons: User Info & Sign Out */}
             <div className="flex items-center gap-2.5 sm:gap-3">
               <div className="flex items-center gap-2.5 bg-neutral-50 border border-neutral-200/80 rounded-full pl-1.5 pr-4 py-1">
-                <div className="w-7 h-7 rounded-full bg-[#84d64f] text-[#14281a] font-black text-xs flex items-center justify-center shadow-xs">
+                <div className="w-7 h-7 rounded-full bg-[#1a422f] text-[#f3ebd6] font-black text-xs flex items-center justify-center shadow-xs">
                   {userName.charAt(0)}
                 </div>
                 <div className="hidden sm:block text-left">
@@ -441,14 +441,14 @@ export default function DashboardPage() {
                   href="/jobs"
                   className="rounded-full border border-neutral-200/90 bg-white hover:bg-neutral-50 px-5 py-3 text-xs font-extrabold text-[#121816] shadow-2xs transition inline-flex items-center gap-2"
                 >
-                  <Search className="w-4 h-4 text-[#3c7818]" /> Browse Master List
+                  <Search className="w-4 h-4 text-[#1a422f]" /> Browse Master List
                 </Link>
 
                 <button
                   onClick={() => setIsAddModalOpen(true)}
-                  className="rounded-full bg-[#84d64f] hover:bg-[#75c73d] px-5 py-3 text-xs font-heading font-bold text-[#14281a] shadow-md shadow-[#84d64f]/25 transition active:scale-[0.98] inline-flex items-center gap-2 cursor-pointer"
+                  className="rounded-full bg-[#1a422f] hover:bg-[#02110c] px-5 py-3 text-xs font-heading font-bold text-[#f3ebd6] shadow-md shadow-[#1a422f]/20 transition active:scale-[0.98] inline-flex items-center gap-2 cursor-pointer"
                 >
-                  <Plus className="w-4 h-4 text-[#14281a]" /> Log Application
+                  <Plus className="w-4 h-4 text-[#f3ebd6]" /> Log Application
                 </button>
               </div>
             </section>
@@ -458,7 +458,7 @@ export default function DashboardPage() {
               <div className="rounded-[22px] border border-neutral-200/90 bg-white p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-extrabold uppercase tracking-wider text-[#55615b]">Total Tracked</span>
-                  <Layers className="w-4 h-4 text-[#3c7818]" />
+                  <Layers className="w-4 h-4 text-[#1a422f]" />
                 </div>
                 <div className="mt-3 text-3xl font-black text-[#121816]">{stats.total}</div>
                 <div className="mt-1 text-xs text-[#55615b]">{stats.saved} pending submission</div>
@@ -466,11 +466,11 @@ export default function DashboardPage() {
 
               <div className="rounded-[22px] border border-neutral-200/90 bg-white p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-extrabold uppercase tracking-wider text-[#3c7818]">Submitted</span>
-                  <CheckCircle2 className="w-4 h-4 text-[#3c7818]" />
+                  <span className="text-xs font-extrabold uppercase tracking-wider text-[#1a422f]">Submitted</span>
+                  <CheckCircle2 className="w-4 h-4 text-[#1a422f]" />
                 </div>
-                <div className="mt-3 text-3xl font-black text-[#3c7818]">{stats.applied}</div>
-                <div className="mt-1 text-xs text-[#3c7818]">Direct ATS submissions</div>
+                <div className="mt-3 text-3xl font-black text-[#1a422f]">{stats.applied}</div>
+                <div className="mt-1 text-xs text-[#1a422f]">Direct ATS submissions</div>
               </div>
 
               <div className="rounded-[22px] border border-neutral-200/90 bg-white p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
@@ -484,8 +484,8 @@ export default function DashboardPage() {
 
               <div className="rounded-[22px] border border-neutral-200/90 bg-white p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-extrabold uppercase tracking-wider text-[#3c7818]">Offers</span>
-                  <Sparkles className="w-4 h-4 text-[#3c7818]" />
+                  <span className="text-xs font-extrabold uppercase tracking-wider text-[#1a422f]">Offers</span>
+                  <Sparkles className="w-4 h-4 text-[#1a422f]" />
                 </div>
                 <div className="mt-3 text-3xl font-black text-[#14281a]">{stats.offered}</div>
                 <div className="mt-1 text-xs text-[#14281a]">Decision / negotiation</div>
@@ -502,7 +502,7 @@ export default function DashboardPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Filter your applications..."
-                className="w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-10 pr-4 py-2 text-xs font-semibold text-[#121816] placeholder:text-neutral-400 outline-none focus:border-[#84d64f] focus:bg-white transition"
+                className="w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-10 pr-4 py-2 text-xs font-semibold text-[#121816] placeholder:text-neutral-400 outline-none focus:border-[#1a422f] focus:bg-white transition"
               />
             </div>
 
@@ -511,7 +511,7 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => setIsStageFilterOpen(!isStageFilterOpen)}
-                className="hidden sm:flex items-center justify-between gap-2.5 rounded-xl border border-neutral-200 bg-neutral-50 hover:bg-white hover:border-[#84d64f] px-3.5 py-2 text-xs font-bold text-[#14281a] outline-none cursor-pointer transition shadow-2xs min-w-[155px]"
+                className="hidden sm:flex items-center justify-between gap-2.5 rounded-xl border border-neutral-200 bg-neutral-50 hover:bg-white hover:border-[#1a422f] px-3.5 py-2 text-xs font-bold text-[#14281a] outline-none cursor-pointer transition shadow-2xs min-w-[155px]"
               >
                 <span>
                   {filterStage === "all" && `All Stages (${applications.length})`}
@@ -521,7 +521,7 @@ export default function DashboardPage() {
                   {filterStage === "offered" && `Offer Received (${applications.filter(a => a.status === "offered").length})`}
                   {filterStage === "rejected" && `Archived (${applications.filter(a => a.status === "rejected").length})`}
                 </span>
-                <ChevronDown className={`w-3.5 h-3.5 text-neutral-500 transition-transform duration-200 ${isStageFilterOpen ? "rotate-180 text-[#3c7818]" : ""}`} />
+                <ChevronDown className={`w-3.5 h-3.5 text-neutral-500 transition-transform duration-200 ${isStageFilterOpen ? "rotate-180 text-[#1a422f]" : ""}`} />
               </button>
 
               {isStageFilterOpen && (
@@ -550,18 +550,18 @@ export default function DashboardPage() {
                           }}
                           className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
                             isSelected
-                              ? "bg-[#eef8e5] text-[#14281a]"
+                              ? "bg-[#f3ebd6] text-[#02110c]"
                               : "text-[#55615b] hover:bg-neutral-50 hover:text-[#14281a]"
                           }`}
                         >
                           <span>{opt.label}</span>
                           <div className="flex items-center gap-1.5">
                             <span className={`text-[0.65rem] px-1.5 py-0.2 rounded-full font-black ${
-                              isSelected ? "bg-[#84d64f] text-[#14281a]" : "bg-neutral-100 text-neutral-500"
+                              isSelected ? "bg-[#1a422f] text-[#f3ebd6]" : "bg-neutral-100 text-neutral-500"
                             }`}>
                               {opt.count}
                             </span>
-                            {isSelected && <Check className="w-3.5 h-3.5 text-[#3c7818]" />}
+                            {isSelected && <Check className="w-3.5 h-3.5 text-[#1a422f]" />}
                           </div>
                         </button>
                       );
@@ -604,7 +604,7 @@ export default function DashboardPage() {
         {/* LOADING STATE */}
         {loading ? (
           <div className="py-24 text-center">
-            <div className="inline-block h-8 w-8 animate-spin rounded-full border-3 border-[#84d64f] border-t-transparent mb-3" />
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-3 border-[#1a422f] border-t-transparent mb-3" />
             <p className="text-xs font-bold text-[#55615b]">Loading application command center...</p>
           </div>
         ) : viewMode === "kanban" ? (
@@ -617,7 +617,7 @@ export default function DashboardPage() {
                 <p className="text-sm font-bold text-neutral-500">No applications found matching your filter.</p>
                 <button
                   onClick={() => { setFilterStage("all"); setSearchQuery(""); }}
-                  className="mt-3 text-xs font-extrabold text-[#3c7818] hover:underline cursor-pointer"
+                  className="mt-3 text-xs font-extrabold text-[#1a422f] hover:underline cursor-pointer"
                 >
                   Clear filters
                 </button>
@@ -631,7 +631,7 @@ export default function DashboardPage() {
                   return (
                     <div
                       key={app.id}
-                      className="group rounded-[26px] border border-neutral-200/90 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:border-[#84d64f] hover:shadow-md transition-all duration-200 flex flex-col justify-between"
+                      className="group rounded-[26px] border border-neutral-200/90 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:border-[#1a422f] hover:shadow-md transition-all duration-200 flex flex-col justify-between"
                     >
                       <div>
                         {/* Header: Company Logo & Name + Match Score + Portal Link */}
@@ -643,7 +643,7 @@ export default function DashboardPage() {
                               className="!h-7 !w-7 !p-0 rounded-xl border-0 bg-transparent shadow-none shrink-0"
                             />
                             <div className="min-w-0">
-                              <span className="text-sm font-black text-[#14281a] tracking-tight truncate block">
+                              <span className="text-sm font-black text-[#02110c] tracking-tight truncate block">
                                 {app.company}
                               </span>
                               <span className="text-[0.68rem] text-neutral-400 font-medium block">
@@ -654,8 +654,8 @@ export default function DashboardPage() {
 
                           <div className="flex items-center gap-1.5 shrink-0">
                             {app.match_score && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-[#84d64f] text-[#14281a] text-[0.68rem] font-black px-2.5 py-0.5 shadow-2xs">
-                                <Sparkles className="w-2.5 h-2.5 text-[#14281a]" />
+                              <span className="inline-flex items-center gap-1 rounded-full bg-[#1a422f] text-[#f3ebd6] text-[0.68rem] font-black px-2.5 py-0.5 shadow-2xs">
+                                <Sparkles className="w-2.5 h-2.5 text-[#f3ebd6]" />
                                 {app.match_score}% Match
                               </span>
                             )}
@@ -664,7 +664,7 @@ export default function DashboardPage() {
                               target="_blank"
                               rel="noreferrer"
                               title="Open Official Portal"
-                              className="h-7 w-7 rounded-xl border border-neutral-200 bg-neutral-50 flex items-center justify-center text-[#55615b] hover:text-[#14281a] hover:border-[#84d64f] hover:bg-[#84d64f]/20 transition shadow-2xs"
+                              className="h-7 w-7 rounded-xl border border-neutral-200 bg-neutral-50 flex items-center justify-center text-[#55615b] hover:text-[#02110c] hover:border-[#1a422f] hover:bg-[#1a422f]/10 transition shadow-2xs"
                             >
                               <ExternalLink className="w-3.5 h-3.5" />
                             </a>
@@ -672,7 +672,7 @@ export default function DashboardPage() {
                         </div>
 
                         {/* Role Title */}
-                        <h4 className="text-base font-black text-[#121816] tracking-tight group-hover:text-[#14281a] transition-colors leading-snug mb-2">
+                        <h4 className="text-base font-black text-[#121816] tracking-tight group-hover:text-[#02110c] transition-colors leading-snug mb-2">
                           {app.title}
                         </h4>
 
@@ -682,7 +682,7 @@ export default function DashboardPage() {
                             {app.location.split("/")[0]}
                           </span>
                           {app.stipend_or_salary && (
-                            <span className="rounded-lg border border-[#cce8be] bg-[#eef8e5] px-2.5 py-1 text-xs font-bold text-[#14281a]">
+                            <span className="rounded-lg border border-[#1a422f]/20 bg-[#f3ebd6]/60 px-2.5 py-1 text-xs font-bold text-[#02110c]">
                               {app.stipend_or_salary}
                             </span>
                           )}
@@ -696,7 +696,7 @@ export default function DashboardPage() {
                             
                             {/* Active progress fill line */}
                             <div
-                              className="absolute left-3 top-1/2 -translate-y-1/2 h-[3px] bg-[#84d64f] -z-0 transition-all duration-300"
+                              className="absolute left-3 top-1/2 -translate-y-1/2 h-[3px] bg-[#1a422f] -z-0 transition-all duration-300"
                               style={{
                                 width: `${
                                   app.status === "saved" ? "0%" :
@@ -717,13 +717,13 @@ export default function DashboardPage() {
                                   <div
                                     className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${
                                       isCurrent
-                                        ? "bg-[#84d64f] text-[#14281a] ring-4 ring-[#84d64f]/30 scale-110 shadow-xs font-black text-xs"
+                                        ? "bg-[#1a422f] text-[#f3ebd6] ring-4 ring-[#1a422f]/25 scale-110 shadow-xs font-black text-xs"
                                         : isPast
-                                        ? "bg-[#3c7818] text-white"
+                                        ? "bg-[#02110c] text-[#f3ebd6]"
                                         : "bg-neutral-200 text-transparent"
                                     }`}
                                   >
-                                    {isPast ? <Check className="w-3 h-3" /> : isCurrent ? <span className="w-2 h-2 rounded-full bg-[#14281a]" /> : null}
+                                    {isPast ? <Check className="w-3 h-3" /> : isCurrent ? <span className="w-2 h-2 rounded-full bg-[#f3ebd6]" /> : null}
                                   </div>
                                 </div>
                               );
@@ -732,16 +732,16 @@ export default function DashboardPage() {
 
                           {/* Step Text Labels underneath dots */}
                           <div className="flex items-center justify-between text-[0.68rem] font-bold text-neutral-400 px-0.5">
-                            <span className={app.status === "saved" ? "text-[#14281a] font-black" : currentIdx > 0 ? "text-[#3c7818]" : ""}>
+                            <span className={app.status === "saved" ? "text-[#02110c] font-black" : currentIdx > 0 ? "text-[#1a422f]" : ""}>
                               Saved
                             </span>
-                            <span className={app.status === "applied" ? "text-[#14281a] font-black" : currentIdx > 1 ? "text-[#3c7818]" : ""}>
+                            <span className={app.status === "applied" ? "text-[#02110c] font-black" : currentIdx > 1 ? "text-[#1a422f]" : ""}>
                               Applied
                             </span>
-                            <span className={app.status === "interviewing" ? "text-[#14281a] font-black" : currentIdx > 2 ? "text-[#3c7818]" : ""}>
+                            <span className={app.status === "interviewing" ? "text-[#02110c] font-black" : currentIdx > 2 ? "text-[#1a422f]" : ""}>
                               Interview
                             </span>
-                            <span className={app.status === "offered" ? "text-[#14281a] font-black" : ""}>
+                            <span className={app.status === "offered" ? "text-[#02110c] font-black" : ""}>
                               Offer
                             </span>
                           </div>
@@ -760,7 +760,7 @@ export default function DashboardPage() {
                         {app.status === "saved" && (
                           <button
                             onClick={() => handleStatusChange(app.id, "applied")}
-                            className="w-full rounded-xl bg-[#eef8e5] hover:bg-[#84d64f] border border-[#cce8be] text-[#14281a] font-black text-xs py-2 px-3 flex items-center justify-center gap-1.5 transition shadow-2xs cursor-pointer"
+                            className="w-full rounded-xl bg-[#f3ebd6]/60 hover:bg-[#1a422f] hover:text-[#f3ebd6] border border-[#1a422f]/20 text-[#02110c] font-black text-xs py-2 px-3 flex items-center justify-center gap-1.5 transition shadow-2xs cursor-pointer"
                           >
                             Advance to Applied <ArrowRight className="w-3.5 h-3.5" />
                           </button>
@@ -768,7 +768,7 @@ export default function DashboardPage() {
                         {app.status === "applied" && (
                           <button
                             onClick={() => handleStatusChange(app.id, "interviewing")}
-                            className="w-full rounded-xl bg-[#eef8e5] hover:bg-[#84d64f] border border-[#cce8be] text-[#14281a] font-black text-xs py-2 px-3 flex items-center justify-center gap-1.5 transition shadow-2xs cursor-pointer"
+                            className="w-full rounded-xl bg-[#f3ebd6]/60 hover:bg-[#1a422f] hover:text-[#f3ebd6] border border-[#1a422f]/20 text-[#02110c] font-black text-xs py-2 px-3 flex items-center justify-center gap-1.5 transition shadow-2xs cursor-pointer"
                           >
                             Advance to Interview <ArrowRight className="w-3.5 h-3.5" />
                           </button>
@@ -776,13 +776,13 @@ export default function DashboardPage() {
                         {app.status === "interviewing" && (
                           <button
                             onClick={() => handleStatusChange(app.id, "offered")}
-                            className="w-full rounded-xl bg-[#84d64f] hover:bg-[#76c245] text-[#14281a] font-black text-xs py-2 px-3 flex items-center justify-center gap-1.5 transition shadow-2xs cursor-pointer"
+                            className="w-full rounded-xl bg-[#1a422f] hover:bg-[#02110c] text-[#f3ebd6] font-black text-xs py-2 px-3 flex items-center justify-center gap-1.5 transition shadow-2xs cursor-pointer"
                           >
                             Advance to Offer 🏆
                           </button>
                         )}
                         {app.status === "offered" && (
-                          <div className="w-full rounded-xl bg-[#eef8e5] border border-[#cce8be] text-[#14281a] font-black text-xs py-2 px-3 text-center">
+                          <div className="w-full rounded-xl bg-[#f3ebd6] border border-[#1a422f]/20 text-[#02110c] font-black text-xs py-2 px-3 text-center">
                             🎉 Offer Received
                           </div>
                         )}
@@ -804,7 +804,7 @@ export default function DashboardPage() {
                                 value={app.status}
                                 onChange={(e) => handleStatusChange(app.id, e.target.value as ApplicationStage)}
                                 title="Change stage manually"
-                                className="appearance-none h-6 rounded-lg border border-neutral-200/90 bg-white hover:bg-[#fbfaf8] hover:border-[#84d64f] pl-2 pr-5 text-[0.68rem] font-bold text-[#55615b] outline-none cursor-pointer shadow-2xs transition"
+                                className="appearance-none h-6 rounded-lg border border-neutral-200/90 bg-white hover:bg-[#fbfaf8] hover:border-[#1a422f] pl-2 pr-5 text-[0.68rem] font-bold text-[#55615b] outline-none cursor-pointer shadow-2xs transition"
                               >
                                 <option value="saved">Saved</option>
                                 <option value="applied">Applied</option>
@@ -879,7 +879,7 @@ export default function DashboardPage() {
                             <select
                               value={app.status}
                               onChange={(e) => handleStatusChange(app.id, e.target.value as ApplicationStage)}
-                              className="appearance-none rounded-xl border border-neutral-200/90 bg-white hover:bg-[#fbfaf8] hover:border-[#84d64f] pl-3 pr-7 py-1.5 text-xs font-bold text-[#14281a] shadow-2xs outline-none cursor-pointer transition focus:border-[#84d64f] focus:ring-2 focus:ring-[#84d64f]/20"
+                              className="appearance-none rounded-xl border border-neutral-200/90 bg-white hover:bg-[#fbfaf8] hover:border-[#1a422f] pl-3 pr-7 py-1.5 text-xs font-bold text-[#14281a] shadow-2xs outline-none cursor-pointer transition focus:border-[#1a422f] focus:ring-2 focus:ring-[#1a422f]/15"
                             >
                               <option value="saved">Saved to Apply</option>
                               <option value="applied">Applied</option>
@@ -893,7 +893,7 @@ export default function DashboardPage() {
 
                         {/* Compensation */}
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="font-bold text-[#14281a] bg-[#eef8e5] border border-[#cce8be] px-2.5 py-1 rounded-lg text-xs inline-block">
+                          <span className="font-bold text-[#02110c] bg-[#f3ebd6]/60 border border-[#1a422f]/20 px-2.5 py-1 rounded-lg text-xs inline-block">
                             {app.stipend_or_salary || "Not specified"}
                           </span>
                         </td>
@@ -901,8 +901,8 @@ export default function DashboardPage() {
                         {/* AI Match */}
                         <td className="px-6 py-4 whitespace-nowrap">
                           {app.match_score ? (
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#84d64f] text-[#14281a] px-3 py-1 text-xs font-black shadow-2xs whitespace-nowrap">
-                              <Sparkles className="w-3 h-3 text-[#14281a]" />
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#1a422f] text-[#f3ebd6] px-3 py-1 text-xs font-black shadow-2xs whitespace-nowrap">
+                              <Sparkles className="w-3 h-3 text-[#f3ebd6]" />
                               {app.match_score}% Match
                             </span>
                           ) : (
@@ -924,7 +924,7 @@ export default function DashboardPage() {
                               href={app.apply_url}
                               target="_blank"
                               rel="noreferrer"
-                              className="inline-flex items-center gap-1 rounded-xl border border-neutral-200 bg-white px-3 py-1.5 text-xs font-bold text-[#14281a] hover:bg-[#eef8e5] hover:border-[#84d64f] transition shadow-2xs"
+                              className="inline-flex items-center gap-1 rounded-xl border border-neutral-200 bg-white px-3 py-1.5 text-xs font-bold text-[#14281a] hover:bg-[#f3ebd6]/60 hover:border-[#1a422f] transition shadow-2xs"
                             >
                               Portal <ExternalLink className="w-3 h-3" />
                             </a>
@@ -952,10 +952,10 @@ export default function DashboardPage() {
             <div className="w-full max-w-lg rounded-[28px] border border-neutral-200/90 bg-white p-6 sm:p-8 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
               <div className="flex items-center justify-between mb-6 pb-3 border-b border-neutral-100">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-[#eef8e5] text-[#3c7818] flex items-center justify-center font-black">
+                  <div className="w-8 h-8 rounded-xl bg-[#f3ebd6] text-[#1a422f] flex items-center justify-center font-black">
                     <Plus className="w-4 h-4" />
                   </div>
-                  <h3 className="text-lg font-black text-[#121816]">Log an Application</h3>
+                  <h3 className="text-lg font-black text-[#02110c]">Log an Application</h3>
                 </div>
                 <button
                   onClick={() => setIsAddModalOpen(false)}
@@ -975,7 +975,7 @@ export default function DashboardPage() {
                       value={newCompany}
                       onChange={(e) => setNewCompany(e.target.value)}
                       placeholder="e.g. Netflix, Vercel"
-                      className="w-full rounded-xl border border-neutral-300 px-3.5 py-2.5 text-xs text-[#121816] outline-none focus:border-[#84d64f]"
+                      className="w-full rounded-xl border border-neutral-300 px-3.5 py-2.5 text-xs text-[#121816] outline-none focus:border-[#1a422f]"
                     />
                   </div>
                   <div>
@@ -984,7 +984,7 @@ export default function DashboardPage() {
                       <select
                         value={newStatus}
                         onChange={(e) => setNewStatus(e.target.value as ApplicationStage)}
-                        className="w-full appearance-none rounded-xl border border-neutral-300 bg-white hover:bg-[#fbfaf8] hover:border-neutral-400 pl-3.5 pr-8 py-2.5 text-xs text-[#121816] font-bold outline-none focus:border-[#84d64f] focus:ring-2 focus:ring-[#84d64f]/20 cursor-pointer shadow-2xs transition"
+                        className="w-full appearance-none rounded-xl border border-neutral-300 bg-white hover:bg-[#fbfaf8] hover:border-neutral-400 pl-3.5 pr-8 py-2.5 text-xs text-[#121816] font-bold outline-none focus:border-[#1a422f] focus:ring-2 focus:ring-[#1a422f]/15 cursor-pointer shadow-2xs transition"
                       >
                         <option value="saved">Saved to Apply</option>
                         <option value="applied">Applied</option>
@@ -1004,7 +1004,7 @@ export default function DashboardPage() {
                     value={newTitle}
                     onChange={(e) => setNewTitle(e.target.value)}
                     placeholder="e.g. Backend Software Engineer"
-                    className="w-full rounded-xl border border-neutral-300 px-3.5 py-2.5 text-xs text-[#121816] outline-none focus:border-[#84d64f]"
+                    className="w-full rounded-xl border border-neutral-300 px-3.5 py-2.5 text-xs text-[#121816] outline-none focus:border-[#1a422f]"
                   />
                 </div>
 
@@ -1016,7 +1016,7 @@ export default function DashboardPage() {
                       value={newLocation}
                       onChange={(e) => setNewLocation(e.target.value)}
                       placeholder="e.g. San Francisco / Remote"
-                      className="w-full rounded-xl border border-neutral-300 px-3.5 py-2.5 text-xs text-[#121816] outline-none focus:border-[#84d64f]"
+                      className="w-full rounded-xl border border-neutral-300 px-3.5 py-2.5 text-xs text-[#121816] outline-none focus:border-[#1a422f]"
                     />
                   </div>
                   <div>
@@ -1026,7 +1026,7 @@ export default function DashboardPage() {
                       value={newSalary}
                       onChange={(e) => setNewSalary(e.target.value)}
                       placeholder="e.g. $160K / Year"
-                      className="w-full rounded-xl border border-neutral-300 px-3.5 py-2.5 text-xs text-[#121816] outline-none focus:border-[#84d64f]"
+                      className="w-full rounded-xl border border-neutral-300 px-3.5 py-2.5 text-xs text-[#121816] outline-none focus:border-[#1a422f]"
                     />
                   </div>
                 </div>
@@ -1038,7 +1038,7 @@ export default function DashboardPage() {
                     value={newApplyUrl}
                     onChange={(e) => setNewApplyUrl(e.target.value)}
                     placeholder="https://company.com/careers/role"
-                    className="w-full rounded-xl border border-neutral-300 px-3.5 py-2.5 text-xs text-[#121816] outline-none focus:border-[#84d64f]"
+                    className="w-full rounded-xl border border-neutral-300 px-3.5 py-2.5 text-xs text-[#121816] outline-none focus:border-[#1a422f]"
                   />
                 </div>
 
@@ -1049,7 +1049,7 @@ export default function DashboardPage() {
                     value={newNotes}
                     onChange={(e) => setNewNotes(e.target.value)}
                     placeholder="e.g. Referral from Jane, OA deadline in 5 days..."
-                    className="w-full rounded-xl border border-neutral-300 p-3 text-xs text-[#121816] outline-none focus:border-[#84d64f] resize-none"
+                    className="w-full rounded-xl border border-neutral-300 p-3 text-xs text-[#121816] outline-none focus:border-[#1a422f] resize-none"
                   />
                 </div>
 
@@ -1063,7 +1063,7 @@ export default function DashboardPage() {
                   </button>
                   <button
                     type="submit"
-                    className="rounded-full bg-[#84d64f] hover:bg-[#75c73d] px-5 py-2.5 text-xs font-heading font-bold text-[#14281a] shadow-md shadow-[#84d64f]/20 transition cursor-pointer"
+                    className="rounded-full bg-[#1a422f] hover:bg-[#02110c] px-5 py-2.5 text-xs font-heading font-bold text-[#f3ebd6] shadow-md shadow-[#1a422f]/20 transition cursor-pointer"
                   >
                     Add to Checklist
                   </button>

@@ -12,11 +12,14 @@ CRITICAL PARSING RULES:
 2. TITLE: Extract the clean official title (e.g. 'Software Engineering Intern, PhD (Summer 2027)'). Never include URLs or raw UI tags in the title.
 3. COMPANY: Detect the accurate company name (e.g. 'Google').
 4. LOCATION: Detect primary location or concise summary (e.g. 'United States (Multiple Locations)' or 'Mountain View, CA' or 'Remote'). Keep it short and concise (under 40 characters). Do NOT dump long lists of 10+ cities.
-5. EMPLOYMENT TYPE: 'Internship' | 'Full time' | 'Part time' | 'Contract' | null.
+5. EMPLOYMENT TYPE: 'Internship' | 'Full-time' | 'Part-time' | 'Contract' | null.
+   - Set to 'Internship' ONLY if the official job title explicitly contains 'Intern', 'Internship', or 'Co-op', or if the role explicitly targets current students for temporary summer/fall/spring terms.
+   - Professional, permanent roles, managers, leads, senior positions, or roles requiring 1+ years experience or standard annual salary ($50k+) are ALWAYS 'Full-time'.
+   - NEVER classify as 'Internship' just because the description mentions 'mentoring interns', 'internal teams', 'international', or 'interview'.
 6. SALARY / STIPEND: Extract exact figures or range with currency (e.g. '$118,000 - $157,000 (USD)'). If not mentioned, set to null.
 7. DEADLINE: Extract exact deadline if mentioned (e.g. '2027-02-26' or 'February 26, 2027'). If unstated, set to null.
 8. ELIGIBILITY: Explicit degree level, graduation criteria, or work authorization (e.g. 'Pursuing a PhD program in Computer Science or a related technical field'). If unstated, set to null.
-9. EXPERIENCE LEVEL: 'Intern' | 'PhD Intern' | 'New Grad' | 'Entry Level' | 'Mid Level' | 'Senior' | null.
+9. EXPERIENCE LEVEL: 'Intern' | 'PhD Intern' | 'New Grad' | 'Entry Level' | 'Mid Level' | 'Senior' | null. If the title or requirements indicate 5+ years experience, Manager, Lead, Staff, or Director, classify as 'Senior'.
 10. SKILLS REQUIRED: Extract all technical skills, programming languages, and domains explicitly mentioned (e.g. ['C', 'C++', 'Java', 'Python', 'Algorithms', 'Distributed Systems', 'Machine Learning', 'Data Structures']).
 11. SUMMARY: A concise, human-readable 2-3 sentence overview explaining what the candidate will work on and why this role is exciting.
 12. RESPONSIBILITIES: Extract 4-6 clean, active bullet points of day-to-day duties.
@@ -43,6 +46,33 @@ Output MUST be valid JSON adhering strictly to:
   "clean_description": "string | null"
 }
 `;
+
+export function sanitizeEmploymentType(title: string, employmentType: string | null | undefined, rawText?: string): string {
+  const t = (title || "").toLowerCase();
+  const isExplicitInternTitle = /\b(intern|internship|co-op|coop|apprentice|fellow|fellowship)\b/i.test(t);
+  const isSeniorOrManager = /\b(manager|lead|senior|sr\.?|staff|principal|director|head|vp|vice president|chief|architect|specialist|officer|supervisor)\b/i.test(t);
+
+  if (isExplicitInternTitle) {
+    return "Internship";
+  }
+
+  if (isSeniorOrManager) {
+    return "Full-time";
+  }
+
+  if (employmentType) {
+    const raw = employmentType.toLowerCase().trim();
+    if (raw.includes("intern") && !isExplicitInternTitle) {
+      return "Full-time";
+    }
+    if (raw.includes("intern")) return "Internship";
+    if (raw.includes("full")) return "Full-time";
+    if (raw.includes("part")) return "Part-time";
+    if (raw.includes("contract")) return "Contract";
+  }
+
+  return "Full-time";
+}
 
 /**
  * High precision local fallback extractor for when no external LLM API key is configured or offline.
@@ -93,13 +123,21 @@ export function localRuleBasedExtract(rawText: string): {
 
   // 3. Employment Type (strict, only if stated)
   let employmentType: string | null = null;
-  const empMatch = rawText.match(/\b(internship|intern|full[-\s]time|part[-\s]time|contract|co-op)\b/i);
-  if (empMatch) {
-    const raw = empMatch[0].toLowerCase();
-    if (raw.includes("intern")) employmentType = "Internship";
-    else if (raw.includes("full")) employmentType = "Full time";
-    else if (raw.includes("part")) employmentType = "Part time";
-    else if (raw.includes("contract")) employmentType = "Contract";
+  const isTitleIntern = /\b(intern|internship|co-op|coop|apprentice|fellow)\b/i.test(title);
+  const isTitleSeniorOrManager = /\b(manager|lead|senior|sr\.?|staff|principal|director|head|vp|chief|architect)\b/i.test(title);
+
+  if (isTitleIntern) {
+    employmentType = "Internship";
+  } else if (isTitleSeniorOrManager) {
+    employmentType = "Full-time";
+  } else if (/\bpart[-\s]?time\b/i.test(rawText)) {
+    employmentType = "Part-time";
+  } else if (/\bcontract(?:or)?\b/i.test(rawText)) {
+    employmentType = "Contract";
+  } else if (/\bfull[-\s]?time\b/i.test(rawText)) {
+    employmentType = "Full-time";
+  } else {
+    employmentType = "Full-time";
   }
 
   // 4. Eligibility (strict, only if stated)
@@ -308,11 +346,17 @@ export async function extractJobFromRawText(
   const company = extractedData.company || "Unknown Company";
   const location = extractedData.location || "Remote / Unspecified";
 
+  const finalEmploymentType = sanitizeEmploymentType(
+    title,
+    extractedData.employment_type,
+    normalizedRaw
+  );
+
   const anomaly = inspectListingForAnomalies({
     title,
     company,
     location,
-    employment_type: extractedData.employment_type || null,
+    employment_type: finalEmploymentType,
     eligibility: extractedData.eligibility || null,
     stipend_or_salary: extractedData.stipend_or_salary || null,
     deadline: extractedData.deadline || null,
@@ -339,7 +383,7 @@ export async function extractJobFromRawText(
     title,
     company,
     location,
-    employment_type: extractedData.employment_type || null,
+    employment_type: finalEmploymentType,
     eligibility: extractedData.eligibility || null,
     stipend_or_salary: extractedData.stipend_or_salary || null,
     deadline: extractedData.deadline || null,
@@ -385,12 +429,18 @@ export async function parseScrapedListingWithAi(scraped: NormalizedListing): Pro
 
   try {
     const aiExtracted = await extractJobFromRawText(fullPromptText, "scraped");
+    const finalTitle = aiExtracted.title || scraped.title;
+    const finalEmpType = sanitizeEmploymentType(
+      finalTitle,
+      aiExtracted.employment_type || scraped.employment_type,
+      fullPromptText
+    );
 
     const anomaly = inspectListingForAnomalies({
-      title: aiExtracted.title || scraped.title,
+      title: finalTitle,
       company: scraped.company || aiExtracted.company,
       location: aiExtracted.location || scraped.location,
-      employment_type: aiExtracted.employment_type || scraped.employment_type,
+      employment_type: finalEmpType,
       eligibility: aiExtracted.eligibility || scraped.eligibility,
       stipend_or_salary: aiExtracted.stipend_or_salary || scraped.stipend_or_salary,
       deadline: aiExtracted.deadline || scraped.deadline,
@@ -406,10 +456,10 @@ export async function parseScrapedListingWithAi(scraped: NormalizedListing): Pro
     // Merge AI extracted structured data with the original scraped identifiers
     return {
       ...scraped,
-      title: aiExtracted.title || scraped.title,
+      title: finalTitle,
       company: scraped.company || aiExtracted.company,
       location: aiExtracted.location || scraped.location,
-      employment_type: aiExtracted.employment_type || scraped.employment_type,
+      employment_type: finalEmpType,
       eligibility: aiExtracted.eligibility || scraped.eligibility,
       stipend_or_salary: aiExtracted.stipend_or_salary || scraped.stipend_or_salary,
       deadline: aiExtracted.deadline || scraped.deadline,

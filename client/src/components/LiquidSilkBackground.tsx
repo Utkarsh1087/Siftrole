@@ -5,11 +5,13 @@ import React, { useEffect, useRef } from "react";
 interface LiquidSilkBackgroundProps {
   imageSrc?: string;
   className?: string;
+  nativeOnly?: boolean;
 }
 
 export function LiquidSilkBackground({
-  imageSrc = "/images/emerald_silk_horizontal.jpg",
+  imageSrc = "/images/auth_fern_frame.jpg",
   className = "",
+  nativeOnly = false,
 }: LiquidSilkBackgroundProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -20,7 +22,7 @@ export function LiquidSilkBackground({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // Try loading threejs-components LiquidBackground first
+    // Load original threejs-components LiquidBackground
     async function loadThreeJsLiquid() {
       try {
         const dynamicImport = new Function("url", "return import(url)");
@@ -34,17 +36,34 @@ export function LiquidSilkBackground({
         const app = LiquidBackground(canvasRef.current);
         appRef.current = app;
 
-        // Use requested image or emerald silk
-        app.loadImage(imageSrc || "https://assets.codepen.io/33787/liquid.webp");
+        app.loadImage(imageSrc || "/images/auth_fern_frame.jpg");
+
         if (app.liquidPlane) {
           if (app.liquidPlane.material) {
-            app.liquidPlane.material.metalness = 0.75;
-            app.liquidPlane.material.roughness = 0.25;
+            // Low metalness/roughness so specular highlights don't bloom white
+            app.liquidPlane.material.metalness = 0.05;
+            app.liquidPlane.material.roughness = 0.85;
+            app.liquidPlane.material.envMapIntensity = 0.2;
           }
           if (app.liquidPlane.uniforms && app.liquidPlane.uniforms.displacementScale) {
             app.liquidPlane.uniforms.displacementScale.value = 5;
           }
         }
+
+        // Dim all lights in the scene so the whitish spotlight is removed
+        if (app.scene) {
+          app.scene.traverse((obj: any) => {
+            if (obj.isLight) {
+              obj.intensity = obj.intensity * 0.12;
+            }
+          });
+        }
+        // Also try renderer tone mapping if accessible
+        if (app.renderer) {
+          app.renderer.toneMapping = 0; // NoToneMapping
+          app.renderer.toneMappingExposure = 0.85;
+        }
+
         if (typeof app.setRain === "function") {
           app.setRain(false);
         }
@@ -54,7 +73,7 @@ export function LiquidSilkBackground({
       }
     }
 
-    // High-performance hardware-accelerated fluid wave simulation fallback
+    // Hardware-accelerated fluid wave fallback
     function initNativeFluidEngine() {
       const cvs = canvasRef.current;
       if (!cvs) return;
@@ -63,7 +82,7 @@ export function LiquidSilkBackground({
 
       const img = new Image();
       img.crossOrigin = "anonymous";
-      img.src = imageSrc || "https://assets.codepen.io/33787/liquid.webp";
+      img.src = imageSrc || "/images/auth_fern_frame.jpg";
 
       let imgLoaded = false;
       img.onload = () => {
@@ -146,7 +165,6 @@ export function LiquidSilkBackground({
         buffer2 = temp;
       }
 
-      // Pre-rendered offscreen background texture
       const offscreen = document.createElement("canvas");
       let offCtx: CanvasRenderingContext2D | null = null;
 
@@ -169,64 +187,45 @@ export function LiquidSilkBackground({
 
         if (offCtx && imgLoaded) {
           offCtx.drawImage(img, 0, 0, w, h);
-        }
+          ctx.clearRect(0, 0, w, h);
 
-        ctx.clearRect(0, 0, w, h);
-        if (offCtx && imgLoaded) {
           try {
             const srcData = offCtx.getImageData(0, 0, w, h);
-            const dstData = ctx.createImageData(w, h);
+            const dstData = new ImageData(new Uint8ClampedArray(srcData.data), w, h);
             const src = srcData.data;
             const dst = dstData.data;
-
             const scaleX = simWidth / w;
             const scaleY = simHeight / h;
+            const sampleWave = (x: number, y: number) => {
+              const x0 = Math.max(0, Math.min(simWidth - 1, Math.floor(x)));
+              const y0 = Math.max(0, Math.min(simHeight - 1, Math.floor(y)));
+              const x1 = Math.min(simWidth - 1, x0 + 1);
+              const y1 = Math.min(simHeight - 1, y0 + 1);
+              const xFraction = x - x0;
+              const yFraction = y - y0;
+              const top = buffer1[y0 * simWidth + x0] * (1 - xFraction) +
+                buffer1[y0 * simWidth + x1] * xFraction;
+              const bottom = buffer1[y1 * simWidth + x0] * (1 - xFraction) +
+                buffer1[y1 * simWidth + x1] * xFraction;
+              return top * (1 - yFraction) + bottom * yFraction;
+            };
 
-            for (let y = 0; y < h; y += 2) {
-              const simY = Math.min(simHeight - 2, Math.floor(y * scaleY));
-              for (let x = 0; x < w; x += 2) {
-                const simX = Math.min(simWidth - 2, Math.floor(x * scaleX));
-                const sIdx = simY * simWidth + simX;
-
-                // Surface normal gradient
-                const dx = (buffer1[sIdx + 1] - buffer1[sIdx - 1]) * 1.8;
-                const dy = (buffer1[sIdx + simWidth] - buffer1[sIdx - simWidth]) * 1.8;
-
+            for (let y = 0; y < h; y++) {
+              const simY = Math.min(simHeight - 2, y * scaleY);
+              for (let x = 0; x < w; x++) {
+                const simX = Math.min(simWidth - 2, x * scaleX);
+                const dx = (sampleWave(simX + 1, simY) - sampleWave(simX - 1, simY)) * 1.8;
+                const dy = (sampleWave(simX, simY + 1) - sampleWave(simX, simY - 1)) * 1.8;
                 const refrX = Math.max(0, Math.min(w - 1, Math.round(x + dx)));
                 const refrY = Math.max(0, Math.min(h - 1, Math.round(y + dy)));
-
                 const srcP = (refrY * w + refrX) * 4;
                 const dstP = (y * w + x) * 4;
-
-                // Specular reflection (metalness 0.75, roughness 0.25)
                 const spec = Math.max(0, (dx + dy) * 0.65);
 
-                const r = Math.min(255, src[srcP] + spec * 22);
-                const g = Math.min(255, src[srcP + 1] + spec * 38);
-                const b = Math.min(255, src[srcP + 2] + spec * 28);
-                const a = src[srcP + 3] || 255;
-
-                // 2x2 pixel write for 60fps performance
-                dst[dstP] = r;
-                dst[dstP + 1] = g;
-                dst[dstP + 2] = b;
-                dst[dstP + 3] = a;
-
-                dst[dstP + 4] = r;
-                dst[dstP + 5] = g;
-                dst[dstP + 6] = b;
-                dst[dstP + 7] = a;
-
-                const nextRowP = dstP + w * 4;
-                dst[nextRowP] = r;
-                dst[nextRowP + 1] = g;
-                dst[nextRowP + 2] = b;
-                dst[nextRowP + 3] = a;
-
-                dst[nextRowP + 4] = r;
-                dst[nextRowP + 5] = g;
-                dst[nextRowP + 6] = b;
-                dst[nextRowP + 7] = a;
+                dst[dstP] = Math.min(255, src[srcP] + spec * 22);
+                dst[dstP + 1] = Math.min(255, src[srcP + 1] + spec * 38);
+                dst[dstP + 2] = Math.min(255, src[srcP + 2] + spec * 28);
+                dst[dstP + 3] = src[srcP + 3] || 255;
               }
             }
             ctx.putImageData(dstData, 0, 0);
@@ -255,11 +254,15 @@ export function LiquidSilkBackground({
 
     let cleanupNative: (() => void) | undefined;
 
-    loadThreeJsLiquid().then((success) => {
-      if (!success && isMounted) {
-        cleanupNative = initNativeFluidEngine();
-      }
-    });
+    if (nativeOnly) {
+      cleanupNative = initNativeFluidEngine();
+    } else {
+      loadThreeJsLiquid().then((success) => {
+        if (!success && isMounted) {
+          cleanupNative = initNativeFluidEngine();
+        }
+      });
+    }
 
     return () => {
       isMounted = false;
@@ -272,7 +275,7 @@ export function LiquidSilkBackground({
         }
       }
     };
-  }, [imageSrc]);
+  }, [imageSrc, nativeOnly]);
 
   return (
     <div
@@ -281,11 +284,7 @@ export function LiquidSilkBackground({
     >
       <canvas
         ref={canvasRef}
-        id="canvas"
         className="w-full h-full object-cover block will-change-transform"
-        style={{
-          filter: "brightness(0.85) contrast(1.1)",
-        }}
       />
     </div>
   );

@@ -10,7 +10,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 function AnimatedCheckmark() {
   return (
-    <div className="relative inline-flex items-center justify-center h-14 w-14 rounded-full bg-[#eef8e5] text-[#3c7818] mb-4 animate-[popIn_0.4s_cubic-bezier(0.175,0.885,0.32,1.275)_forwards]">
+    <div className="relative inline-flex items-center justify-center h-14 w-14 rounded-full bg-[#008561]/10 text-[#008561] mb-4 animate-[popIn_0.4s_cubic-bezier(0.175,0.885,0.32,1.275)_forwards]">
       <svg
         className="w-8 h-8"
         viewBox="0 0 48 48"
@@ -22,7 +22,7 @@ function AnimatedCheckmark() {
           cx="24"
           cy="24"
           r="20"
-          stroke="#3c7818"
+          stroke="#008561"
           strokeWidth="3.5"
           strokeLinecap="round"
           className="animate-[drawCircle_0.5s_ease-out_forwards]"
@@ -34,7 +34,7 @@ function AnimatedCheckmark() {
         {/* Checkmark Path Animation */}
         <path
           d="M15 24.5L21.5 31L33 18"
-          stroke="#3c7818"
+          stroke="#008561"
           strokeWidth="3.5"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -70,7 +70,7 @@ function VerifyNewsletterContent() {
         gravity: 1.1,
         scalar: 0.9,
         ticks: 200,
-        colors: ["#3c7818", "#84d64f", "#121816", "#22c55e", "#166534"],
+        colors: ["#008561", "#02110c", "#fff6eb"],
         disableForReducedMotion: true,
       });
     } catch {
@@ -127,18 +127,18 @@ function VerifyNewsletterContent() {
   }, [token, email, otp]);
 
   return (
-    <main className="min-h-screen bg-neutral-50 text-neutral-900 flex flex-col items-center justify-center p-4">
-      <div className="max-w-md w-full rounded-2xl border border-neutral-200 bg-white p-8 shadow-xl text-center transition-all duration-300">
+    <main className="min-h-screen bg-[#fdfcf9] bg-canvas-white text-[#02110c] flex flex-col items-center justify-center p-4">
+      <div className="max-w-md w-full rounded-2xl border border-[#eedfc9] bg-white p-8 shadow-xl text-center transition-all duration-300">
         {/* Brand Logo */}
-        <div className="inline-flex items-center gap-1.5 font-black text-2xl sm:text-[28px] tracking-[-0.03em] text-neutral-900 mb-6">
-          <span>Sift<span className="text-[#3c7818]">role</span></span>
+        <div className="inline-flex items-center gap-1.5 font-black text-2xl sm:text-[28px] tracking-[-0.03em] text-[#02110c] mb-6">
+          <span>Sift<span className="text-[#008561]">role</span></span>
         </div>
 
         {status === "loading" && (
           <div className="py-6 space-y-4">
-            <div className="h-9 w-9 rounded-full border-2 border-neutral-900 border-t-transparent animate-spin mx-auto" />
-            <h2 className="text-xl font-semibold text-neutral-900">Confirming subscription</h2>
-            <p className="text-sm text-neutral-500">
+            <div className="h-9 w-9 rounded-full border-2 border-[#008561] border-t-transparent animate-spin mx-auto" />
+            <h2 className="text-xl font-pochaevsk font-bold text-[#02110c]">Confirming subscription</h2>
+            <p className="text-sm text-[#55615b]">
               Please wait while we verify your email address...
             </p>
           </div>
@@ -149,32 +149,32 @@ function VerifyNewsletterContent() {
             {/* Animated Checkmark (No Glow) */}
             <AnimatedCheckmark />
             
-            <h2 className="text-2xl font-bold tracking-tight text-neutral-900">
+            <h2 className="text-2xl font-pochaevsk font-bold tracking-tight text-[#02110c]">
               Subscription Verified!
             </h2>
             
             {copied && (
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-neutral-100 border border-neutral-200 px-3 py-1 text-xs font-medium text-neutral-800">
-                <Check className="w-3.5 h-3.5 text-emerald-600" />
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-[#fff6eb] border border-[#eedfc9] px-3 py-1 text-xs font-medium text-[#02110c]">
+                <Check className="w-3.5 h-3.5 text-[#008561]" />
                 <span>Code <strong>{otp}</strong> copied to clipboard</span>
               </div>
             )}
 
-            <p className="text-sm text-neutral-600 leading-relaxed px-2">
+            <p className="text-sm text-[#55615b] leading-relaxed px-2">
               {message}
             </p>
 
             <div className="pt-4 flex flex-col gap-2.5">
               <Link
                 href="/jobs"
-                className="w-full rounded-xl bg-neutral-900 hover:bg-black text-white py-3 text-sm font-medium transition active:scale-[0.99] flex items-center justify-center gap-2 shadow-xs"
+                className="w-full rounded-xl bg-[#008561] hover:bg-[#006e50] text-white py-3 text-sm font-medium transition active:scale-[0.99] flex items-center justify-center gap-2 shadow-xs"
               >
                 <span>Browse Verified Tech Jobs</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
                 href="/"
-                className="w-full rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-700 py-3 text-sm font-medium transition active:scale-[0.99]"
+                className="w-full rounded-xl border border-[#eedfc9] bg-[#fff6eb] hover:bg-white text-[#02110c] py-3 text-sm font-medium transition active:scale-[0.99]"
               >
                 Return to Home
               </Link>

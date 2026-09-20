@@ -117,7 +117,7 @@ export function FisheyeWordmark({
       {isHovered && (
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute rounded-full border-2 border-[#84d64f]/80 bg-[#84d64f]/10 backdrop-blur-[0.5px] shadow-[inset_0_0_30px_rgba(132,214,79,0.25),0_12px_40px_rgba(20,40,26,0.18)] will-change-transform transition-transform duration-75"
+          className="pointer-events-none absolute rounded-full border-2 border-[#1a422f]/80 bg-[#1a422f]/10 backdrop-blur-[0.5px] shadow-[inset_0_0_30px_rgba(26,66,47,0.2),0_12px_40px_rgba(2,17,12,0.18)] will-change-transform transition-transform duration-75"
           style={{
             width: `${lensSize * 2}px`,
             height: `${lensSize * 2}px`,

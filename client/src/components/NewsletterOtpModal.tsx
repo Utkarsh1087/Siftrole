@@ -172,12 +172,12 @@ export function NewsletterOtpModal({
         {!isVerified ? (
           <div>
             {/* Minimal Icon */}
-            <div className="h-11 w-11 rounded-2xl bg-neutral-100 text-neutral-900 flex items-center justify-center mb-4">
+            <div className="h-11 w-11 rounded-2xl bg-[#008561]/10 text-[#008561] flex items-center justify-center mb-4">
               <Mail className="w-5 h-5" />
             </div>
 
             {/* Title & Description */}
-            <h3 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">
+            <h3 className="text-xl sm:text-2xl font-pochaevsk font-bold tracking-tight text-neutral-900">
               Check your inbox
             </h3>
             <p className="mt-1.5 text-sm text-neutral-500 leading-normal">
@@ -203,7 +203,7 @@ export function NewsletterOtpModal({
                     value={digit}
                     onChange={(e) => handleChange(i, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(i, e)}
-                    className="w-11 h-13 sm:w-12 sm:h-14 text-center text-xl font-mono font-semibold rounded-xl bg-neutral-50 border border-neutral-200 text-neutral-900 focus:bg-white focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 outline-none transition shadow-xs"
+                    className="w-11 h-13 sm:w-12 sm:h-14 text-center text-xl font-mono font-semibold rounded-xl bg-[#fff6eb] border border-[#eedfc9] text-neutral-900 focus:bg-white focus:border-[#008561] focus:ring-1 focus:ring-[#008561] outline-none transition shadow-xs"
                   />
                 ))}
               </div>
@@ -217,7 +217,7 @@ export function NewsletterOtpModal({
               )}
 
               {resendMsg && (
-                <div className="mt-3 flex items-center gap-2 text-xs font-medium text-emerald-600">
+                <div className="mt-3 flex items-center gap-2 text-xs font-medium text-[#008561]">
                   <CheckCircle2 className="w-4 h-4 shrink-0" />
                   <span>{resendMsg}</span>
                 </div>
@@ -228,7 +228,7 @@ export function NewsletterOtpModal({
             <button
               onClick={() => handleVerifyCode()}
               disabled={isVerifying || otp.join("").length !== 6}
-              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-neutral-900 hover:bg-black text-white py-3 text-sm font-medium transition active:scale-[0.99] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-xs"
+              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#008561] hover:bg-[#006e50] text-white py-3 text-sm font-medium transition active:scale-[0.99] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-xs"
             >
               {isVerifying ? (
                 <>
@@ -254,7 +254,7 @@ export function NewsletterOtpModal({
                 <button
                   onClick={handleResend}
                   disabled={isResending}
-                  className="font-medium text-neutral-900 hover:underline inline-flex items-center gap-1 cursor-pointer"
+                  className="font-medium text-[#008561] hover:underline inline-flex items-center gap-1 cursor-pointer"
                 >
                   <RefreshCw className={`w-3 h-3 ${isResending ? "animate-spin" : ""}`} />
                   <span>Resend code</span>
@@ -264,10 +264,10 @@ export function NewsletterOtpModal({
           </div>
         ) : (
           <div className="py-6 text-center animate-in zoom-in-95 duration-200">
-            <div className="h-12 w-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3">
+            <div className="h-12 w-12 rounded-full bg-[#008561]/10 text-[#008561] flex items-center justify-center mx-auto mb-3">
               <CheckCircle2 className="w-6 h-6" />
             </div>
-            <h3 className="text-xl font-semibold text-neutral-900">Email Verified</h3>
+            <h3 className="text-xl font-pochaevsk font-bold text-neutral-900">Email Verified</h3>
             <p className="text-sm text-neutral-500 mt-1 max-w-xs mx-auto">
               You're all set! Job alert digests will now arrive directly in your inbox.
             </p>

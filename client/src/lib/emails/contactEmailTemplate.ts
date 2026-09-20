@@ -36,7 +36,7 @@ export function renderContactEmailHtml({
                 <tr>
                   <td style="vertical-align: middle;">
                     <span style="font-size: 24px; font-weight: 900; letter-spacing: -0.04em; color: #121816; font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-                      Sift<span style="color: #3c7818;">role</span>
+                      Sift<span style="color: #1a422f;">role</span>
                     </span>
                   </td>
                   <td style="vertical-align: middle; padding-left: 12px;">

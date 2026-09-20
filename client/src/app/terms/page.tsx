@@ -19,27 +19,27 @@ import {
 
 export default function TermsPage() {
   return (
-    <main className="min-h-screen bg-[#f8f7f5] text-[#121816] font-sans antialiased py-12 px-4 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-[#fdfcf9] bg-canvas-white text-[#02110c] font-sans antialiased py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Navigation Header */}
         <div className="flex items-center justify-between">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 text-xs font-bold text-[#14281a] hover:text-[#3c7818] transition"
+            className="inline-flex items-center gap-2 text-xs font-bold text-[#02110c] hover:text-[#008561] transition"
           >
-            <ArrowLeft className="w-4 h-4" /> Back to Siftrole
+            <ArrowLeft className="w-4 h-4 text-[#008561]" /> Back to Siftrole
           </Link>
-          <span className="rounded-full bg-[#eef8e5] text-[#3c7818] border border-[#cce8be] px-3 py-1 text-[0.7rem] font-extrabold uppercase tracking-wider">
+          <span className="rounded-full bg-[#008561]/10 text-[#008561] border border-[#008561]/20 px-3 py-1 text-[0.7rem] font-extrabold uppercase tracking-wider">
             Official Policy
           </span>
         </div>
 
         {/* Page Hero Header */}
         <div>
-          <span className="text-[0.85rem] font-extrabold uppercase tracking-widest text-[#3c7818]">
+          <span className="text-[0.85rem] font-extrabold uppercase tracking-widest text-[#008561]">
             Legal Agreements & Community Rules
           </span>
-          <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-[#121816] mt-2">
+          <h1 className="text-3xl sm:text-5xl font-pochaevsk font-bold tracking-tight text-[#02110c] mt-2">
             Terms of Use
           </h1>
           <p className="text-sm sm:text-base text-[#55615b] mt-3 leading-relaxed max-w-2xl">
@@ -48,34 +48,34 @@ export default function TermsPage() {
         </div>
 
         {/* Highlight Card: Core Commitment */}
-        <div className="rounded-3xl bg-[#14281a] text-white p-6 sm:p-8 border border-[#14281a] shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        <div className="rounded-3xl bg-[#02110c] text-white p-6 sm:p-8 border border-[#008561]/50 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <div className="space-y-1 max-w-xl">
-            <div className="flex items-center gap-2 text-[#84d64f] text-xs font-extrabold uppercase tracking-wider">
-              <ShieldCheck className="w-4 h-4" /> Honest & Transparent Platform
+            <div className="flex items-center gap-2 text-[#fff6eb] text-xs font-extrabold uppercase tracking-wider">
+              <ShieldCheck className="w-4 h-4 text-[#008561]" /> Honest & Transparent Platform
             </div>
-            <h3 className="text-lg sm:text-xl font-bold text-white">
+            <h3 className="text-lg sm:text-xl font-pochaevsk font-bold text-white">
               Built for legitimate applicants, students, and engineers
             </h3>
-            <p className="text-xs sm:text-sm text-[#eef8e5]/80 leading-relaxed">
+            <p className="text-xs sm:text-sm text-[#fff6eb]/80 leading-relaxed">
               Siftrole is committed to maintaining a clean, zero-spam, verified environment connecting job seekers with official career portals.
             </p>
           </div>
           <div className="rounded-2xl bg-white/10 border border-white/20 px-4 py-3 text-center shrink-0">
-            <span className="block text-[0.7rem] uppercase tracking-wider text-[#84d64f] font-bold">Effective Date</span>
+            <span className="block text-[0.7rem] uppercase tracking-wider text-[#fff6eb] font-bold">Effective Date</span>
             <span className="text-xs font-extrabold text-white">September 2026</span>
           </div>
         </div>
 
         {/* Main Terms Sections */}
-        <div className="bg-white rounded-[32px] p-6 sm:p-10 border border-neutral-200/80 shadow-xs space-y-10 text-xs sm:text-sm text-[#44504b] leading-relaxed">
+        <div className="bg-white rounded-[32px] p-6 sm:p-10 border border-[#eedfc9] shadow-xs space-y-10 text-xs sm:text-sm text-[#44504b] leading-relaxed">
           
           {/* Section 1 */}
           <section className="space-y-3">
-            <div className="flex items-center gap-2.5 text-[#14281a]">
-              <div className="h-7 w-7 rounded-lg bg-[#eef8e5] text-[#3c7818] flex items-center justify-center font-black text-xs">
+            <div className="flex items-center gap-2.5 text-[#02110c]">
+              <div className="h-7 w-7 rounded-lg bg-[#008561]/10 text-[#008561] flex items-center justify-center font-bold text-xs border border-[#008561]/20">
                 01
               </div>
-              <h2 className="text-base sm:text-lg font-black text-[#121816]">
+              <h2 className="text-base sm:text-lg font-pochaevsk font-bold text-[#02110c]">
                 Acceptance of Terms and Eligibility
               </h2>
             </div>
@@ -85,12 +85,12 @@ export default function TermsPage() {
           </section>
 
           {/* Section 2 */}
-          <section className="space-y-3 pt-6 border-t border-neutral-100">
-            <div className="flex items-center gap-2.5 text-[#14281a]">
-              <div className="h-7 w-7 rounded-lg bg-[#eef8e5] text-[#3c7818] flex items-center justify-center font-black text-xs">
+          <section className="space-y-3 pt-6 border-t border-[#eedfc9]">
+            <div className="flex items-center gap-2.5 text-[#02110c]">
+              <div className="h-7 w-7 rounded-lg bg-[#008561]/10 text-[#008561] flex items-center justify-center font-bold text-xs border border-[#008561]/20">
                 02
               </div>
-              <h2 className="text-base sm:text-lg font-black text-[#121816]">
+              <h2 className="text-base sm:text-lg font-pochaevsk font-bold text-[#02110c]">
                 Acceptable Use and Strict Prohibitions
               </h2>
             </div>
@@ -137,12 +137,12 @@ export default function TermsPage() {
           </section>
 
           {/* Section 3 */}
-          <section className="space-y-3 pt-6 border-t border-neutral-100">
-            <div className="flex items-center gap-2.5 text-[#14281a]">
-              <div className="h-7 w-7 rounded-lg bg-[#eef8e5] text-[#3c7818] flex items-center justify-center font-black text-xs">
+          <section className="space-y-3 pt-6 border-t border-[#eedfc9]">
+            <div className="flex items-center gap-2.5 text-[#02110c]">
+              <div className="h-7 w-7 rounded-lg bg-[#008561]/10 text-[#008561] flex items-center justify-center font-bold text-xs border border-[#008561]/20">
                 03
               </div>
-              <h2 className="text-base sm:text-lg font-black text-[#121816]">
+              <h2 className="text-base sm:text-lg font-pochaevsk font-bold text-[#02110c]">
                 Verified Job Indexing and Direct Employer Portals
               </h2>
             </div>
@@ -163,12 +163,12 @@ export default function TermsPage() {
           </section>
 
           {/* Section 4 */}
-          <section className="space-y-3 pt-6 border-t border-neutral-100">
-            <div className="flex items-center gap-2.5 text-[#14281a]">
-              <div className="h-7 w-7 rounded-lg bg-[#eef8e5] text-[#3c7818] flex items-center justify-center font-black text-xs">
+          <section className="space-y-3 pt-6 border-t border-[#eedfc9]">
+            <div className="flex items-center gap-2.5 text-[#02110c]">
+              <div className="h-7 w-7 rounded-lg bg-[#008561]/10 text-[#008561] flex items-center justify-center font-bold text-xs border border-[#008561]/20">
                 04
               </div>
-              <h2 className="text-base sm:text-lg font-black text-[#121816]">
+              <h2 className="text-base sm:text-lg font-pochaevsk font-bold text-[#02110c]">
                 AI Assistant and Resume Matching Guidelines
               </h2>
             </div>
@@ -189,12 +189,12 @@ export default function TermsPage() {
           </section>
 
           {/* Section 5 */}
-          <section className="space-y-3 pt-6 border-t border-neutral-100">
-            <div className="flex items-center gap-2.5 text-[#14281a]">
-              <div className="h-7 w-7 rounded-lg bg-[#eef8e5] text-[#3c7818] flex items-center justify-center font-black text-xs">
+          <section className="space-y-3 pt-6 border-t border-[#eedfc9]">
+            <div className="flex items-center gap-2.5 text-[#02110c]">
+              <div className="h-7 w-7 rounded-lg bg-[#008561]/10 text-[#008561] flex items-center justify-center font-bold text-xs border border-[#008561]/20">
                 05
               </div>
-              <h2 className="text-base sm:text-lg font-black text-[#121816]">
+              <h2 className="text-base sm:text-lg font-pochaevsk font-bold text-[#02110c]">
                 Account Security and Access Termination
               </h2>
             </div>
@@ -204,12 +204,12 @@ export default function TermsPage() {
           </section>
 
           {/* Section 6 */}
-          <section className="space-y-3 pt-6 border-t border-neutral-100">
-            <div className="flex items-center gap-2.5 text-[#14281a]">
-              <div className="h-7 w-7 rounded-lg bg-[#eef8e5] text-[#3c7818] flex items-center justify-center font-black text-xs">
+          <section className="space-y-3 pt-6 border-t border-[#eedfc9]">
+            <div className="flex items-center gap-2.5 text-[#02110c]">
+              <div className="h-7 w-7 rounded-lg bg-[#008561]/10 text-[#008561] flex items-center justify-center font-bold text-xs border border-[#008561]/20">
                 06
               </div>
-              <h2 className="text-base sm:text-lg font-black text-[#121816]">
+              <h2 className="text-base sm:text-lg font-pochaevsk font-bold text-[#02110c]">
                 Intellectual Property Rights
               </h2>
             </div>
@@ -219,12 +219,12 @@ export default function TermsPage() {
           </section>
 
           {/* Section 7 */}
-          <section className="space-y-3 pt-6 border-t border-neutral-100">
-            <div className="flex items-center gap-2.5 text-[#14281a]">
-              <div className="h-7 w-7 rounded-lg bg-[#eef8e5] text-[#3c7818] flex items-center justify-center font-black text-xs">
+          <section className="space-y-3 pt-6 border-t border-[#eedfc9]">
+            <div className="flex items-center gap-2.5 text-[#02110c]">
+              <div className="h-7 w-7 rounded-lg bg-[#008561]/10 text-[#008561] flex items-center justify-center font-bold text-xs border border-[#008561]/20">
                 07
               </div>
-              <h2 className="text-base sm:text-lg font-black text-[#121816]">
+              <h2 className="text-base sm:text-lg font-pochaevsk font-bold text-[#02110c]">
                 Disclaimer of Warranties and Limitation of Liability
               </h2>
             </div>
@@ -234,39 +234,39 @@ export default function TermsPage() {
           </section>
 
           {/* Section 8 */}
-          <section className="space-y-3 pt-6 border-t border-neutral-100">
-            <div className="flex items-center gap-2.5 text-[#14281a]">
-              <div className="h-7 w-7 rounded-lg bg-[#eef8e5] text-[#3c7818] flex items-center justify-center font-black text-xs">
+          <section className="space-y-3 pt-6 border-t border-[#eedfc9]">
+            <div className="flex items-center gap-2.5 text-[#02110c]">
+              <div className="h-7 w-7 rounded-lg bg-[#008561]/10 text-[#008561] flex items-center justify-center font-bold text-xs border border-[#008561]/20">
                 08
               </div>
-              <h2 className="text-base sm:text-lg font-black text-[#121816]">
+              <h2 className="text-base sm:text-lg font-pochaevsk font-bold text-[#02110c]">
                 Contact Information
               </h2>
             </div>
             <p>
               If you have any questions regarding these Terms of Use or wish to report a policy violation, please contact our legal and support team:
             </p>
-            <div className="p-4 rounded-2xl bg-[#fbfaf8] border border-neutral-200/80 inline-flex flex-col gap-1 text-xs">
-              <span className="font-bold text-[#121816]">Siftrole Legal & Community Team</span>
+            <div className="p-4 rounded-2xl bg-[#fff6eb] border border-[#eedfc9] inline-flex flex-col gap-1 text-xs">
+              <span className="font-bold text-[#02110c]">Siftrole Legal & Community Team</span>
               <span className="text-[#55615b]">Email: support@siftrole.in</span>
               <span className="text-[#55615b]">Website: https://siftrole.in</span>
             </div>
           </section>
 
           {/* Last Updated Badge */}
-          <div className="pt-6 border-t border-neutral-100 flex flex-wrap items-center justify-between gap-4 text-xs text-[#55615b]">
+          <div className="pt-6 border-t border-[#eedfc9] flex flex-wrap items-center justify-between gap-4 text-xs text-[#55615b]">
             <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-[#3c7818]" />
+              <ShieldCheck className="w-4 h-4 text-[#008561]" />
               <span>Last updated: September 2026</span>
             </div>
             <div className="flex items-center gap-4 font-bold">
-              <Link href="/privacy" className="hover:text-[#121816] transition">
+              <Link href="/privacy" className="hover:text-[#02110c] transition">
                 Privacy Policy
               </Link>
-              <Link href="/about" className="hover:text-[#121816] transition">
+              <Link href="/about" className="hover:text-[#02110c] transition">
                 About Us
               </Link>
-              <Link href="/jobs" className="hover:text-[#121816] transition">
+              <Link href="/jobs" className="hover:text-[#02110c] transition">
                 Live Jobs
               </Link>
             </div>
@@ -274,7 +274,7 @@ export default function TermsPage() {
         </div>
 
         {/* Footer brand mark with logo as letter O */}
-        <div className="pt-8 pb-4 select-none overflow-hidden flex items-center justify-center font-black uppercase text-[#14281a] leading-none tracking-[-0.04em] text-2xl sm:text-3xl border-t border-neutral-200/70">
+        <div className="pt-8 pb-4 select-none overflow-hidden flex items-center justify-center font-black uppercase text-[#02110c] leading-none tracking-[-0.04em] text-2xl sm:text-3xl border-t border-[#eedfc9]">
           <span>SIFTR</span>
           <span className="inline-flex items-center justify-center w-[0.84em] h-[0.84em] mx-[0.04em] relative shrink-0">
             <Image

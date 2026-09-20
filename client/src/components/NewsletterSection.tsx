@@ -56,14 +56,14 @@ export function NewsletterSection({ className = "" }: NewsletterSectionProps) {
     <section
       id="newsletter-section"
       data-footer-zone="true"
-      className={`mt-16 sm:mt-24 relative overflow-hidden rounded-[32px] sm:rounded-[38px] min-h-[340px] sm:min-h-[380px] flex flex-col justify-center items-center text-center p-8 sm:p-14 lg:p-16 shadow-2xl border border-[#14281a] ${className}`}
+      className={`mt-16 sm:mt-24 relative overflow-hidden rounded-[32px] sm:rounded-[38px] min-h-[340px] sm:min-h-[380px] flex flex-col justify-center items-center text-center p-8 sm:p-14 lg:p-16 shadow-2xl border border-[#02110c] ${className}`}
     >
       {/* Interactive 3D WebGL Liquid Silk Background */}
       <LiquidSilkBackground imageSrc="/images/emerald_silk_horizontal.jpg" />
-      <div className="absolute inset-0 bg-gradient-to-r from-[#0a180e]/55 via-transparent to-[#0a180e]/55 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-r from-[#02110c]/80 via-[#02110c]/40 to-[#02110c]/80 pointer-events-none" />
 
       {/* Headline */}
-      <h2 className="relative z-10 text-[2rem] sm:text-[2.75rem] lg:text-[3.15rem] font-medium sm:font-semibold tracking-[-0.02em] leading-[1.18] text-white/95 max-w-[720px] mx-auto drop-shadow-sm">
+      <h2 className="relative z-10 text-[2rem] sm:text-[2.75rem] lg:text-[3.15rem] font-pochaevsk font-bold tracking-tight leading-[1.18] text-white max-w-[720px] mx-auto drop-shadow-sm">
         Subscribe to our newsletter to get job updates.
       </h2>
 
@@ -82,24 +82,24 @@ export function NewsletterSection({ className = "" }: NewsletterSectionProps) {
                 setErrorMessage(null);
               }}
               placeholder="Enter your university or work email"
-              className="w-full rounded-full border border-white/30 bg-black/30 backdrop-blur-md px-6 py-3.5 text-sm text-white placeholder:text-white/60 outline-none focus:border-white focus:ring-2 focus:ring-white/20 transition shadow-inner"
+              className="w-full rounded-full border border-white/30 bg-black/40 backdrop-blur-md px-6 py-3.5 text-sm text-white placeholder:text-white/60 outline-none focus:border-[#008561] focus:ring-2 focus:ring-[#008561]/20 transition shadow-inner"
             />
           </div>
 
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full sm:w-auto shrink-0 rounded-full bg-[#84d64f] hover:bg-[#75c73d] text-[#14281a] px-7 py-3.5 text-sm font-bold transition-all flex items-center justify-center gap-2.5 shadow-lg active:scale-[0.98] cursor-pointer disabled:opacity-85"
+            className="w-full sm:w-auto shrink-0 rounded-full bg-white hover:bg-white/95 text-[#008561] px-7 py-3.5 text-sm font-bold transition-all flex items-center justify-center gap-2.5 shadow-lg active:scale-[0.98] cursor-pointer disabled:opacity-85"
           >
             {isLoading ? (
               <>
-                <div className="h-4 w-4 rounded-full border-2 border-[#14281a] border-t-transparent animate-spin" />
+                <div className="h-4 w-4 rounded-full border-2 border-[#008561] border-t-transparent animate-spin" />
                 <span>Sending...</span>
               </>
             ) : (
               <>
                 <span>Subscribe</span>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-4 h-4 text-[#008561]" />
               </>
             )}
           </button>
@@ -107,7 +107,7 @@ export function NewsletterSection({ className = "" }: NewsletterSectionProps) {
       ) : (
         <div className="relative z-10 mt-8 inline-flex flex-col sm:flex-row items-center gap-3.5 rounded-full bg-black/40 backdrop-blur-md border border-white/20 px-6 py-3 text-white shadow-xl animate-in fade-in zoom-in-95 duration-200">
           <div className="flex items-center gap-2.5 text-sm font-medium text-white/90">
-            <CheckCircle2 className="w-4 h-4 text-[#84d64f] shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-[#008561] shrink-0" />
             <span>
               A confirmation link has been sent to your inbox. Please check your email to activate.
             </span>

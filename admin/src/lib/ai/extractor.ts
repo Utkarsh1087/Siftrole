@@ -11,10 +11,13 @@ CRITICAL PARSING RULES:
 3. COMPANY: Detect the accurate company name (e.g. 'Google').
 4. LOCATION: Detect primary location or concise summary (e.g. 'United States (Multiple Locations)' or 'Mountain View, CA' or 'Remote'). Keep it short and concise (under 40 characters). Do NOT dump long lists of 10+ cities.
 5. EMPLOYMENT TYPE: 'Internship' | 'Full-time' | 'Part-time' | 'Contract' | null.
+   - Set to 'Internship' ONLY if the official job title explicitly contains 'Intern', 'Internship', or 'Co-op', or if the role explicitly targets current students for temporary summer/fall/spring terms.
+   - Professional, permanent roles, managers, leads, senior positions, or roles requiring 1+ years experience or standard annual salary ($50k+) are ALWAYS 'Full-time'.
+   - NEVER classify as 'Internship' just because the description mentions 'mentoring interns', 'internal teams', 'international', or 'interview'.
 6. SALARY / STIPEND: Extract exact figures or range with currency (e.g. '$118,000 - $157,000 (USD)'). If not mentioned, set to null.
 7. DEADLINE: Extract exact deadline if mentioned (e.g. '2027-02-26' or 'February 26, 2027'). If unstated, set to null.
 8. ELIGIBILITY: Explicit degree level, graduation criteria, or work authorization (e.g. 'Pursuing a PhD program in Computer Science or a related technical field'). If unstated, set to null.
-9. EXPERIENCE LEVEL: 'Intern' | 'PhD Intern' | 'New Grad' | 'Entry Level' | 'Mid Level' | 'Senior' | null.
+9. EXPERIENCE LEVEL: 'Intern' | 'PhD Intern' | 'New Grad' | 'Entry Level' | 'Mid Level' | 'Senior' | null. If the title or requirements indicate 5+ years experience, Manager, Lead, Staff, or Director, classify as 'Senior'.
 10. SKILLS REQUIRED: Extract all technical skills, programming languages, and domains explicitly mentioned (e.g. ['C', 'C++', 'Java', 'Python', 'Algorithms', 'Distributed Systems', 'Machine Learning', 'Data Structures']).
 11. SUMMARY: A concise, human-readable 2-3 sentence overview explaining what the candidate will work on and why this role is exciting.
 12. RESPONSIBILITIES: Extract 4-6 clean, active bullet points of day-to-day duties.
@@ -41,6 +44,33 @@ Output MUST be valid JSON adhering strictly to:
   "clean_description": "string | null"
 }
 `;
+
+export function sanitizeEmploymentType(title: string, employmentType: string | null | undefined, rawText?: string): string {
+  const t = (title || "").toLowerCase();
+  const isExplicitInternTitle = /\b(intern|internship|co-op|coop|apprentice|fellow|fellowship)\b/i.test(t);
+  const isSeniorOrManager = /\b(manager|lead|senior|sr\.?|staff|principal|director|head|vp|vice president|chief|architect|specialist|officer|supervisor)\b/i.test(t);
+
+  if (isExplicitInternTitle) {
+    return "Internship";
+  }
+
+  if (isSeniorOrManager) {
+    return "Full-time";
+  }
+
+  if (employmentType) {
+    const raw = employmentType.toLowerCase().trim();
+    if (raw.includes("intern") && !isExplicitInternTitle) {
+      return "Full-time";
+    }
+    if (raw.includes("intern")) return "Internship";
+    if (raw.includes("full")) return "Full-time";
+    if (raw.includes("part")) return "Part-time";
+    if (raw.includes("contract")) return "Contract";
+  }
+
+  return "Full-time";
+}
 
 export function cleanInputText(text: string): string {
   if (!text) return "";
@@ -97,10 +127,22 @@ export function localRuleBasedExtract(rawText: string): {
   }
 
   let employment_type: string | null = null;
-  if (/intern(ship)?/i.test(cleaned)) employment_type = "Internship";
-  else if (/full[-\s]?time/i.test(cleaned)) employment_type = "Full time";
-  else if (/part[-\s]?time/i.test(cleaned)) employment_type = "Part time";
-  else if (/contract/i.test(cleaned)) employment_type = "Contract";
+  const isTitleIntern = /\b(intern|internship|co-op|coop|apprentice|fellow)\b/i.test(title);
+  const isTitleSeniorOrManager = /\b(manager|lead|senior|sr\.?|staff|principal|director|head|vp|chief|architect)\b/i.test(title);
+
+  if (isTitleIntern) {
+    employment_type = "Internship";
+  } else if (isTitleSeniorOrManager) {
+    employment_type = "Full-time";
+  } else if (/\bpart[-\s]?time\b/i.test(cleaned)) {
+    employment_type = "Part-time";
+  } else if (/\bcontract(?:or)?\b/i.test(cleaned)) {
+    employment_type = "Contract";
+  } else if (/\bfull[-\s]?time\b/i.test(cleaned)) {
+    employment_type = "Full-time";
+  } else {
+    employment_type = "Full-time";
+  }
 
   let stipend_or_salary: string | null = null;
   const salaryMatch = cleaned.match(/(\$|€|£|₹|INR|USD)\s*[\d,]+(\s*-\s*[\d,]+)?(\s*(k|K|LPA|per month|hr|year|annum|\/yr|\/mo))?/i);
@@ -211,7 +253,20 @@ export async function extractJobListingWithAI(rawJdText: string): Promise<{
   // Clean prompt input text
   const cleanInput = cleanInputText(rawJdText);
 
-  // --- Build multi-key cascade (Groq keys first, then Gemini fallback) ---
+  // --- Build multi-key cascade (Google Gemini first, then Groq failover) ---
+  const rawGeminiKeys = [
+    process.env.GEMINI_API_KEY_1,
+    process.env.GEMINI_API_KEY_2,
+    process.env.GEMINI_API_KEY_3,
+    process.env.GEMINI_API_KEY,
+    process.env.GOOGLE_API_KEY,
+  ]
+    .filter(Boolean)
+    .map((k) => k!.replace(/^["']|["']$/g, "").trim())
+    .filter((k) => k.length > 0);
+
+  const uniqueGeminiKeys = Array.from(new Set(rawGeminiKeys));
+
   const rawGroqKeys = [
     process.env.GROQ_API_KEY_1,
     process.env.GROQ_API_KEY_2,
@@ -227,107 +282,89 @@ export async function extractJobListingWithAI(rawJdText: string): Promise<{
 
   const uniqueGroqKeys = Array.from(new Set(rawGroqKeys));
 
-  const rawGeminiKeys = [
-    process.env.GEMINI_API_KEY_1,
-    process.env.GEMINI_API_KEY_2,
-    process.env.GEMINI_API_KEY_3,
-    process.env.GEMINI_API_KEY,
-    process.env.GOOGLE_API_KEY,
-  ]
-    .filter(Boolean)
-    .map((k) => k!.replace(/^["']|["']$/g, "").trim())
-    .filter((k) => k.length > 0);
-
-  const uniqueGeminiKeys = Array.from(new Set(rawGeminiKeys));
-
-  // Try each Groq key with high-intelligence openai/gpt-oss-120b, then fast qwen/qwen3.8-27b
-  for (const apiKey of uniqueGroqKeys) {
-    const groqModels = ["openai/gpt-oss-120b", "qwen/qwen3.8-27b", "openai/gpt-oss-20b"];
-    for (const model of groqModels) {
+  // 1. Primary: Try Google Gemini keys first for highest extraction quality
+  for (const apiKey of uniqueGeminiKeys) {
+    for (const geminiModel of ["gemini-1.5-flash", "gemini-2.0-flash"]) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 12000);
-        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`;
+        const response = await fetch(endpoint, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${apiKey}`,
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            model,
-            messages: [
-              { role: "system", content: STRICT_EXTRACTION_SYSTEM_PROMPT },
-              { role: "user", content: `Raw Job Description:\n\n${rawJdText}` },
+            contents: [
+              {
+                role: "user",
+                parts: [{ text: `${STRICT_EXTRACTION_SYSTEM_PROMPT}\n\nRaw Job Description:\n\n${rawJdText}` }],
+              },
             ],
-            response_format: { type: "json_object" },
-            temperature: 0.1,
+            generationConfig: {
+              temperature: 0.1,
+              responseMimeType: "application/json",
+            },
           }),
           signal: controller.signal,
         });
         clearTimeout(timeoutId);
 
         if (response.ok) {
-          const completion = await response.json();
-          const content = completion.choices?.[0]?.message?.content;
-          if (content) {
-            rawJson = JSON.parse(content);
-            modelUsed = `groq/${model}`;
-            tokensUsed = completion.usage?.total_tokens || 0;
+          const geminiData = await response.json();
+          const text = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) {
+            rawJson = JSON.parse(text);
+            modelUsed = `google/${geminiModel}`;
             break;
           }
-        } else if (response.status === 429 || response.status === 503) {
-          console.warn(`[AI Extractor] Groq key rate-limited (${response.status}), trying next key...`);
-          break; // Move to next key
         }
       } catch (err: any) {
-        const isAbort = err?.name === "AbortError";
-        console.warn(`[AI Extractor] Groq ${model} failed (${isAbort ? "timeout" : err?.message}), trying next...`);
+        console.warn(`[AI Extractor] Gemini ${geminiModel} failed (${err?.message}), trying next candidate...`);
       }
     }
     if (rawJson) break;
   }
 
-  // Gemini fallback if all Groq keys failed
+  // 2. Failover: Groq keys if Gemini keys are rate-limited or unavailable
   if (!rawJson) {
-    for (const apiKey of uniqueGeminiKeys) {
-      for (const geminiModel of ["gemini-1.5-flash", "gemini-2.0-flash"]) {
+    for (const apiKey of uniqueGroqKeys) {
+      const groqModels = ["openai/gpt-oss-120b", "qwen/qwen3.8-27b", "openai/gpt-oss-20b"];
+      for (const model of groqModels) {
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 10000);
-          const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`;
-          const response = await fetch(endpoint, {
+          const timeoutId = setTimeout(() => controller.abort(), 12000);
+          const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${apiKey}`,
+            },
             body: JSON.stringify({
-              contents: [
-                {
-                  role: "user",
-                  parts: [{ text: `${STRICT_EXTRACTION_SYSTEM_PROMPT}\n\nRaw Job Description:\n\n${rawJdText}` }],
-                },
+              model,
+              messages: [
+                { role: "system", content: STRICT_EXTRACTION_SYSTEM_PROMPT },
+                { role: "user", content: `Raw Job Description:\n\n${rawJdText}` },
               ],
-              generationConfig: {
-                temperature: 0.1,
-                responseMimeType: "application/json",
-              },
+              response_format: { type: "json_object" },
+              temperature: 0.1,
             }),
             signal: controller.signal,
           });
           clearTimeout(timeoutId);
 
           if (response.ok) {
-            const data = await response.json();
-            const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            const completion = await response.json();
+            const content = completion.choices?.[0]?.message?.content;
             if (content) {
               rawJson = JSON.parse(content);
-              modelUsed = `gemini/${geminiModel}`;
+              modelUsed = `groq/${model}`;
+              tokensUsed = completion.usage?.total_tokens || 0;
               break;
             }
-          } else if (response.status === 429) {
-            console.warn("[AI Extractor] Gemini key rate-limited, trying next...");
+          } else if (response.status === 429 || response.status === 503) {
+            break;
           }
-        } catch (err: any) {
-          const isAbort = err?.name === "AbortError";
-          console.warn(`[AI Extractor] Gemini failed (${isAbort ? "timeout" : err?.message}), trying next...`);
+        } catch {
+          // move to next
         }
       }
       if (rawJson) break;
@@ -375,11 +412,17 @@ export async function extractJobListingWithAI(rawJdText: string): Promise<{
     ? JSON.stringify(structuredJdPayload)
     : (validated.clean_description || cleanInputText(rawJdText));
 
+  const finalEmploymentType = sanitizeEmploymentType(
+    validated.title,
+    validated.employment_type,
+    rawJdText
+  );
+
   const normalizedListing: NormalizedListing = {
     title: validated.title,
     company: validated.company,
     location: validated.location,
-    employment_type: validated.employment_type || null,
+    employment_type: finalEmploymentType,
     eligibility: validated.eligibility || null,
     stipend_or_salary: validated.stipend_or_salary || null,
     deadline: validated.deadline || null,
@@ -425,13 +468,19 @@ export async function parseScrapedListingWithAi(scraped: NormalizedListing): Pro
   try {
     const aiResult = await extractJobListingWithAI(fullPromptText);
     const aiExtracted = aiResult.listing;
+    const finalTitle = aiExtracted.title || scraped.title;
+    const finalEmpType = sanitizeEmploymentType(
+      finalTitle,
+      aiExtracted.employment_type || scraped.employment_type,
+      fullPromptText
+    );
 
     return {
       ...scraped,
-      title: aiExtracted.title || scraped.title,
+      title: finalTitle,
       company: scraped.company || aiExtracted.company,
       location: aiExtracted.location || scraped.location,
-      employment_type: aiExtracted.employment_type || scraped.employment_type,
+      employment_type: finalEmpType,
       eligibility: aiExtracted.eligibility || scraped.eligibility,
       stipend_or_salary: aiExtracted.stipend_or_salary || scraped.stipend_or_salary,
       deadline: aiExtracted.deadline || scraped.deadline,

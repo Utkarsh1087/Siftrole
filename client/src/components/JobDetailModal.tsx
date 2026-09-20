@@ -136,22 +136,22 @@ export function JobDetailModal({
         {/* ======================================================== */}
         {/* 1. HEADER */}
         {/* ======================================================== */}
-        <div className="p-6 sm:p-7 pb-4 border-b border-neutral-100 bg-white">
+        <div className="p-6 sm:p-7 pb-4 border-b border-[#eadecc] bg-white">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-3.5 sm:gap-4 min-w-0">
-              <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-neutral-50 border border-neutral-200/80 flex items-center justify-center p-2.5 shrink-0 shadow-xs">
+              <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-[#faf8f5] border border-[#eadecc] flex items-center justify-center p-2.5 shrink-0 shadow-xs">
                 <CompanyLogo company={listing.company} size="lg" />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center flex-wrap gap-2">
-                  <span className="text-xs font-black uppercase tracking-wider text-[#3c7818]">
+                  <span className="text-xs font-black uppercase tracking-wider text-[#008561]">
                     {listing.company}
                   </span>
-                  <span className="rounded-full bg-[#eef8e5] border border-[#cce8be] text-[#2d6113] text-[0.65rem] font-bold px-2.5 py-0.5 inline-flex items-center gap-1">
-                    <ShieldCheck className="w-3 h-3 text-[#3c7818]" /> Verified Official ATS Feed
+                  <span className="rounded-full bg-[#00D793]/15 border border-[#00D793]/40 text-[#083D2E] text-[0.65rem] font-bold px-2.5 py-0.5 inline-flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3 text-[#008561]" /> Verified Official ATS Feed
                   </span>
                 </div>
-                <h3 className="text-xl sm:text-2xl font-black text-[#121816] tracking-tight mt-1 leading-snug break-words">
+                <h3 className="text-xl sm:text-2xl font-lora font-bold text-[#02110c] tracking-tight mt-1 leading-snug break-words">
                   {listing.title}
                 </h3>
               </div>
@@ -160,47 +160,47 @@ export function JobDetailModal({
             <button
               onClick={onClose}
               aria-label="Close modal"
-              className="h-9 w-9 rounded-full bg-neutral-100 hover:bg-neutral-200 flex items-center justify-center text-neutral-500 hover:text-neutral-900 text-sm font-bold transition shrink-0 cursor-pointer"
+              className="h-9 w-9 rounded-full bg-[#faf8f5] hover:bg-white border border-[#eadecc] flex items-center justify-center text-[#495e54] hover:text-[#02110c] text-sm font-bold transition shrink-0 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
 
           {/* Key Attribute Pills Bar */}
-          <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-[#14281a]">
+          <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-[#02110c]">
             {listing.location && (
-              <div className="flex items-center gap-1.5 bg-[#f6f5f2] border border-neutral-200/80 rounded-xl px-3 py-1.5">
-                <MapPin className="w-3.5 h-3.5 text-[#79857f]" />
+              <div className="flex items-center gap-1.5 bg-[#faf8f5] border border-[#eadecc] rounded-xl px-3 py-1.5">
+                <MapPin className="w-3.5 h-3.5 text-[#008561]" />
                 <span className="truncate max-w-[220px]">{listing.location}</span>
               </div>
             )}
             {listing.employment_type && (
-              <div className="flex items-center gap-1.5 bg-[#f6f5f2] border border-neutral-200/80 rounded-xl px-3 py-1.5">
-                <Briefcase className="w-3.5 h-3.5 text-[#79857f]" />
+              <div className="flex items-center gap-1.5 bg-[#faf8f5] border border-[#eadecc] rounded-xl px-3 py-1.5">
+                <Briefcase className="w-3.5 h-3.5 text-[#008561]" />
                 <span>{listing.employment_type}</span>
               </div>
             )}
             {listing.stipend_or_salary && (
-              <div className="flex items-center gap-1.5 bg-[#eef8e5] border border-[#cce8be] text-[#24580d] rounded-xl px-3 py-1.5">
-                <DollarSign className="w-3.5 h-3.5 text-[#3c7818]" />
+              <div className="flex items-center gap-1.5 bg-[#00D793]/15 border border-[#00D793]/40 text-[#083D2E] rounded-xl px-3 py-1.5">
+                <DollarSign className="w-3.5 h-3.5 text-[#008561]" />
                 <span>{listing.stipend_or_salary}</span>
               </div>
             )}
             {listing.experience_level && (
-              <div className="flex items-center gap-1.5 bg-[#f6f5f2] border border-neutral-200/80 rounded-xl px-3 py-1.5">
-                <GraduationCap className="w-3.5 h-3.5 text-[#79857f]" />
+              <div className="flex items-center gap-1.5 bg-[#faf8f5] border border-[#eadecc] rounded-xl px-3 py-1.5">
+                <GraduationCap className="w-3.5 h-3.5 text-[#008561]" />
                 <span>{listing.experience_level}</span>
               </div>
             )}
             {formattedDeadline && (
-              <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl px-3 py-1.5">
-                <Calendar className="w-3.5 h-3.5 text-amber-700" />
+              <div className="flex items-center gap-1.5 bg-[#faf8f5] border border-[#eadecc] text-[#02110c] rounded-xl px-3 py-1.5">
+                <Calendar className="w-3.5 h-3.5 text-[#008561]" />
                 <span>Deadline: {formattedDeadline}</span>
               </div>
             )}
             {listing.eligibility && (
-              <div className="flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-900 rounded-xl px-3 py-1.5">
-                <Award className="w-3.5 h-3.5 text-blue-700" />
+              <div className="flex items-center gap-1.5 bg-[#faf8f5] border border-[#eadecc] text-[#008561] rounded-xl px-3 py-1.5">
+                <Award className="w-3.5 h-3.5 text-[#008561]" />
                 <span className="truncate max-w-[240px]">{listing.eligibility}</span>
               </div>
             )}
@@ -217,31 +217,31 @@ export function JobDetailModal({
         >
           {/* Resume Match Breakdown */}
           {resumeMatch && (
-            <div className="rounded-2xl border border-[#84d64f]/50 bg-[#f4faee] p-4">
+            <div className="rounded-2xl border border-[#008561]/30 bg-[#faf8f5] p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-[#3c7818]" />
-                  <span className="text-xs font-black text-[#14281a]">
+                  <Sparkles className="w-4 h-4 text-[#008561]" />
+                  <span className="text-xs font-black text-[#02110c]">
                     AI Compatibility Score: {resumeMatch.score}%
                   </span>
                 </div>
-                <span className="text-[0.68rem] font-bold text-[#2d6113]">
+                <span className="text-[0.68rem] font-bold text-[#008561]">
                   {resumeMatch.matchedCount} of {resumeMatch.totalCount} Skills Matched
                 </span>
               </div>
 
               {resumeMatch.matchedSkills.length > 0 && (
                 <div className="mt-3">
-                  <span className="text-[0.68rem] font-bold uppercase tracking-wider text-[#2d6113] block mb-1.5">
+                  <span className="text-[0.68rem] font-bold uppercase tracking-wider text-[#008561] block mb-1.5">
                     Matching Skills on Your Resume:
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {resumeMatch.matchedSkills.map((s) => (
                       <span
                         key={s}
-                        className="rounded-lg bg-[#d7f3be] text-[#1e480d] border border-[#84d64f] px-2.5 py-0.5 text-xs font-bold inline-flex items-center gap-1"
+                        className="rounded-lg bg-white text-[#008561] border border-[#008561]/30 px-2.5 py-0.5 text-xs font-bold inline-flex items-center gap-1 shadow-2xs"
                       >
-                        <Check className="w-3 h-3 text-[#1e480d]" /> {s}
+                        <Check className="w-3 h-3 text-[#008561]" /> {s}
                       </span>
                     ))}
                   </div>
@@ -270,13 +270,13 @@ export function JobDetailModal({
 
           {/* Section: Role Summary / Overview */}
           <div>
-            <h4 className="font-extrabold text-xs uppercase tracking-wider text-[#79857f] mb-2.5 flex items-center gap-1.5">
+            <h4 className="font-extrabold text-xs uppercase tracking-wider text-[#495e54] mb-2.5 flex items-center gap-1.5">
               <span>About the Role & Mission</span>
             </h4>
-            <div className="rounded-2xl bg-[#faf9f6] border border-neutral-200/70 p-4 sm:p-5 text-xs sm:text-sm leading-relaxed text-[#35413c]">
+            <div className="rounded-2xl bg-[#faf8f5] border border-[#eadecc] p-4 sm:p-5 text-xs sm:text-sm leading-relaxed text-[#02110c]">
               {parsed.summary || (
                 <p>
-                  This position is actively hiring at <strong className="text-[#121816]">{listing.company}</strong>. Applications are submitted directly to the verified employer portal without third-party recruitment agencies.
+                  This position is actively hiring at <strong className="text-[#02110c]">{listing.company}</strong>. Applications are submitted directly to the verified employer portal without third-party recruitment agencies.
                 </p>
               )}
             </div>
@@ -285,13 +285,13 @@ export function JobDetailModal({
           {/* Section: Key Responsibilities */}
           {parsed.responsibilities.length > 0 && (
             <div>
-              <h4 className="font-extrabold text-xs uppercase tracking-wider text-[#79857f] mb-3">
+              <h4 className="font-extrabold text-xs uppercase tracking-wider text-[#495e54] mb-3">
                 Key Responsibilities
               </h4>
               <div className="space-y-2.5">
                 {parsed.responsibilities.map((item, idx) => (
-                  <div key={idx} className="flex items-start gap-3 text-xs sm:text-sm text-[#35413c] leading-relaxed">
-                    <CheckCircle2 className="w-4 h-4 text-[#3c7818] shrink-0 mt-0.5" />
+                  <div key={idx} className="flex items-start gap-3 text-xs sm:text-sm text-[#02110c] leading-relaxed">
+                    <CheckCircle2 className="w-4 h-4 text-[#008561] shrink-0 mt-0.5" />
                     <span>{item}</span>
                   </div>
                 ))}
@@ -302,13 +302,13 @@ export function JobDetailModal({
           {/* Section: Qualifications & Eligibility */}
           {parsed.qualifications.length > 0 && (
             <div>
-              <h4 className="font-extrabold text-xs uppercase tracking-wider text-[#79857f] mb-3">
+              <h4 className="font-extrabold text-xs uppercase tracking-wider text-[#495e54] mb-3">
                 Qualifications & Requirements
               </h4>
               <div className="space-y-2.5">
                 {parsed.qualifications.map((item, idx) => (
-                  <div key={idx} className="flex items-start gap-3 text-xs sm:text-sm text-[#35413c] leading-relaxed">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#3c7818] shrink-0 mt-2" />
+                  <div key={idx} className="flex items-start gap-3 text-xs sm:text-sm text-[#02110c] leading-relaxed">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#008561] shrink-0 mt-2" />
                     <span>{item}</span>
                   </div>
                 ))}
@@ -319,16 +319,16 @@ export function JobDetailModal({
           {/* Section: Benefits & Perks */}
           {parsed.benefits.length > 0 && (
             <div>
-              <h4 className="font-extrabold text-xs uppercase tracking-wider text-[#79857f] mb-3">
+              <h4 className="font-extrabold text-xs uppercase tracking-wider text-[#495e54] mb-3">
                 Benefits & Compensation Highlights
               </h4>
               <div className="flex flex-wrap gap-2">
                 {parsed.benefits.map((b, idx) => (
                   <span
                     key={idx}
-                    className="rounded-xl bg-[#f0fae8] text-[#24580d] border border-[#cce8be] px-3 py-1.5 text-xs font-semibold inline-flex items-center gap-1.5"
+                    className="rounded-xl bg-[#008561]/10 text-[#008561] border border-[#008561]/20 px-3 py-1.5 text-xs font-semibold inline-flex items-center gap-1.5"
                   >
-                    <Check className="w-3 h-3 text-[#3c7818]" /> {b}
+                    <Check className="w-3 h-3 text-[#008561]" /> {b}
                   </span>
                 ))}
               </div>
@@ -338,14 +338,14 @@ export function JobDetailModal({
           {/* Section: Required Skills & Tech Stack */}
           {listing.skills_required && listing.skills_required.length > 0 && (
             <div>
-              <h4 className="font-extrabold text-xs uppercase tracking-wider text-[#79857f] mb-3">
+              <h4 className="font-extrabold text-xs uppercase tracking-wider text-[#495e54] mb-3">
                 Required Skills & Tech Stack
               </h4>
               <div className="flex flex-wrap gap-2">
                 {listing.skills_required.map((s) => (
                   <span
                     key={s}
-                    className="rounded-xl bg-[#eef8e5] text-[#24580d] font-bold text-xs px-3 py-1.5 border border-[#cce8be]"
+                    className="rounded-xl bg-[#008561]/10 text-[#008561] font-bold text-xs px-3 py-1.5 border border-[#008561]/25"
                   >
                     {s}
                   </span>
@@ -357,10 +357,10 @@ export function JobDetailModal({
           {/* Fallback Unstructured Clean Description if no sections matched */}
           {!parsed.hasStructuredData && parsed.cleanDescription && (
             <div>
-              <h4 className="font-extrabold text-xs uppercase tracking-wider text-[#79857f] mb-2.5">
+              <h4 className="font-extrabold text-xs uppercase tracking-wider text-[#495e54] mb-2.5">
                 Full Role Details
               </h4>
-              <div className="rounded-2xl bg-[#faf9f6] border border-neutral-200/70 p-4 sm:p-5 text-xs sm:text-sm leading-relaxed text-[#35413c] whitespace-pre-line max-h-[300px] overflow-y-auto">
+              <div className="rounded-2xl bg-[#faf8f5] border border-[#eadecc] p-4 sm:p-5 text-xs sm:text-sm leading-relaxed text-[#02110c] whitespace-pre-line max-h-[300px] overflow-y-auto">
                 {parsed.cleanDescription}
               </div>
             </div>
@@ -368,18 +368,18 @@ export function JobDetailModal({
 
           {/* Expandable Official Posting Notes */}
           {parsed.cleanDescription && parsed.hasStructuredData && (
-            <div className="pt-2 border-t border-neutral-100">
+            <div className="pt-2 border-t border-[#eadecc]">
               <button
                 type="button"
                 onClick={() => setShowFullRaw(!showFullRaw)}
-                className="text-xs font-bold text-[#3c7818] hover:text-[#2d6113] inline-flex items-center gap-1 cursor-pointer"
+                className="text-xs font-bold text-[#008561] hover:text-[#02110c] inline-flex items-center gap-1 cursor-pointer"
               >
                 {showFullRaw ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                 {showFullRaw ? "Hide Full Posting Text" : "View Full Career Posting Text"}
               </button>
 
               {showFullRaw && (
-                <div className="mt-3 rounded-2xl bg-[#faf9f6] border border-neutral-200/70 p-4 text-xs leading-relaxed text-[#55615b] whitespace-pre-line max-h-[260px] overflow-y-auto">
+                <div className="mt-3 rounded-2xl bg-[#faf8f5] border border-[#eadecc] p-4 text-xs leading-relaxed text-[#495e54] whitespace-pre-line max-h-[260px] overflow-y-auto">
                   {parsed.cleanDescription}
                 </div>
               )}
@@ -390,12 +390,12 @@ export function JobDetailModal({
         {/* ======================================================== */}
         {/* 3. STICKY ACTION FOOTER */}
         {/* ======================================================== */}
-        <div className="p-4 sm:p-6 border-t border-neutral-100 bg-[#fdfdfc] flex items-center justify-between gap-3">
+        <div className="p-4 sm:p-6 border-t border-[#eadecc] bg-white flex items-center justify-between gap-3">
           <button
             onClick={handleShare}
-            className="rounded-xl border border-neutral-200/90 hover:bg-neutral-100/80 px-4 py-3 text-xs font-bold text-[#14281a] inline-flex items-center gap-1.5 transition cursor-pointer shrink-0"
+            className="rounded-xl border border-[#eadecc] bg-[#faf8f5] hover:bg-white px-4 py-3 text-xs font-bold text-[#02110c] inline-flex items-center gap-1.5 transition cursor-pointer shrink-0 shadow-2xs"
           >
-            <Share2 className="w-3.5 h-3.5" />
+            <Share2 className="w-3.5 h-3.5 text-[#008561]" />
             {copiedLink ? "Link Copied!" : "Share Link"}
           </button>
 
@@ -404,10 +404,10 @@ export function JobDetailModal({
             target="_blank"
             rel="noreferrer"
             onClick={() => onApplyClick && onApplyClick(listing)}
-            className="flex-1 text-center rounded-full bg-[#84d64f] hover:bg-[#7ec942] text-[#14261b] py-3.5 font-heading font-extrabold text-sm shadow-[0_8px_20px_rgba(132,214,79,0.28)] transition inline-flex items-center justify-center gap-2 cursor-pointer"
+            className="flex-1 text-center rounded-full bg-[#008561] hover:bg-[#006e50] text-white py-3.5 font-bold text-sm shadow-[0_8px_20px_rgba(0,133,97,0.25)] transition inline-flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
           >
             Apply on Official Portal
-            <ExternalLink className="w-4 h-4 text-[#14261b]" />
+            <ExternalLink className="w-4 h-4 text-white" />
           </a>
         </div>
       </div>

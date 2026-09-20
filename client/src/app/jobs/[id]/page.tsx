@@ -26,8 +26,10 @@ import { CompanyLogo, getCompanyDomain } from "@/components/CompanyLogo";
 import { LiquidSilkBackground } from "@/components/LiquidSilkBackground";
 import { NewsletterSection } from "@/components/NewsletterSection";
 import { Listing } from "@/components/SiftAiChat";
+import { SiftroleLogoMark } from "@/components/SiftroleLogo";
 import { useAppliedJobs } from "@/lib/appliedJobs";
 import { useAuth } from "@/lib/useAuth";
+import { AuthGateModal } from "@/components/AuthGateModal";
 
 export default function JobDetailPage() {
   const params = useParams();
@@ -42,6 +44,27 @@ export default function JobDetailPage() {
   const [subscribedEmail, setSubscribedEmail] = useState(false);
   const { toggleApplied, isApplied } = useAppliedJobs();
   const { isLoggedIn } = useAuth();
+  const [authGateConfig, setAuthGateConfig] = useState<{
+    isOpen: boolean;
+    title?: string;
+    description?: string;
+    badge?: string;
+    primaryCta?: string;
+  }>({ isOpen: false });
+
+  const handleToggleAppliedWithAuth = () => {
+    if (!job?.id) return;
+    if (!isLoggedIn) {
+      setAuthGateConfig({
+        isOpen: true,
+        title: "Sign in to Track Applications",
+        description: "Create a free account or sign in to mark this role as applied and track your application progress.",
+        badge: "Sign In Required",
+      });
+      return;
+    }
+    toggleApplied(job.id);
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -87,10 +110,10 @@ export default function JobDetailPage() {
 
   if (isLoading) {
     return (
-      <main className="min-h-screen bg-[#f8f7f5] flex items-center justify-center p-6">
+      <main className="min-h-screen bg-[#fff6eb] flex items-center justify-center p-6">
         <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-3 border-[#84d64f] border-t-transparent mb-4" />
-          <h3 className="text-sm font-black text-[#121816]">Loading verified role details...</h3>
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-3 border-[#008561] border-t-transparent mb-4" />
+          <h3 className="text-sm font-black text-[#02110c]">Loading verified role details...</h3>
           <p className="text-xs text-[#55615b] mt-1">Syncing with official ATS feed</p>
         </div>
       </main>
@@ -99,16 +122,16 @@ export default function JobDetailPage() {
 
   if (!job) {
     return (
-      <main className="min-h-screen bg-[#f8f7f5] flex items-center justify-center p-6 text-center">
-        <div className="bg-white rounded-[28px] border border-neutral-200/80 p-10 max-w-md shadow-sm">
-          <Briefcase className="w-12 h-12 text-[#b0bcba] mx-auto mb-4" />
-          <h2 className="text-2xl font-black text-[#121816]">Role Not Found or Expired</h2>
+      <main className="min-h-screen bg-[#fff6eb] flex items-center justify-center p-6 text-center">
+        <div className="bg-white rounded-[28px] border border-[#eedfc9] p-10 max-w-md shadow-sm">
+          <Briefcase className="w-12 h-12 text-[#008561] mx-auto mb-4" />
+          <h2 className="text-2xl font-pochaevsk font-bold text-[#02110c]">Role Not Found or Expired</h2>
           <p className="text-xs sm:text-sm text-[#55615b] mt-2">
             This opening may have been filled by the employer and auto-removed from our live sync stream.
           </p>
           <Link
             href="/jobs"
-            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#84d64f] hover:bg-[#75c73d] px-6 py-3 text-xs font-bold text-[#14281a] transition shadow-sm"
+            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#008561] hover:bg-[#006e50] px-6 py-3 text-xs font-bold text-white transition shadow-sm"
           >
             <ChevronLeft className="w-4 h-4" /> Back to All Roles
           </Link>
@@ -118,10 +141,10 @@ export default function JobDetailPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f8f7f5] text-[#121816] font-sans antialiased selection:bg-[#84d64f]/30 selection:text-[#14281a]">
+    <main className="min-h-screen bg-[#fdfcf9] bg-canvas-white text-[#02110c] font-sans antialiased selection:bg-[#008561]/20 selection:text-[#02110c]">
       {/* Background Subtle Ambient Glow */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute -top-[20%] left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-gradient-to-b from-[#84d64f]/15 via-[#84d64f]/5 to-transparent blur-3xl opacity-70" />
+        <div className="absolute -top-[20%] left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-gradient-to-b from-[#008561]/8 via-transparent to-transparent blur-3xl opacity-50" />
       </div>
 
       <div className="relative z-10 mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-12 pt-4 pb-20">
@@ -129,36 +152,37 @@ export default function JobDetailPage() {
         {/* ======================================================== */}
         {/* TOP NAVBAR */}
         {/* ======================================================== */}
-        <header className="sticky top-4 z-50 rounded-[20px] border border-neutral-200/80 bg-white/85 backdrop-blur-md px-5 py-3 shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-all">
+        <header className="sticky top-4 z-50 rounded-[20px] border border-[#eadecc] bg-white/95 backdrop-blur-md px-5 py-3 shadow-[0_8px_30px_rgba(2,17,12,0.04)] transition-all">
           <div className="flex items-center justify-between gap-4">
             {/* Logo & Back */}
             <div className="flex items-center gap-3">
               <Link
                 href="/jobs"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-100 hover:bg-neutral-200 px-3.5 py-2 text-xs font-bold text-[#121816] transition"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[#faf8f5] hover:bg-white border border-[#eadecc] px-3.5 py-2 text-xs font-lora font-bold text-[#02110c] transition"
               >
-                <ChevronLeft className="w-4 h-4 text-[#3c7818]" /> Back to Jobs
+                <ChevronLeft className="w-4 h-4 text-[#008561]" /> Back to Jobs
               </Link>
 
-              <Link href="/" className="flex items-center gap-2 group">
-                <span className="text-[1.7rem] font-black tracking-[-0.04em] text-[#121816]">
-                  Sift<span className="text-[#58a826] transition-colors group-hover:text-[#4a911e]">role</span>
+              <Link href="/" className="flex items-center gap-2.5 group">
+                <SiftroleLogoMark size={28} />
+                <span className="font-bodoni-moda text-[1.85rem] font-extrabold italic tracking-[-0.02em] text-[#02110c]">
+                  Sift<span className="text-[#008561] transition-colors group-hover:text-[#02110c]">role</span>
                 </span>
               </Link>
             </div>
 
             {/* Nav Links */}
-            <nav className="hidden md:flex items-center gap-8 text-[0.95rem] font-semibold text-[#55615b]">
-              <Link href="/jobs" className="text-[#3c7818] font-bold hover:text-[#58a826] transition-colors">
+            <nav className="hidden md:flex items-center gap-8 text-[1rem] font-lora font-medium text-[#083D2E]/85">
+              <Link href="/jobs" className="text-[#083D2E] font-bold hover:text-[#008561] transition-colors">
                 All Jobs
               </Link>
-              <Link href="/cold-email" className="hover:text-[#121816] transition-colors">
+              <Link href="/cold-email" className="hover:text-[#083D2E] transition-colors">
                 HR Outreach
               </Link>
-              <Link href="/about" className="hover:text-[#121816] transition-colors">
+              <Link href="/about" className="hover:text-[#083D2E] transition-colors">
                 About
               </Link>
-              <Link href="/#faq" className="hover:text-[#121816] transition-colors">
+              <Link href="/#faq" className="hover:text-[#083D2E] transition-colors">
                 FAQ
               </Link>
             </nav>
@@ -168,23 +192,23 @@ export default function JobDetailPage() {
               {isLoggedIn ? (
                 <Link
                   href="/dashboard"
-                  className="rounded-full bg-[#84d64f] hover:bg-[#75c73d] px-5 py-2.5 text-xs sm:text-[0.9rem] font-heading font-bold text-[#14281a] shadow-md shadow-[#84d64f]/25 transition active:scale-[0.98] inline-flex items-center gap-2"
+                  className="rounded-full bg-[#00D793] hover:bg-[#00bf83] px-5 py-2.5 text-xs sm:text-[0.92rem] font-lora font-bold text-[#083D2E] shadow-md shadow-[#00D793]/25 transition active:scale-[0.98] inline-flex items-center gap-2"
                 >
-                  Go to Dashboard <ArrowRight className="w-3.5 h-3.5 text-[#14281a]" />
+                  Go to Dashboard <ArrowRight className="w-3.5 h-3.5 text-[#083D2E]" />
                 </Link>
               ) : (
                 <>
                   <Link
                     href="/login"
-                    className="text-xs sm:text-[0.9rem] font-bold text-[#55615b] hover:text-[#121816] px-3 py-2 transition"
+                    className="text-xs sm:text-[0.92rem] font-lora font-bold text-[#083D2E] hover:text-[#008561] px-3 py-2 transition"
                   >
                     Sign In
                   </Link>
                   <Link
                     href="/login?mode=signup"
-                    className="rounded-full bg-[#84d64f] hover:bg-[#75c73d] px-4 sm:px-5 py-2.5 text-xs sm:text-[0.9rem] font-heading font-bold text-[#14281a] shadow-md shadow-[#84d64f]/25 transition active:scale-[0.98] inline-flex items-center gap-1.5"
+                    className="rounded-full bg-[#00D793] hover:bg-[#00bf83] px-4 sm:px-5 py-2.5 text-xs sm:text-[0.92rem] font-lora font-bold text-[#083D2E] shadow-md shadow-[#00D793]/25 transition active:scale-[0.98] inline-flex items-center gap-1.5"
                   >
-                    Sign Up <ArrowRight className="w-3.5 h-3.5 text-[#14281a]" />
+                    Sign Up <ArrowRight className="w-3.5 h-3.5 text-[#083D2E]" />
                   </Link>
                 </>
               )}
@@ -193,70 +217,70 @@ export default function JobDetailPage() {
         </header>
 
         {/* ======================================================== */}
-        {/* BREADCRUMB */}
+        {/* BREADCRUMBS */}
         {/* ======================================================== */}
-        <nav className="mt-6 sm:mt-8 flex items-center gap-2 text-xs font-semibold text-[#79857f]">
-          <Link href="/" className="hover:text-[#121816] transition">Home</Link>
+        <nav className="mt-6 flex items-center gap-2 text-xs font-medium text-[#495e54] overflow-x-auto no-scrollbar">
+          <Link href="/" className="hover:text-[#02110c] transition">Home</Link>
           <span>/</span>
-          <Link href="/jobs" className="hover:text-[#121816] transition">Jobs</Link>
+          <Link href="/jobs" className="hover:text-[#02110c] transition">Jobs</Link>
           <span>/</span>
-          <Link href={`/jobs?company=${job.company}`} className="hover:text-[#121816] transition">{job.company}</Link>
+          <Link href={`/jobs?company=${job.company}`} className="hover:text-[#02110c] transition">{job.company}</Link>
           <span>/</span>
-          <span className="text-[#121816] font-bold truncate max-w-[300px]">{job.title}</span>
+          <span className="text-[#02110c] font-bold truncate max-w-[300px]">{job.title}</span>
         </nav>
 
         {/* ======================================================== */}
         {/* JOB HEADER HERO CARD */}
         {/* ======================================================== */}
-        <section className="mt-6 rounded-[32px] border border-neutral-200/90 bg-white p-6 sm:p-10 shadow-sm relative overflow-hidden">
+        <section className="mt-4 rounded-[30px] border border-[#eadecc] bg-white p-6 sm:p-10 shadow-[0_4px_20px_rgba(2,17,12,0.03)] relative overflow-hidden">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             
             {/* Left Info */}
-            <div className="flex items-start gap-5">
+            <div className="flex items-start gap-4 sm:gap-6 min-w-0">
               <CompanyLogo
                 company={job.company}
                 size="lg"
-                className="!h-16 !w-16 !p-2 rounded-2xl border border-neutral-200/80 bg-white shadow-xs shrink-0"
+                className="!h-16 !w-16 sm:!h-20 sm:!w-20 !p-3 rounded-2xl border border-[#eadecc] bg-white shadow-xs shrink-0"
               />
               <div>
                 <div className="flex flex-wrap items-center gap-2.5">
-                  <span className="text-sm font-extrabold uppercase tracking-wider text-[#3c7818]">
+                  <span className="text-sm font-extrabold uppercase tracking-wider text-[#008561]">
                     {job.company}
                   </span>
-                  <span className="rounded-full bg-[#eef8e5] border border-[#cce8be] text-[#3c7818] text-[0.7rem] font-bold px-3 py-0.5 inline-flex items-center gap-1">
-                    <ShieldCheck className="w-3.5 h-3.5 text-[#3c7818]" /> Verified Official ATS Feed
+                  <span className="rounded-full bg-[#00D793]/15 border border-[#00D793]/40 text-[#083D2E] text-[0.7rem] font-bold px-3 py-0.5 inline-flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#008561]" /> Verified Official ATS Feed
                   </span>
                   {job.source && (
-                    <span className="rounded-full bg-neutral-100 text-[#55615b] text-[0.7rem] font-bold px-2.5 py-0.5">
+                    <span className="rounded-full bg-[#faf8f5] border border-[#eadecc] text-[#495e54] text-[0.7rem] font-bold px-2.5 py-0.5">
                       Source: {job.source}
                     </span>
                   )}
                 </div>
 
-                <h1 className="text-[2.2rem] sm:text-[2.8rem] font-black text-[#121816] tracking-tight leading-[1.1] mt-2">
+                <h1 className="text-[2.2rem] sm:text-[2.8rem] font-lora font-bold text-[#02110c] tracking-tight leading-[1.1] mt-2">
                   {job.title}
                 </h1>
 
                 {/* Quick Info Badges */}
-                <div className="mt-4 flex flex-wrap items-center gap-3 sm:gap-4 text-xs font-bold text-[#55615b]">
-                  <div className="flex items-center gap-1.5 bg-[#f8f7f5] px-3.5 py-1.5 rounded-xl border border-neutral-200/80">
-                    <MapPin className="w-3.5 h-3.5 text-[#3c7818]" />
+                <div className="mt-4 flex flex-wrap items-center gap-3 sm:gap-4 text-xs font-bold text-[#02110c]">
+                  <div className="flex items-center gap-1.5 bg-[#faf8f5] px-3.5 py-1.5 rounded-xl border border-[#eadecc]">
+                    <MapPin className="w-3.5 h-3.5 text-[#008561]" />
                     <span>{job.location}</span>
                   </div>
 
-                  <div className="flex items-center gap-1.5 bg-[#f8f7f5] px-3.5 py-1.5 rounded-xl border border-neutral-200/80">
-                    <Briefcase className="w-3.5 h-3.5 text-[#3c7818]" />
+                  <div className="flex items-center gap-1.5 bg-[#faf8f5] px-3.5 py-1.5 rounded-xl border border-[#eadecc]">
+                    <Briefcase className="w-3.5 h-3.5 text-[#008561]" />
                     <span>{job.employment_type || "Full-Time"}</span>
                   </div>
 
-                  <div className="flex items-center gap-1.5 bg-[#f8f7f5] px-3.5 py-1.5 rounded-xl border border-neutral-200/80">
-                    <DollarSign className="w-3.5 h-3.5 text-[#3c7818]" />
+                  <div className="flex items-center gap-1.5 bg-[#00D793]/15 px-3.5 py-1.5 rounded-xl border border-[#00D793]/40 text-[#083D2E]">
+                    <DollarSign className="w-3.5 h-3.5 text-[#008561]" />
                     <span>{job.stipend_or_salary || "$140K/Yearly"}</span>
                   </div>
 
                   {job.experience_level && (
-                    <div className="flex items-center gap-1.5 bg-[#f8f7f5] px-3.5 py-1.5 rounded-xl border border-neutral-200/80">
-                      <GraduationCap className="w-3.5 h-3.5 text-[#3c7818]" />
+                    <div className="flex items-center gap-1.5 bg-[#faf8f5] px-3.5 py-1.5 rounded-xl border border-[#eadecc]">
+                      <GraduationCap className="w-3.5 h-3.5 text-[#008561]" />
                       <span>{job.experience_level}</span>
                     </div>
                   )}
@@ -265,7 +289,7 @@ export default function JobDetailPage() {
             </div>
 
             {/* Right Action CTA */}
-            <div className="flex flex-row flex-wrap lg:flex-col items-center lg:items-end gap-3 shrink-0 pt-4 lg:pt-0 border-t lg:border-t-0 border-neutral-100">
+            <div className="flex flex-row flex-wrap lg:flex-col items-center lg:items-end gap-3 shrink-0 pt-4 lg:pt-0 border-t lg:border-t-0 border-[#eedfc9]">
               <a
                 href={job.apply_url}
                 target="_blank"
@@ -275,30 +299,30 @@ export default function JobDetailPage() {
                     toggleApplied(job.id);
                   }
                 }}
-                className="w-full sm:w-auto rounded-full bg-[#84d64f] hover:bg-[#75c73d] text-[#14281a] px-8 py-4 text-sm font-heading font-extrabold shadow-[0_12px_24px_rgba(132,214,79,0.3)] transition active:scale-[0.98] inline-flex items-center justify-center gap-2"
+                className="w-full sm:w-auto rounded-full bg-[#008561] hover:bg-[#006e50] text-white px-8 py-4 text-sm font-bold shadow-[0_12px_24px_rgba(0,133,97,0.25)] transition active:scale-[0.98] inline-flex items-center justify-center gap-2 cursor-pointer"
               >
                 Apply on Official Portal
-                <ExternalLink className="w-4 h-4" />
+                <ExternalLink className="w-4 h-4 text-white" />
               </a>
 
               <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                 {/* Mark as Applied Toggle */}
                 <button
-                  onClick={() => toggleApplied(job.id)}
+                  onClick={handleToggleAppliedWithAuth}
                   className={`rounded-2xl px-5 py-3.5 text-xs font-bold transition inline-flex items-center gap-2 shrink-0 cursor-pointer ${
                     isApplied(job.id)
-                      ? "bg-[#14281a] text-[#84d64f] hover:bg-[#1f3d27] shadow-sm"
-                      : "border border-neutral-200/90 bg-white hover:bg-[#eef8e5] hover:border-[#84d64f] text-[#121816]"
+                      ? "bg-[#008561] text-white hover:bg-[#006e50] shadow-sm"
+                      : "border border-[#eadecc] bg-white hover:bg-[#faf8f5] hover:border-[#008561] text-[#02110c]"
                   }`}
                 >
                   {isApplied(job.id) ? (
                     <>
-                      <CheckCircle2 className="w-4 h-4 text-[#84d64f]" />
+                      <CheckCircle2 className="w-4 h-4 text-white" />
                       <span>Applied ✓</span>
                     </>
                   ) : (
                     <>
-                      <Check className="w-4 h-4 text-[#79857f]" />
+                      <Check className="w-4 h-4 text-[#495e54]" />
                       <span>Mark as Applied</span>
                     </>
                   )}
@@ -306,9 +330,9 @@ export default function JobDetailPage() {
 
                 <button
                   onClick={handleShare}
-                  className="rounded-2xl border border-neutral-200/90 bg-white hover:bg-neutral-50 text-[#121816] px-4 py-3.5 text-xs font-bold transition inline-flex items-center gap-2 shrink-0 cursor-pointer"
+                  className="rounded-2xl border border-[#eadecc] bg-white hover:bg-[#faf8f5] text-[#02110c] px-4 py-3.5 text-xs font-bold transition inline-flex items-center gap-2 shrink-0 cursor-pointer shadow-2xs"
                 >
-                  <Share2 className="w-4 h-4 text-[#55615b]" />
+                  <Share2 className="w-4 h-4 text-[#008561]" />
                   <span>{copiedLink ? "Copied!" : "Share"}</span>
                 </button>
               </div>
@@ -328,15 +352,15 @@ export default function JobDetailPage() {
             
             {/* Required Skills & Stack */}
             {job.skills_required && job.skills_required.length > 0 && (
-              <div className="rounded-[26px] border border-neutral-200/90 bg-white p-6 sm:p-8 shadow-sm">
-                <h3 className="text-xs font-black uppercase tracking-wider text-[#79857f] mb-4">
+              <div className="rounded-[26px] border border-[#eadecc] bg-white p-6 sm:p-8 shadow-[0_2px_12px_rgba(2,17,12,0.03)]">
+                <h3 className="text-xs font-black uppercase tracking-wider text-[#495e54] mb-4">
                   Required Technologies & Core Skills
                 </h3>
                 <div className="flex flex-wrap gap-2.5">
                   {job.skills_required.map((skill) => (
                     <span
                       key={skill}
-                      className="rounded-xl bg-[#eef8e5] text-[#14281a] border border-[#cce8be] px-4 py-2 text-xs font-extrabold shadow-2xs"
+                      className="rounded-xl bg-[#008561]/10 text-[#008561] border border-[#008561]/20 px-4 py-2 text-xs font-extrabold shadow-2xs"
                     >
                       {skill}
                     </span>
@@ -346,12 +370,12 @@ export default function JobDetailPage() {
             )}
 
             {/* Detailed Description */}
-            <div className="rounded-[26px] border border-neutral-200/90 bg-white p-6 sm:p-10 shadow-sm">
-              <h2 className="text-xl sm:text-2xl font-black text-[#121816] tracking-tight mb-6">
+            <div className="rounded-[26px] border border-[#eadecc] bg-white p-6 sm:p-10 shadow-[0_2px_12px_rgba(2,17,12,0.03)]">
+              <h2 className="text-xl sm:text-2xl font-pochaevsk font-bold text-[#02110c] tracking-tight mb-6">
                 About the Role & Qualifications
               </h2>
 
-              <div className="prose prose-neutral max-w-none text-[#55615b] leading-[1.8] text-sm sm:text-base">
+              <div className="prose prose-neutral max-w-none text-[#495e54] leading-[1.8] text-sm sm:text-base">
                 {job.raw_jd_text ? (
                   <div className="whitespace-pre-line font-normal space-y-4">
                     {job.raw_jd_text}
@@ -359,13 +383,13 @@ export default function JobDetailPage() {
                 ) : (
                   <div className="space-y-4 font-normal">
                     <p>
-                      <strong>{job.company}</strong> is actively seeking a talented{" "}
-                      <strong>{job.title}</strong> to join their team in {job.location}.
+                      <strong className="text-[#02110c]">{job.company}</strong> is actively seeking a talented{" "}
+                      <strong className="text-[#02110c]">{job.title}</strong> to join their team in {job.location}.
                     </p>
                     <p>
                       This role is ingested continuously from {job.company}'s official public career portal via direct ATS integration. By applying through the official link on this page, your application will go straight into {job.company}'s hiring team pipeline with zero intermediaries or data scraping.
                     </p>
-                    <h4 className="text-base font-bold text-[#121816] mt-4">Key Highlights:</h4>
+                    <h4 className="text-base font-bold text-[#02110c] mt-4">Key Highlights:</h4>
                     <ul className="list-disc pl-5 space-y-1.5">
                       <li>Location: {job.location}</li>
                       <li>Employment Type: {job.employment_type || "Full-Time"}</li>
@@ -377,17 +401,17 @@ export default function JobDetailPage() {
               </div>
 
               {/* Bottom Apply Strip */}
-              <div className="mt-10 pt-8 border-t border-neutral-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="text-xs text-[#79857f]">
+              <div className="mt-10 pt-8 border-t border-[#eadecc]/60 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-xs text-[#495e54]">
                   Role verified active today from official ATS JSON feed.
                 </div>
                 <a
                   href={job.apply_url}
                   target="_blank"
                   rel="noreferrer"
-                  className="w-full sm:w-auto rounded-full bg-[#84d64f] hover:bg-[#75c73d] text-[#14281a] px-8 py-3.5 text-xs font-heading font-black shadow-md shadow-[#84d64f]/25 transition inline-flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto rounded-full bg-[#008561] hover:bg-[#006e50] text-white px-8 py-3.5 text-xs font-bold shadow-md shadow-[#008561]/20 transition inline-flex items-center justify-center gap-2"
                 >
-                  Apply on Official Portal <ExternalLink className="w-3.5 h-3.5" />
+                  Apply on Official Portal <ExternalLink className="w-3.5 h-3.5 text-white" />
                 </a>
               </div>
             </div>
@@ -399,9 +423,9 @@ export default function JobDetailPage() {
           <div className="lg:col-span-4 space-y-6 sticky top-24">
             
             {/* Official Portal Application Card */}
-            <div className="rounded-[26px] border border-neutral-200/90 bg-white p-6 shadow-sm">
-              <h4 className="text-sm font-black text-[#121816] mb-2">Direct Official Application</h4>
-              <p className="text-xs text-[#55615b] leading-relaxed mb-5">
+            <div className="rounded-[26px] border border-[#eadecc] bg-white p-6 shadow-[0_2px_12px_rgba(2,17,12,0.03)]">
+              <h4 className="text-sm font-black text-[#02110c] mb-2">Direct Official Application</h4>
+              <p className="text-xs text-[#495e54] leading-relaxed mb-5">
                 Your application goes directly to {job.company}'s hiring managers. Siftrole does not insert intermediate forms or charge applicant fees.
               </p>
 
@@ -409,73 +433,68 @@ export default function JobDetailPage() {
                 href={job.apply_url}
                 target="_blank"
                 rel="noreferrer"
-                className="w-full rounded-full bg-[#84d64f] hover:bg-[#75c73d] text-[#14281a] py-3.5 text-xs font-heading font-extrabold shadow-sm transition inline-flex items-center justify-center gap-2"
+                className="w-full rounded-full bg-[#008561] hover:bg-[#006e50] text-white py-3.5 text-xs font-bold shadow-sm transition inline-flex items-center justify-center gap-2"
               >
                 Apply on {job.company}'s Portal
-                <ExternalLink className="w-4 h-4" />
+                <ExternalLink className="w-4 h-4 text-white" />
               </a>
 
-              <div className="mt-4 pt-4 border-t border-neutral-100 flex items-center justify-between text-xs text-[#79857f]">
+              <div className="mt-4 pt-4 border-t border-[#eadecc]/60 flex items-center justify-between text-xs text-[#495e54]">
                 <span>Status: Active & Verified</span>
-                <span className="flex items-center gap-1 text-[#3c7818] font-bold">
-                  <span className="h-2 w-2 rounded-full bg-[#84d64f] animate-pulse" /> Live Feed
+                <span className="flex items-center gap-1 text-[#008561] font-bold">
+                  <span className="h-2 w-2 rounded-full bg-[#008561] animate-pulse" /> Live Feed
                 </span>
               </div>
             </div>
 
             {/* Zero Ghost Guarantee Card */}
-            <div className="rounded-[26px] border border-[#14281a]/10 bg-gradient-to-br from-[#14281a] to-[#0a180e] p-6 text-white shadow-md">
-              <div className="flex items-center gap-2 text-[#84d64f] font-bold text-xs mb-2">
-                <ShieldCheck className="w-4 h-4" />
+            <div className="rounded-[26px] border border-[#008561]/20 bg-gradient-to-br from-[#02110c] to-[#0d2119] p-6 text-white shadow-md">
+              <div className="flex items-center gap-2 text-[#fff6eb] font-bold text-xs mb-2">
+                <ShieldCheck className="w-4 h-4 text-[#008561]" />
                 <span>Zero Ghost Jobs Guarantee</span>
               </div>
-              <h5 className="font-extrabold text-base leading-snug">
+              <h5 className="font-pochaevsk font-bold text-base leading-snug text-white">
                 Never waste hours on stale postings.
               </h5>
-              <p className="text-xs text-[#eef8e5]/80 mt-2 leading-relaxed">
+              <p className="text-xs text-[#fff6eb]/80 mt-2 leading-relaxed">
                 When {job.company} fills this vacancy, our continuous sync engine auto-expires the page within minutes.
               </p>
             </div>
 
             {/* Company Info Box */}
-            <div className="rounded-[26px] border border-neutral-200/90 bg-white p-6 shadow-sm">
-              <div className="flex items-center gap-3 mb-3">
-                <CompanyLogo company={job.company} size="sm" />
-                <div>
-                  <h5 className="font-black text-sm text-[#121816]">{job.company}</h5>
-                  <span className="text-xs text-[#79857f]">{getCompanyDomain(job.company)}</span>
-                </div>
-              </div>
-              <p className="text-xs text-[#55615b] leading-relaxed">
-                Explore all verified engineering and tech opportunities actively hiring at {job.company}.
+            <div className="rounded-[26px] border border-[#eadecc] bg-white p-6 shadow-[0_2px_12px_rgba(2,17,12,0.03)]">
+              <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#495e54] mb-3">
+                About {job.company}
+              </h4>
+              <p className="text-xs text-[#495e54] leading-relaxed">
+                Tracked in Siftrole&apos;s verified engineering database. Roles are verified from authoritative public hiring pipelines.
               </p>
-              <Link
-                href={`/jobs?company=${job.company}`}
-                className="mt-4 block text-center rounded-xl bg-neutral-100 hover:bg-[#eef8e5] text-[#121816] hover:text-[#14281a] py-2.5 text-xs font-bold transition"
-              >
-                View all {job.company} roles →
-              </Link>
             </div>
+
           </div>
+
         </div>
 
         {/* ======================================================== */}
-        {/* SIMILAR VERIFIED ROLES SECTION */}
+        {/* SIMILAR ROLES CAROUSEL / ROW */}
         {/* ======================================================== */}
         {similarRoles.length > 0 && (
-          <section className="mt-16 sm:mt-24">
-            <div className="flex items-center justify-between gap-4 mb-6">
+          <section className="mt-16 pt-12 border-t border-[#eadecc]">
+            <div className="flex items-center justify-between mb-8">
               <div>
-                <h3 className="text-2xl sm:text-3xl font-black text-[#121816] tracking-tight">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-[#008561]">
+                  Related Opportunities
+                </span>
+                <h3 className="text-2xl font-pochaevsk font-bold text-[#02110c] tracking-tight mt-1">
                   Similar Verified Roles
                 </h3>
-                <p className="text-xs sm:text-sm text-[#55615b] mt-1">
+                <p className="text-xs sm:text-sm text-[#495e54] mt-1">
                   Other live tech opportunities that match this stack or team.
                 </p>
               </div>
               <Link
                 href="/jobs"
-                className="text-xs sm:text-sm font-bold text-[#3c7818] hover:text-[#58a826] transition flex items-center gap-1"
+                className="text-xs sm:text-sm font-bold text-[#008561] hover:underline transition flex items-center gap-1"
               >
                 Explore all roles <ArrowRight className="w-4 h-4" />
               </Link>
@@ -486,20 +505,20 @@ export default function JobDetailPage() {
                 <Link
                   key={simJob.id}
                   href={`/jobs/${simJob.id}`}
-                  className="rounded-[24px] border border-neutral-200/90 bg-white p-6 shadow-2xs hover:border-[#84d64f] hover:bg-[#eef8e5] transition-all flex flex-col justify-between"
+                  className="rounded-[24px] border border-[#eadecc] bg-white p-6 shadow-[0_2px_12px_rgba(2,17,12,0.03)] hover:border-[#008561] hover:shadow-md transition-all flex flex-col justify-between"
                 >
                   <div>
                     <div className="flex items-center gap-2 mb-2.5">
                       <CompanyLogo company={simJob.company} size="sm" className="!h-4 !w-4 !p-0 border-0 bg-transparent" />
-                      <span className="text-xs font-bold text-[#3c7818]">{simJob.company}</span>
+                      <span className="text-xs font-bold text-[#008561]">{simJob.company}</span>
                     </div>
-                    <h4 className="font-black text-base text-[#121816] line-clamp-1">{simJob.title}</h4>
-                    <span className="text-xs text-[#79857f] mt-1 block">{simJob.location}</span>
+                    <h4 className="font-bold text-base text-[#02110c] line-clamp-1">{simJob.title}</h4>
+                    <span className="text-xs text-[#495e54] mt-1 block">{simJob.location}</span>
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-neutral-100/80 flex items-center justify-between text-xs font-bold">
-                    <span className="text-[#121816]">{simJob.stipend_or_salary || "$140k"}</span>
-                    <span className="text-[#3c7818] flex items-center gap-0.5">View JD →</span>
+                  <div className="mt-4 pt-3 border-t border-[#eadecc] flex items-center justify-between text-xs font-bold">
+                    <span className="text-[#02110c]">{simJob.stipend_or_salary || "$140k"}</span>
+                    <span className="text-[#008561] flex items-center gap-0.5">View JD →</span>
                   </div>
                 </Link>
               ))}
@@ -528,10 +547,10 @@ export default function JobDetailPage() {
             <div>
               <h4 className="text-xs font-black text-[#121816] mb-4">Company</h4>
               <ul className="space-y-2.5 text-xs font-semibold text-[#55615b]">
-                <li><Link href="/about" className="hover:text-[#3c7818] transition">About</Link></li>
-                <li><Link href="/jobs" className="hover:text-[#3c7818] transition">Career</Link></li>
-                <li><Link href="/#faq" className="hover:text-[#3c7818] transition">Contact</Link></li>
-                <li><Link href="/jobs" className="hover:text-[#3c7818] transition">Blog</Link></li>
+                <li><Link href="/about" className="hover:text-[#008561] transition">About</Link></li>
+                <li><Link href="/jobs" className="hover:text-[#008561] transition">Career</Link></li>
+                <li><Link href="/#faq" className="hover:text-[#008561] transition">Contact</Link></li>
+                <li><Link href="/jobs" className="hover:text-[#008561] transition">Blog</Link></li>
               </ul>
             </div>
 
@@ -539,9 +558,9 @@ export default function JobDetailPage() {
             <div>
               <h4 className="text-xs font-black text-[#121816] mb-4">Support</h4>
               <ul className="space-y-2.5 text-xs font-semibold text-[#55615b]">
-                <li><Link href="/dashboard" className="hover:text-[#3c7818] transition">License</Link></li>
-                <li><Link href="/about" className="hover:text-[#3c7818] transition">Style Guide</Link></li>
-                <li><Link href="/jobs" className="hover:text-[#3c7818] transition">Changelog</Link></li>
+                <li><Link href="/dashboard" className="hover:text-[#008561] transition">License</Link></li>
+                <li><Link href="/about" className="hover:text-[#008561] transition">Style Guide</Link></li>
+                <li><Link href="/jobs" className="hover:text-[#008561] transition">Changelog</Link></li>
               </ul>
             </div>
 
@@ -549,18 +568,18 @@ export default function JobDetailPage() {
             <div>
               <h4 className="text-xs font-black text-[#121816] mb-4">Social</h4>
               <ul className="space-y-2.5 text-xs font-semibold text-[#55615b]">
-                <li><a href="https://linkedin.com" target="_blank" rel="noreferrer" className="hover:text-[#3c7818] transition">LinkedIn</a></li>
+                <li><a href="https://linkedin.com" target="_blank" rel="noreferrer" className="hover:text-[#008561] transition">LinkedIn</a></li>
               </ul>
             </div>
           </div>
 
           {/* Sub-row */}
-          <div className="pt-8 border-t border-neutral-200/70 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-semibold text-[#55615b]">
+          <div className="pt-8 border-t border-[#eedfc9] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-semibold text-[#55615b]">
             <div>
               &copy; {new Date().getFullYear()} Siftrole. All rights reserved.
             </div>
             <div>
-              <a href="mailto:support@siftrole.in" className="hover:text-[#3c7818] transition">
+              <a href="mailto:support@siftrole.in" className="hover:text-[#008561] transition">
                 support@siftrole.in
               </a>
             </div>
@@ -569,14 +588,24 @@ export default function JobDetailPage() {
           {/* ======================================================== */}
           {/* MASSIVE BOTTOM SIFTROLE WORDMARK */}
           {/* ======================================================== */}
-          <div className="pt-10 pb-4 select-none overflow-hidden text-center text-[#14281a]">
-            <span className="text-[13vw] sm:text-[14vw] font-black tracking-[-0.04em] leading-none uppercase select-none text-[#14281a] inline-block">
+          <div className="pt-10 pb-4 select-none overflow-hidden text-center text-[#02110c]">
+            <span className="text-[13vw] sm:text-[14vw] font-black tracking-[-0.04em] leading-none uppercase select-none text-[#02110c] inline-block">
               SIFTROLE
             </span>
           </div>
         </footer>
 
       </div>
+
+      {/* Auth Gate Modal */}
+      <AuthGateModal
+        isOpen={authGateConfig.isOpen}
+        onClose={() => setAuthGateConfig({ isOpen: false })}
+        title={authGateConfig.title}
+        description={authGateConfig.description}
+        badge={authGateConfig.badge}
+        primaryCta={authGateConfig.primaryCta}
+      />
     </main>
   );
 }

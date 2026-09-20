@@ -37,8 +37,9 @@ import {
 import { CompanyLogo, getCompanyDomain } from "@/components/CompanyLogo";
 import { LiquidSilkBackground } from "@/components/LiquidSilkBackground";
 import { NewsletterSection } from "@/components/NewsletterSection";
-import { SiftroleLogoMark } from "@/components/SiftroleLogo";
+import { SiftroleLogo } from "@/components/SiftroleLogo";
 import { JobDetailModal } from "@/components/JobDetailModal";
+import { AuthGateModal } from "@/components/AuthGateModal";
 import { useAppliedJobs } from "@/lib/appliedJobs";
 import { useAuth } from "@/lib/useAuth";
 
@@ -64,11 +65,28 @@ interface Listing {
 const COMPANY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   Figma: { bg: "bg-purple-500/10", text: "text-purple-600", border: "border-purple-200" },
   Stripe: { bg: "bg-indigo-500/10", text: "text-indigo-600", border: "border-indigo-200" },
-  Spotify: { bg: "bg-[#84d64f]/15", text: "text-[#3c7818]", border: "border-[#84d64f]/30" },
+  Spotify: { bg: "bg-emerald-500/10", text: "text-emerald-700", border: "border-emerald-200" },
   Linear: { bg: "bg-slate-800/10", text: "text-slate-800", border: "border-slate-200" },
   Notion: { bg: "bg-amber-500/10", text: "text-amber-700", border: "border-amber-200" },
   SmartRecruiters: { bg: "bg-blue-500/10", text: "text-blue-600", border: "border-blue-200" },
 };
+
+function formatLocation(loc: string | null | undefined): string {
+  if (!loc) return "Remote / Unspecified";
+  const trimmed = loc.trim();
+  if (/multiple locations/i.test(trimmed)) {
+    const prefix = trimmed.split("(")[0].trim();
+    return prefix ? `${prefix} (Multiple Locations)` : "Multiple Locations";
+  }
+  if (trimmed.length > 35) {
+    const parts = trimmed.split(/[;,]/);
+    if (parts.length > 1 && parts[0].trim().length >= 3) {
+      return `${parts[0].trim()} +more`;
+    }
+    return trimmed.slice(0, 32) + "...";
+  }
+  return trimmed;
+}
 
 export default function LandingPage() {
   const router = useRouter();
@@ -85,6 +103,28 @@ export default function LandingPage() {
   const [subscribedEmail, setSubscribedEmail] = useState(false);
   const { appliedJobIds, toggleApplied, isApplied } = useAppliedJobs();
   const { isLoggedIn, isLoaded } = useAuth();
+  const [authGateConfig, setAuthGateConfig] = useState<{
+    isOpen: boolean;
+    title?: string;
+    description?: string;
+    badge?: string;
+    primaryCta?: string;
+  }>({ isOpen: false });
+
+  const handleToggleAppliedWithAuth = (jobId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isLoggedIn) {
+      setAuthGateConfig({
+        isOpen: true,
+        title: "Sign in to Track Applications",
+        description: "Create a free account or sign in to mark roles as applied and track your application progress.",
+        badge: "Sign In Required",
+      });
+      return;
+    }
+    toggleApplied(jobId, e);
+  };
 
   // Contact / Feedback form state
   const [contactName, setContactName] = useState("");
@@ -228,10 +268,10 @@ export default function LandingPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-[#f8f7f5] text-[#121816] font-sans antialiased selection:bg-[#84d64f]/30 selection:text-[#14281a]">
-      {/* Background Subtle Ambient Glow */}
+    <main className="relative min-h-screen bg-[#fff6eb] bg-canvas-pattern text-[#02110c] font-sans antialiased selection:bg-[#008561]/20 selection:text-[#02110c]">
+      {/* Ambient background glow */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute -top-[20%] left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-gradient-to-b from-[#84d64f]/15 via-[#84d64f]/5 to-transparent blur-3xl opacity-70" />
+        <div className="absolute -top-[20%] left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-gradient-to-b from-[#008561]/12 via-[#008561]/4 to-transparent blur-3xl opacity-70" />
       </div>
 
       <div className="relative z-10 mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-12 pt-4 pb-20">
@@ -239,28 +279,23 @@ export default function LandingPage() {
         {/* ======================================================== */}
         {/* PREMIUM FLOATING NAVBAR */}
         {/* ======================================================== */}
-        <header className="sticky top-4 z-50 rounded-[20px] border border-neutral-200/80 bg-white/85 backdrop-blur-md px-5 py-3 shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-all">
+        <header className="sticky top-4 z-50 rounded-[20px] border border-[#eadecc] bg-white/95 backdrop-blur-md px-5 py-3 shadow-[0_8px_30px_rgba(2,17,12,0.04)] transition-all">
           <div className="flex items-center justify-between gap-4">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2.5 group">
-              <SiftroleLogoMark size={32} />
-              <span className="text-[1.85rem] font-black tracking-[-0.04em] text-[#121816]">
-                Sift<span className="text-[#58a826] transition-colors group-hover:text-[#4a911e]">role</span>
-              </span>
-            </Link>
+            <SiftroleLogo size={32} priority />
 
             {/* Nav Links */}
-            <nav className="hidden md:flex items-center gap-8 text-[0.95rem] font-semibold text-[#55615b]">
-              <Link href="/jobs" className="text-[#3c7818] font-bold hover:text-[#58a826] transition-colors">
+            <nav className="hidden md:flex items-center gap-8 text-[1rem] font-lora font-medium text-[#083D2E]/85">
+              <Link href="/jobs" className="text-[#083D2E] font-bold hover:text-[#008561] transition-colors">
                 All Jobs
               </Link>
-              <Link href="/cold-email" className="hover:text-[#121816] transition-colors">
+              <Link href="/cold-email" className="hover:text-[#083D2E] transition-colors">
                 HR Outreach
               </Link>
-              <Link href="/about" className="hover:text-[#121816] transition-colors">
+              <Link href="/about" className="hover:text-[#083D2E] transition-colors">
                 About
               </Link>
-              <a href="#faq" className="hover:text-[#121816] transition-colors">
+              <a href="#faq" className="hover:text-[#083D2E] transition-colors">
                 FAQ
               </a>
             </nav>
@@ -271,30 +306,30 @@ export default function LandingPage() {
                 <>
                   <Link
                     href="/jobs"
-                    className="hidden sm:inline-flex text-xs font-bold text-[#55615b] hover:text-[#121816] px-3 py-2 transition"
+                    className="hidden sm:inline-flex text-xs font-lora font-bold text-[#083D2E] hover:text-[#008561] px-3 py-2 transition"
                   >
                     Browse Roles
                   </Link>
                   <Link
                     href="/dashboard"
-                    className="rounded-full bg-[#84d64f] hover:bg-[#75c73d] px-5 py-2.5 text-xs sm:text-[0.9rem] font-heading font-bold text-[#14281a] shadow-md shadow-[#84d64f]/25 transition active:scale-[0.98] inline-flex items-center gap-2"
+                    className="rounded-full bg-[#00D793] hover:bg-[#00bf83] px-5 py-2.5 text-xs sm:text-[0.92rem] font-lora font-bold text-[#083D2E] shadow-md shadow-[#00D793]/25 transition active:scale-[0.98] inline-flex items-center gap-2"
                   >
-                    Go to Dashboard <ArrowRight className="w-3.5 h-3.5 text-[#14281a]" />
+                    Go to Dashboard <ArrowRight className="w-3.5 h-3.5 text-[#083D2E]" />
                   </Link>
                 </>
               ) : (
                 <>
                   <Link
                     href="/login"
-                    className="text-xs sm:text-[0.9rem] font-bold text-[#55615b] hover:text-[#121816] px-3 py-2 transition"
+                    className="text-xs sm:text-[0.92rem] font-lora font-bold text-[#083D2E] hover:text-[#008561] px-3 py-2 transition"
                   >
                     Sign In
                   </Link>
                   <Link
                     href="/login?mode=signup"
-                    className="rounded-full bg-[#84d64f] hover:bg-[#75c73d] px-4 sm:px-5 py-2.5 text-xs sm:text-[0.9rem] font-heading font-bold text-[#14281a] shadow-md shadow-[#84d64f]/25 transition active:scale-[0.98] inline-flex items-center gap-1.5"
+                    className="rounded-full bg-[#00D793] hover:bg-[#00bf83] px-4 sm:px-5 py-2.5 text-xs sm:text-[0.92rem] font-lora font-bold text-[#083D2E] shadow-md shadow-[#00D793]/25 transition active:scale-[0.98] inline-flex items-center gap-1.5"
                   >
-                    Sign Up <ArrowRight className="w-3.5 h-3.5 text-[#14281a]" />
+                    Sign Up <ArrowRight className="w-3.5 h-3.5 text-[#083D2E]" />
                   </Link>
                 </>
               )}
@@ -310,12 +345,12 @@ export default function LandingPage() {
             
             {/* Left Column: Heading & Core Angle */}
             <div className="relative z-10">
-              <h1 className="font-heading text-[3.2rem] sm:text-[4.4rem] lg:text-[4.9rem] font-extrabold tracking-[-0.035em] text-[#121816] leading-[1.05]">
+              <h1 className="font-pochaevsk text-[3.2rem] sm:text-[4.4rem] lg:text-[5rem] tracking-[-0.02em] text-[#02110c] leading-[1.08]">
                 Thinking you applied to them all?<br />
-                <span className="text-[#58a826]">Check the master list.</span>
+                <span className="text-[#008561]">Check the master list.</span>
               </h1>
 
-              <p className="mt-6 max-w-[580px] text-[1.1rem] sm:text-[1.2rem] leading-[1.75] text-[#55615b]">
+              <p className="mt-6 max-w-[580px] text-[1.1rem] sm:text-[1.2rem] leading-[1.75] text-[#495e54]">
                 Leave the job hunting to us, you just apply. We continuously monitor official career feeds across big tech companies, then use AI to match and rank the highest-fit roles for your resume in seconds.
               </p>
 
@@ -323,16 +358,16 @@ export default function LandingPage() {
               <div className="mt-8 flex flex-wrap items-center gap-4">
                 <Link
                   href="/jobs"
-                  className="rounded-full bg-[#84d64f] hover:bg-[#75c73d] px-8 py-4 text-[1.05rem] font-heading font-bold text-[#14281a] shadow-[0_12px_28px_rgba(132,214,79,0.35)] transition active:scale-[0.98] inline-flex items-center gap-2"
+                  className="rounded-full bg-[#008561] hover:bg-[#006e50] px-8 py-4 text-[1.05rem] font-heading font-bold text-white shadow-[0_12px_28px_rgba(0,133,97,0.3)] transition active:scale-[0.98] inline-flex items-center gap-2"
                 >
-                  Explore Verified Roles <ArrowRight className="w-4 h-4 text-[#14281a]" />
+                  Explore Verified Roles <ArrowRight className="w-4 h-4 text-white" />
                 </Link>
 
                 <Link
                   href="/jobs"
-                  className="rounded-full border border-neutral-300/90 bg-white px-6 py-4 text-[1.02rem] font-heading font-bold text-[#14281a] hover:border-[#84d64f] hover:bg-[#eef8e5] transition shadow-sm inline-flex items-center gap-2"
+                  className="rounded-full border border-[#008561]/25 bg-white/80 backdrop-blur-xs px-6 py-4 text-[1.02rem] font-heading font-bold text-[#02110c] hover:border-[#008561] hover:bg-white transition shadow-sm inline-flex items-center gap-2"
                 >
-                  <Sparkles className="w-4 h-4 text-[#58a826]" />
+                  <Sparkles className="w-4 h-4 text-[#008561]" />
                   Match With Resume
                 </Link>
               </div>
@@ -341,7 +376,7 @@ export default function LandingPage() {
             {/* Right Column: Transparent Girl Cutout with Laptop */}
             <div className="relative flex items-center justify-center min-h-[480px] sm:min-h-[560px] lg:min-h-[620px]">
               {/* Soft ambient glow behind cutout */}
-              <div className="absolute w-[440px] h-[440px] rounded-full bg-[#84d64f]/15 blur-3xl pointer-events-none -translate-y-3 sm:-translate-y-5 lg:-translate-y-7" />
+              <div className="absolute w-[440px] h-[440px] rounded-full bg-[#008561]/15 blur-3xl pointer-events-none -translate-y-3 sm:-translate-y-5 lg:-translate-y-7" />
 
               {/* Fully transparent cut-out image */}
               <div className="relative w-full max-w-[580px] h-[500px] sm:h-[580px] lg:h-[640px] -translate-y-3 sm:-translate-y-5 lg:-translate-y-7 transition-transform duration-300">
@@ -367,9 +402,9 @@ export default function LandingPage() {
               aria-label="Scroll down to explore verified opportunities"
               className="group flex flex-col items-center justify-center p-2 transition-all hover:scale-110 active:scale-95 cursor-pointer focus:outline-none"
             >
-              <div className="flex flex-col items-center -space-y-3 drop-shadow-[0_0_8px_rgba(132,214,79,0.6)]">
+              <div className="flex flex-col items-center -space-y-3 drop-shadow-[0_0_10px_rgba(0,133,97,0.35)]">
                 <svg
-                  className="w-6 h-6 text-[#84d64f] animate-[pulse_1.4s_infinite_100ms] opacity-60 transition-colors group-hover:opacity-90"
+                  className="w-6 h-6 text-[#008561]/50 animate-[pulse_1.4s_infinite_100ms] opacity-60 transition-colors group-hover:opacity-90"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -380,7 +415,7 @@ export default function LandingPage() {
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
                 <svg
-                  className="w-6 h-6 text-[#58a826] animate-[pulse_1.4s_infinite_350ms] opacity-80 transition-colors group-hover:opacity-100"
+                  className="w-6 h-6 text-[#008561] animate-[pulse_1.4s_infinite_350ms] opacity-80 transition-colors group-hover:opacity-100"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -391,7 +426,7 @@ export default function LandingPage() {
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
                 <svg
-                  className="w-6 h-6 text-[#14281a] animate-[pulse_1.4s_infinite_600ms] transition-colors group-hover:text-[#2d5d11]"
+                  className="w-6 h-6 text-[#02110c] animate-[pulse_1.4s_infinite_600ms] transition-colors group-hover:text-[#008561]"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -439,20 +474,20 @@ export default function LandingPage() {
           {/* Section Heading with Direct CTA */}
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
             <div>
-              <span className="text-[0.85rem] font-extrabold uppercase tracking-[0.15em] text-[#3c7818]">
+              <span className="text-[0.85rem] font-extrabold uppercase tracking-[0.15em] text-[#008561]">
                 Featured Roles
               </span>
-              <h2 className="mt-2 text-[2.6rem] sm:text-[3.4rem] font-black leading-[1.06] tracking-[-0.04em] text-[#121816]">
+              <h2 className="mt-2 font-pochaevsk text-[2.8rem] sm:text-[3.6rem] leading-[1.06] tracking-[-0.02em] text-[#02110c]">
                 Recently Verified Openings
               </h2>
-              <p className="mt-2 text-sm font-medium text-[#55615b]">
+              <p className="mt-2 text-sm font-medium text-[#495e54]">
                 A preview of active roles parsed with AI. Explore the full board for {totalListingsCount > 0 ? `${totalListingsCount.toLocaleString()}+` : "all verified"} live positions.
               </p>
             </div>
 
             <Link
               href="/jobs"
-              className="text-xs sm:text-sm font-extrabold text-[#3c7818] hover:text-[#58a826] inline-flex items-center gap-1.5 transition group"
+              className="text-xs sm:text-sm font-extrabold text-[#008561] hover:text-[#02110c] inline-flex items-center gap-1.5 transition group"
             >
               <span>View all {totalListingsCount > 0 ? `${totalListingsCount.toLocaleString()}+` : "verified"} live listings</span>
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
@@ -462,17 +497,17 @@ export default function LandingPage() {
           {/* Job Preview Feed */}
           <div className="space-y-4">
             {isLoadingListings ? (
-              <div className="py-20 text-center bg-white rounded-[26px] border border-neutral-200/80 text-[#79857f]">
-                <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-[#84d64f] border-t-transparent mb-3" />
+              <div className="py-20 text-center bg-white rounded-[26px] border border-[#eedfc9] text-[#495e54]">
+                <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-[#008561] border-t-transparent mb-3" />
                 <p className="text-xs font-bold">Loading verified positions...</p>
               </div>
             ) : featuredListings.length === 0 ? (
-              <div className="py-16 text-center bg-white rounded-[26px] border border-neutral-200/80 p-8">
-                <Briefcase className="w-10 h-10 text-[#b0bcba] mx-auto mb-2" />
-                <h3 className="font-extrabold text-base text-[#121816]">Checking company career feeds...</h3>
+              <div className="py-16 text-center bg-white rounded-[26px] border border-[#eedfc9] p-8">
+                <Briefcase className="w-10 h-10 text-[#495e54]/50 mx-auto mb-2" />
+                <h3 className="font-extrabold text-base text-[#02110c]">Checking company career feeds...</h3>
                 <Link
                   href="/jobs"
-                  className="mt-4 inline-block rounded-xl bg-[#84d64f] hover:bg-[#75c73d] text-[#14281a] text-xs font-bold px-5 py-2.5 shadow-sm"
+                  className="mt-4 inline-block rounded-xl bg-[#008561] hover:bg-[#006e50] text-white text-xs font-bold px-5 py-2.5 shadow-sm"
                 >
                   Open Full Job Board
                 </Link>
@@ -484,114 +519,114 @@ export default function LandingPage() {
                   <Link
                     key={job.id || job.raw_jd_hash || idx}
                     href={`/jobs/${job.id}`}
-                    className={`block group rounded-[24px] border p-6 sm:p-7 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all duration-200 hover:border-[#84d64f] hover:bg-[#eef8e5] hover:shadow-md cursor-pointer relative overflow-hidden ${
-                      applied
-                        ? "border-[#84d64f]/70 bg-[#f7fcf3]"
-                        : "border-neutral-200/90 bg-white"
+                    className={`block group rounded-2xl border p-5 sm:p-6 shadow-[0_2px_12px_rgba(2,17,12,0.03)] transition-all duration-150 hover:border-[#008561] hover:shadow-md cursor-pointer relative ${
+                      applied ? "border-[#008561] bg-[#faf8f5]" : "border-[#eadecc] bg-white"
                     }`}
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                      {/* Left Block */}
-                      <div className="flex-1 min-w-0">
-                        {/* Company Logo + Domain */}
-                        <div className="flex items-center gap-2">
-                          <CompanyLogo
-                            company={job.company}
-                            size="sm"
-                            className="!h-5 !w-5 !p-0 rounded-md border-0 bg-transparent shadow-none"
-                          />
-                          <span className="text-xs sm:text-sm font-bold text-[#14281a] tracking-tight">
-                            {getCompanyDomain(job.company)}
-                          </span>
-                        </div>
-
-                        {/* Job Title */}
-                        <h3 className="text-xl sm:text-[1.35rem] font-black text-[#121816] tracking-tight mt-2 mb-3.5 group-hover:text-[#3c7818] transition-colors">
-                          {job.title}
-                        </h3>
-
-                        {/* Filter Pills */}
-                        <div className="flex flex-wrap items-center gap-2">
-                          {job.experience_level && (
-                            <span className="rounded-full border border-neutral-300/80 bg-white/70 px-4 py-1 text-xs font-semibold text-[#14281a] shadow-2xs">
-                              {job.experience_level.toLowerCase().includes("experience")
-                                ? job.experience_level
-                                : `${job.experience_level} Experience`}
-                            </span>
-                          )}
-                          {job.employment_type && (
-                            <span className="rounded-full border border-neutral-300/80 bg-white/70 px-4 py-1 text-xs font-semibold text-[#14281a] shadow-2xs">
-                              {job.employment_type}
-                            </span>
-                          )}
-                          {job.eligibility && (
-                            <span className="rounded-full border border-neutral-300/80 bg-white/70 px-4 py-1 text-xs font-semibold text-[#14281a] shadow-2xs">
-                              {job.eligibility}
-                            </span>
-                          )}
-                          {job.skills_required &&
-                            job.skills_required.slice(0, 3).map((skill) => (
-                              <span
-                                key={skill}
-                                className="rounded-full border border-neutral-300/80 bg-white/70 px-4 py-1 text-xs font-semibold text-[#14281a] shadow-2xs"
-                              >
-                                {skill}
-                              </span>
-                            ))}
-                        </div>
+                    {/* Top Row: Company Logo & Name & Verified Badge, Actions */}
+                    <div className="flex items-center justify-between gap-3 mb-2.5">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-wrap">
+                        <CompanyLogo
+                          company={job.company}
+                          size="sm"
+                          className="!h-6 !w-6 !p-0.5 rounded-md border border-[#eadecc] bg-white shadow-none shrink-0"
+                        />
+                        <span className="text-xs sm:text-sm font-bold text-[#02110c] tracking-tight truncate">
+                          {job.company}
+                        </span>
+                        <span className="rounded-full bg-[#00D793]/15 text-[#083D2E] text-[0.65rem] font-bold px-2.5 py-0.5 border border-[#00D793]/40 inline-flex items-center gap-1 shrink-0">
+                          <ShieldCheck className="w-3 h-3 text-[#008561]" /> Verified
+                        </span>
                       </div>
 
-                      {/* Right Block: Compensation & Location & Mark Applied Button */}
-                      <div className="flex sm:flex-col items-start sm:items-end justify-between sm:justify-start gap-3 shrink-0 mt-3 sm:mt-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-neutral-100">
-                        <div className="text-left sm:text-right">
-                          <div className="text-lg sm:text-xl font-black text-[#121816] tracking-tight">
-                            {job.stipend_or_salary ? (
-                              job.stipend_or_salary.toLowerCase().includes("year") ||
-                              job.stipend_or_salary.toLowerCase().includes("/yr") ||
-                              job.stipend_or_salary.toLowerCase().includes("/mo") ? (
-                                job.stipend_or_salary
-                              ) : (
-                                <>
-                                  {job.stipend_or_salary}
-                                  <span className="text-xs sm:text-sm font-semibold text-[#55615b]">/Yearly</span>
-                                </>
-                              )
-                            ) : (
-                              <>
-                                $140K<span className="text-xs sm:text-sm font-semibold text-[#55615b]">/Yearly</span>
-                              </>
-                            )}
-                          </div>
-                          <div className="text-xs sm:text-sm font-medium text-[#55615b] mt-0.5">
-                            {job.location}
-                          </div>
-                        </div>
-
-                        {/* Mark as Applied Toggle Button */}
+                      {/* Mark as Applied Toggle Button */}
+                      <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
                         <button
                           type="button"
-                          onClick={(e) => toggleApplied(job.id, e)}
-                          className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all shadow-2xs cursor-pointer z-10 ${
+                          onClick={(e) => handleToggleAppliedWithAuth(job.id, e)}
+                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[0.7rem] font-bold transition-all shadow-2xs cursor-pointer ${
                             applied
-                              ? "bg-[#14281a] text-[#84d64f] hover:bg-[#1f3d27]"
-                              : "border border-neutral-300 bg-white/90 text-[#45524d] hover:border-[#84d64f] hover:text-[#14281a] hover:bg-[#eef8e5]"
+                              ? "bg-[#008561] text-white"
+                              : "border border-[#eadecc] bg-[#faf8f5] hover:border-[#008561] hover:text-[#02110c] hover:bg-white text-[#495e54]"
                           }`}
-                          title={applied ? "Click to unmark as applied" : "Mark as applied"}
                         >
                           {applied ? (
                             <>
-                              <CheckCircle2 className="w-3.5 h-3.5 text-[#84d64f]" />
+                              <CheckCircle2 className="w-3 h-3 text-white" />
                               <span>Applied</span>
                             </>
                           ) : (
                             <>
-                              <Check className="w-3.5 h-3.5 text-[#79857f]" />
+                              <Check className="w-3 h-3 text-[#495e54]" />
                               <span>Mark Applied</span>
                             </>
                           )}
                         </button>
                       </div>
                     </div>
+
+                    {/* Second Row: Job Title */}
+                    <h3 className="font-lora text-xl sm:text-[1.35rem] font-bold text-[#02110c] tracking-tight group-hover:text-[#008561] transition-colors leading-snug mb-3 line-clamp-2">
+                      {job.title}
+                    </h3>
+
+                    {/* Third Row: Key Important Details Pills */}
+                    <div className="flex flex-wrap items-center gap-2 mb-3.5">
+                      {/* Location */}
+                      <div className="inline-flex items-center gap-1.5 bg-[#faf8f5] border border-[#eadecc] rounded-lg px-2.5 py-1 text-xs font-medium text-[#02110c]">
+                        <MapPin className="w-3.5 h-3.5 text-[#008561] shrink-0" />
+                        <span className="truncate max-w-[240px]">{formatLocation(job.location)}</span>
+                      </div>
+
+                      {/* Employment Type */}
+                      {job.employment_type && (
+                        <div className="inline-flex items-center gap-1.5 bg-[#faf8f5] border border-[#eadecc] rounded-lg px-2.5 py-1 text-xs font-medium text-[#02110c]">
+                          <Briefcase className="w-3.5 h-3.5 text-[#008561] shrink-0" />
+                          <span>{job.employment_type}</span>
+                        </div>
+                      )}
+
+                      {/* Salary */}
+                      {job.stipend_or_salary && (
+                        <div className="inline-flex items-center gap-1.5 bg-[#00D793]/15 border border-[#00D793]/40 text-[#083D2E] rounded-lg px-2.5 py-1 text-xs font-bold">
+                          <DollarSign className="w-3.5 h-3.5 text-[#008561] shrink-0" />
+                          <span>{job.stipend_or_salary}</span>
+                        </div>
+                      )}
+
+                      {/* Experience Level */}
+                      {job.experience_level && (
+                        <div className="inline-flex items-center gap-1.5 bg-[#faf8f5] border border-[#eadecc] rounded-lg px-2.5 py-1 text-xs font-medium text-[#02110c]">
+                          <GraduationCap className="w-3.5 h-3.5 text-[#008561] shrink-0" />
+                          <span>{job.experience_level}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Fourth Row: Skills + View Details Link */}
+                    {job.skills_required && job.skills_required.length > 0 && (
+                      <div className="flex items-center justify-between gap-2 pt-3 border-t border-[#eadecc]/60 flex-wrap">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {job.skills_required.slice(0, 4).map((skill) => (
+                            <span
+                              key={skill}
+                              className="rounded-md bg-[#faf8f5] text-[#495e54] border border-[#eadecc] px-2 py-0.5 text-[0.7rem] font-semibold"
+                            >
+                              {skill}
+                            </span>
+                          ))}
+                          {job.skills_required.length > 4 && (
+                            <span className="text-[0.68rem] text-[#495e54] font-medium">
+                              +{job.skills_required.length - 4} more
+                            </span>
+                          )}
+                        </div>
+
+                        <span className="text-xs font-bold text-[#008561] group-hover:underline inline-flex items-center gap-1 shrink-0 ml-auto">
+                          View Details <ArrowRight className="w-3.5 h-3.5" />
+                        </span>
+                      </div>
+                    )}
                   </Link>
                 );
               })
@@ -602,9 +637,9 @@ export default function LandingPage() {
           <div className="mt-10 flex justify-center">
             <Link
               href="/jobs"
-              className="rounded-full border border-[#14281a] hover:bg-[#84d64f] hover:border-[#84d64f] hover:text-[#14281a] text-[#14281a] px-9 py-3 text-xs sm:text-sm font-bold transition-all shadow-2xs inline-flex items-center gap-2 active:scale-[0.98]"
+              className="rounded-full bg-[#008561] hover:bg-[#006e50] text-white px-9 py-3.5 text-xs sm:text-sm font-bold transition-all shadow-md inline-flex items-center gap-2 active:scale-[0.98]"
             >
-              See More Job
+              See More Verified Roles <ArrowRight className="w-4 h-4 text-white" />
             </Link>
           </div>
         </section>
@@ -615,23 +650,23 @@ export default function LandingPage() {
         <section id="about" className="py-16 scroll-mt-20">
           <div className="mb-10 grid gap-6 lg:grid-cols-[1.1fr_0.9fr] items-end">
             <div>
-              <span className="text-[0.85rem] font-extrabold uppercase tracking-[0.15em] text-[#3c7818]">
+              <span className="text-[0.85rem] font-extrabold uppercase tracking-[0.15em] text-[#008561]">
                 Why Siftrole
               </span>
-              <h2 className="mt-2 text-[2.8rem] sm:text-[3.8rem] font-black leading-[1.06] tracking-[-0.04em] text-[#121816]">
+              <h2 className="mt-2 font-pochaevsk text-[2.8rem] sm:text-[3.8rem] leading-[1.06] tracking-[-0.02em] text-[#02110c]">
                 Only verified jobs. Zero ghost posts.
               </h2>
             </div>
             <div className="pt-2 lg:pt-6 flex flex-col items-start gap-4">
-              <p className="text-[1.15rem] leading-[1.8] text-[#55615b]">
+              <p className="text-[1.15rem] leading-[1.8] text-[#495e54]">
                 Every role links directly to official company career pages. When a position closes, it's removed immediately so you never waste time on dead links.
               </p>
               <Link
                 href="/jobs"
-                className="inline-flex items-center gap-2 rounded-full bg-[#14281a] hover:bg-[#1f3d27] text-[#84d64f] px-6 py-3 text-xs sm:text-sm font-bold transition shadow-xs"
+                className="inline-flex items-center gap-2 rounded-full bg-[#008561] hover:bg-[#006e50] text-white px-6 py-3 text-xs sm:text-sm font-bold transition shadow-xs"
               >
                 <span>Browse Verified Jobs</span>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-4 h-4 text-white" />
               </Link>
             </div>
           </div>
@@ -640,113 +675,142 @@ export default function LandingPage() {
           <div className="grid gap-6 md:grid-cols-3">
             
             {/* Bento 1: Sourced, Not Scraped */}
-            <div className="md:col-span-2 rounded-[28px] border border-neutral-200/80 bg-[#f2eee9] p-8 sm:p-10 flex flex-col justify-between shadow-sm">
+            <div className="md:col-span-2 rounded-[28px] border border-[#eadecc] bg-white p-8 sm:p-10 flex flex-col justify-between shadow-[0_4px_20px_rgba(2,17,12,0.03)]">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="rounded-md bg-[#eef8e5] border border-[#cce8be] text-[#14281a] text-xs font-bold px-2.5 py-1 uppercase tracking-wider">
+                  <span className="rounded-md bg-[#008561]/10 border border-[#008561]/25 text-[#008561] text-xs font-bold px-2.5 py-1 uppercase tracking-wider">
                     Always Current
                   </span>
-                  <span className="rounded-md bg-neutral-200/80 text-[#121915] text-xs font-bold px-2.5 py-1 uppercase tracking-wider">
+                  <span className="rounded-md bg-[#faf8f5] border border-[#eadecc] text-[#02110c] text-xs font-bold px-2.5 py-1 uppercase tracking-wider">
                     Auto-Expiring
                   </span>
                 </div>
-                <h3 className="text-[2.2rem] sm:text-[2.6rem] font-black leading-[1.1] tracking-[-0.03em] text-[#121816] mt-4">
+                <h3 className="font-pochaevsk text-[2.2rem] sm:text-[2.8rem] leading-[1.1] tracking-[-0.02em] text-[#02110c] mt-4">
                   Sourced, not scraped.
                 </h3>
-                <p className="mt-4 text-[1.05rem] leading-[1.7] text-[#55615b] max-w-[620px]">
+                <p className="mt-4 text-[1.05rem] leading-[1.7] text-[#495e54] max-w-[620px]">
                   Every listing traces directly back to the company's official career page. The moment a role closes on the company's own site, it vanishes from ours: eliminating dead links sitting around for weeks.
                 </p>
               </div>
 
-              <div className="mt-8 relative h-[220px] rounded-[20px] overflow-hidden shadow-sm">
+              <div className="mt-6 sm:mt-8 relative h-[250px] sm:h-[290px] rounded-[20px] overflow-hidden shadow-xs border border-[#eadecc]">
                 <Image
-                  src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80"
+                  src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1400&q=85"
                   alt="Students collaborating on projects"
                   fill
-                  className="object-cover"
+                  className="object-cover object-[center_12%]"
                 />
               </div>
             </div>
 
             {/* Bento 2: Zero Spam & Verified Startups */}
-            <div className="rounded-[28px] bg-[#14281a] p-8 text-white flex flex-col justify-between shadow-md">
-              <div>
-                <span className="rounded-md bg-[#84d64f]/20 text-[#84d64f] text-xs font-bold px-2.5 py-1 uppercase tracking-wider border border-[#84d64f]/30">
-                  Zero Spam
-                </span>
-                <h3 className="text-[2rem] font-black leading-[1.15] tracking-[-0.03em] text-white mt-4">
-                  Verified startups only.
-                </h3>
-                <p className="mt-3 text-sm leading-[1.7] text-[#eef8e5]/90">
-                  Every non-top-company post is manually checked before going live. No anonymous postings, no fake recruitment ads.
-                </p>
+            <div className="relative rounded-[28px] overflow-hidden p-8 text-white flex flex-col justify-between shadow-lg border border-[#008561]/40 min-h-[380px] group">
+              {/* Background Image with Ambient Emerald Overlay */}
+              <div className="absolute inset-0 z-0">
+                <Image
+                  src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80"
+                  alt="Verified tech startups team collaboration"
+                  fill
+                  className="object-cover opacity-25 group-hover:opacity-35 group-hover:scale-105 transition-all duration-700 ease-out"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#02110c] via-[#02110c]/85 to-[#008561]/40" />
+                <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-[#008561]/25 blur-2xl pointer-events-none" />
               </div>
 
-              <div className="mt-6 pt-6 border-t border-white/10 flex items-center justify-between">
-                <span className="text-xs font-bold text-[#84d64f]">100% Verified Source Gate</span>
-                <ShieldCheck className="w-5 h-5 text-[#84d64f]" />
+              {/* Top content */}
+              <div className="relative z-10">
+                <div>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[#008561]/30 text-[#fff6eb] text-[0.72rem] font-extrabold px-3 py-1 uppercase tracking-wider border border-[#008561]/50 backdrop-blur-md">
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#00e5a3]" />
+                    Zero Spam
+                  </span>
+                </div>
+                <h3 className="font-pochaevsk text-[2.1rem] leading-[1.12] tracking-[-0.02em] text-white mt-4">
+                  Verified startups only.
+                </h3>
+                <p className="mt-3 text-sm leading-[1.7] text-white/85">
+                  Every non-top-company post is manually checked before going live. No anonymous postings, no fake recruitment ads.
+                </p>
+
+                {/* Micro trust indicators */}
+                <div className="mt-5 flex flex-wrap gap-2">
+                  <span className="inline-flex items-center gap-1 text-[0.7rem] font-medium text-white/90 bg-white/10 backdrop-blur-xs px-2.5 py-1 rounded-lg border border-white/15">
+                    ✓ Official ATS Feeds
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-[0.7rem] font-medium text-white/90 bg-white/10 backdrop-blur-xs px-2.5 py-1 rounded-lg border border-white/15">
+                    ✓ Direct Career Portals
+                  </span>
+                </div>
+              </div>
+
+              {/* Bottom footer bar */}
+              <div className="relative z-10 mt-6 pt-5 border-t border-white/15 flex items-center justify-between">
+                <span className="text-xs font-bold text-white/90">100% Verified Source Gate</span>
+                <span className="flex items-center justify-center w-7 h-7 rounded-full bg-[#008561] text-white shadow-xs">
+                  <ShieldCheck className="w-4 h-4" />
+                </span>
               </div>
             </div>
 
             {/* Bento 3: One Feed */}
-            <div className="rounded-[28px] border border-neutral-200/80 bg-white p-8 flex flex-col justify-between shadow-sm">
+            <div className="rounded-[28px] border border-[#eadecc] bg-white p-8 flex flex-col justify-between shadow-[0_4px_20px_rgba(2,17,12,0.03)]">
               <div>
-                <div className="h-10 w-10 rounded-xl bg-[#eef8e5] text-[#3c7818] flex items-center justify-center mb-3">
+                <div className="h-10 w-10 rounded-xl bg-[#008561]/10 text-[#008561] flex items-center justify-center mb-3">
                   <Layers className="w-5 h-5" />
                 </div>
-                <h4 className="text-[1.8rem] font-black tracking-[-0.02em] text-[#121816]">
+                <h4 className="font-pochaevsk text-[1.8rem] tracking-[-0.02em] text-[#02110c]">
                   One feed, not fifty tabs.
                 </h4>
-                <p className="mt-3 text-sm leading-[1.65] text-[#55615b]">
+                <p className="mt-3 text-sm leading-[1.65] text-[#495e54]">
                   Top tech company openings across official career portals in one clean, unified stream.
                 </p>
               </div>
-              <div className="mt-6 flex items-center gap-2 text-xs font-bold text-[#14281a]">
-                <ShieldCheck className="w-4 h-4 text-[#3c7818]" />
+              <div className="mt-6 flex items-center gap-2 text-xs font-bold text-[#02110c]">
+                <ShieldCheck className="w-4 h-4 text-[#008561]" />
                 <span>Direct company sync</span>
               </div>
             </div>
 
             {/* Bento 4: Resume-Matched */}
-            <div className="rounded-[28px] border border-neutral-200/80 bg-white p-8 flex flex-col justify-between shadow-sm">
+            <div className="rounded-[28px] border border-[#eadecc] bg-white p-8 flex flex-col justify-between shadow-[0_4px_20px_rgba(2,17,12,0.03)]">
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <span className="rounded-full bg-[#eef8e5] border border-[#cce8be] text-[#14281a] text-xs font-bold px-3 py-1 uppercase tracking-wider">
+                  <span className="rounded-full bg-[#008561]/10 border border-[#008561]/25 text-[#008561] text-xs font-bold px-3 py-1 uppercase tracking-wider">
                     Smart Rank
                   </span>
-                  <Sparkles className="w-4 h-4 text-[#58a826]" />
+                  <Sparkles className="w-4 h-4 text-[#008561]" />
                 </div>
-                <div className="text-[1.8rem] font-black tracking-[-0.02em] text-[#121816]">
+                <div className="font-pochaevsk text-[1.8rem] tracking-[-0.02em] text-[#02110c]">
                   Resume-matched.
                 </div>
-                <p className="mt-2 text-sm leading-[1.65] text-[#55615b]">
+                <p className="mt-2 text-sm leading-[1.65] text-[#495e54]">
                   Upload your resume once. Open roles are ranked as High, Medium, or Low fit based on your exact profile.
                 </p>
               </div>
-              <div className="mt-6 flex items-center justify-between pt-4 border-t border-neutral-100">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-[#14281a]">
-                  <BellRing className="w-4 h-4 text-[#58a826]" />
+              <div className="mt-6 flex items-center justify-between pt-4 border-t border-[#eadecc]/60">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[#02110c]">
+                  <BellRing className="w-4 h-4 text-[#008561]" />
                   <span>Passive discovery alerts</span>
                 </div>
               </div>
             </div>
 
             {/* Bento 5: Application Tracking */}
-            <div className="rounded-[28px] border border-neutral-200/80 bg-white p-8 flex flex-col justify-between shadow-sm">
+            <div className="rounded-[28px] border border-[#eadecc] bg-white p-8 flex flex-col justify-between shadow-[0_4px_20px_rgba(2,17,12,0.03)]">
               <div>
-                <div className="h-10 w-10 rounded-xl bg-neutral-100 text-[#121816] flex items-center justify-center mb-3">
-                  <ClipboardCheck className="w-5 h-5 text-[#3c7818]" />
+                <div className="h-10 w-10 rounded-xl bg-[#faf8f5] border border-[#eadecc] text-[#02110c] flex items-center justify-center mb-3">
+                  <ClipboardCheck className="w-5 h-5 text-[#008561]" />
                 </div>
-                <h4 className="text-[1.7rem] font-black tracking-[-0.02em] text-[#121816]">
+                <h4 className="font-pochaevsk text-[1.7rem] tracking-[-0.02em] text-[#02110c]">
                   Application tracking.
                 </h4>
-                <p className="mt-2 text-sm leading-[1.65] text-[#55615b]">
+                <p className="mt-2 text-sm leading-[1.65] text-[#495e54]">
                   One unified place to track applied, interviewed, offered, and rejected across every role you pursue.
                 </p>
               </div>
               <Link
                 href="/jobs"
-                className="mt-6 text-xs font-bold text-[#3c7818] inline-flex items-center gap-1 hover:text-[#58a826]"
+                className="mt-6 text-xs font-bold text-[#008561] inline-flex items-center gap-1 hover:text-[#02110c]"
               >
                 Explore opportunities <ArrowRight className="w-3.5 h-3.5" />
               </Link>
@@ -758,19 +822,19 @@ export default function LandingPage() {
         {/* ======================================================== */}
         {/* FAQ & WE WOULD LIKE TO HEAR FROM YOU SECTION */}
         {/* ======================================================== */}
-        <section id="faq" className="py-16 sm:py-20 scroll-mt-20 border-t border-neutral-200/80">
+        <section id="faq" className="py-16 sm:py-20 scroll-mt-20 border-t border-[#eadecc]">
           <div className="grid lg:grid-cols-[1.12fr_0.88fr] gap-10 lg:gap-14 items-start">
             
             {/* Left Column: FAQ Accordion */}
             <div>
               <div className="mb-8">
-                <span className="text-[0.85rem] font-extrabold uppercase tracking-[0.15em] text-[#3c7818]">
+                <span className="text-[0.85rem] font-extrabold uppercase tracking-[0.15em] text-[#008561]">
                   Got Questions?
                 </span>
-                <h2 className="mt-2 text-[2.2rem] sm:text-[2.8rem] font-black tracking-[-0.03em] text-[#121816] leading-[1.1]">
+                <h2 className="mt-2 font-pochaevsk text-[2.4rem] sm:text-[3rem] tracking-[-0.02em] text-[#02110c] leading-[1.1]">
                   Frequently Asked Questions
                 </h2>
-                <p className="mt-2 text-xs sm:text-sm text-[#55615b]">
+                <p className="mt-2 text-xs sm:text-sm text-[#495e54]">
                   Everything you need to know about our verified feeds, AI tools, and matching.
                 </p>
               </div>
@@ -783,21 +847,21 @@ export default function LandingPage() {
                       key={faq.q}
                       className={`rounded-[20px] border transition-all duration-300 overflow-hidden shadow-2xs ${
                         isOpen
-                          ? "border-[#84d64f]/60 bg-white shadow-sm ring-1 ring-[#84d64f]/20"
-                          : "border-neutral-200/80 bg-white hover:border-neutral-300"
+                          ? "border-[#008561]/40 bg-white shadow-sm ring-1 ring-[#008561]/20"
+                          : "border-[#eadecc] bg-white hover:border-[#008561]/30"
                       }`}
                     >
                       <button
                         type="button"
                         onClick={() => setActiveFaq(isOpen ? null : idx)}
-                        className="w-full text-left p-5 sm:p-6 font-black text-sm sm:text-base text-[#121816] flex items-center justify-between gap-4 cursor-pointer hover:bg-neutral-50/50 transition-colors"
+                        className="w-full text-left p-5 sm:p-6 font-bold text-sm sm:text-base text-[#02110c] flex items-center justify-between gap-4 cursor-pointer hover:bg-neutral-50/50 transition-colors"
                       >
-                        <span className={`leading-snug transition-colors duration-200 ${isOpen ? "text-[#14281a]" : "text-[#121816]"}`}>
+                        <span className={`leading-snug transition-colors duration-200 ${isOpen ? "text-[#008561]" : "text-[#02110c]"}`}>
                           {faq.q}
                         </span>
                         <ChevronDown
-                          className={`w-5 h-5 text-[#79857f] transition-transform duration-300 shrink-0 ${
-                            isOpen ? "rotate-180 text-[#3c7818]" : ""
+                          className={`w-5 h-5 text-[#495e54] transition-transform duration-300 shrink-0 ${
+                            isOpen ? "rotate-180 text-[#008561]" : ""
                           }`}
                         />
                       </button>
@@ -811,7 +875,7 @@ export default function LandingPage() {
                         }`}
                       >
                         <div className="overflow-hidden">
-                          <div className="px-5 sm:px-6 pb-5 sm:pb-6 pt-2 text-xs sm:text-sm leading-[1.75] text-[#55615b] border-t border-neutral-100 bg-[#fafcfa]/60">
+                          <div className="px-5 sm:px-6 pb-5 sm:pb-6 pt-2 text-xs sm:text-sm leading-[1.75] text-[#495e54] border-t border-[#eadecc]/50 bg-[#faf8f5]">
                             {faq.a}
                           </div>
                         </div>
@@ -823,33 +887,33 @@ export default function LandingPage() {
             </div>
 
             {/* Right Column: We Would Like to Hear From You Form Card */}
-            <div className="lg:sticky lg:top-24 rounded-[28px] border border-neutral-200/90 bg-white p-7 sm:p-9 shadow-md shadow-neutral-200/40 relative overflow-hidden">
+            <div className="lg:sticky lg:top-24 rounded-[28px] border border-[#eadecc] bg-white p-7 sm:p-9 shadow-[0_8px_30px_rgba(2,17,12,0.04)] relative overflow-hidden">
               {/* Subtle radiant background accent */}
-              <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-bl from-[#84d64f]/25 via-[#84d64f]/5 to-transparent rounded-bl-full pointer-events-none" />
+              <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-bl from-[#008561]/10 via-[#008561]/5 to-transparent rounded-bl-full pointer-events-none" />
 
               <div>
-                <span className="text-[0.85rem] font-extrabold uppercase tracking-[0.15em] text-[#3c7818]">
+                <span className="text-[0.85rem] font-extrabold uppercase tracking-[0.15em] text-[#008561]">
                   Get In Touch
                 </span>
-                <h3 className="mt-2 text-2xl sm:text-[1.75rem] font-black tracking-tight text-[#121816]">
+                <h3 className="mt-2 font-pochaevsk text-2xl sm:text-[2rem] tracking-tight text-[#02110c]">
                   We would like to hear from you
                 </h3>
-                <p className="mt-2 text-xs sm:text-sm text-[#55615b] leading-relaxed">
+                <p className="mt-2 text-xs sm:text-sm text-[#495e54] leading-relaxed">
                   Have feedback, a feature suggestion, or spotted a company career feed we should track? Send us a message directly.
                 </p>
               </div>
 
               {contactSuccess ? (
-                <div className="mt-6 rounded-2xl border border-[#cce8be] bg-[#f7fcf3] p-6 text-center animate-fadeIn">
-                  <CheckCircle2 className="w-10 h-10 text-[#3c7818] mx-auto mb-2" />
-                  <h4 className="font-extrabold text-sm text-[#14281a]">Thank you for reaching out!</h4>
-                  <p className="text-xs text-[#556958] mt-1.5 leading-relaxed">
+                <div className="mt-6 rounded-2xl border border-[#008561]/20 bg-[#008561]/10 p-6 text-center animate-fadeIn">
+                  <CheckCircle2 className="w-10 h-10 text-[#008561] mx-auto mb-2" />
+                  <h4 className="font-extrabold text-sm text-[#02110c]">Thank you for reaching out!</h4>
+                  <p className="text-xs text-[#495e54] mt-1.5 leading-relaxed">
                     Your message has been sent directly to our team. We read every note and will get back to you shortly.
                   </p>
                   <button
                     type="button"
                     onClick={() => setContactSuccess(false)}
-                    className="mt-4 text-xs font-bold text-[#3c7818] hover:text-[#58a826] underline cursor-pointer"
+                    className="mt-4 text-xs font-bold text-[#008561] hover:underline cursor-pointer"
                   >
                     Send another message
                   </button>
@@ -857,8 +921,8 @@ export default function LandingPage() {
               ) : (
                 <form onSubmit={handleContactSubmit} className="mt-6 space-y-3.5">
                   <div>
-                    <label className="block text-[0.72rem] font-extrabold uppercase tracking-wider text-[#45524d] mb-1.5">
-                      Your Name <span className="text-neutral-400 font-normal text-[0.7rem]">(Optional)</span>
+                    <label className="block text-[0.72rem] font-extrabold uppercase tracking-wider text-[#02110c] mb-1.5">
+                      Your Name <span className="text-[#495e54] font-normal text-[0.7rem]">(Optional)</span>
                     </label>
                     <input
                       type="text"
@@ -868,13 +932,13 @@ export default function LandingPage() {
                         setContactError(null);
                       }}
                       placeholder="Alex Morgan"
-                      className="w-full rounded-xl border border-neutral-200 bg-[#fafcfa] px-4 py-2.5 text-xs sm:text-sm font-medium text-[#121816] placeholder:text-neutral-400 outline-none transition focus:border-[#84d64f] focus:bg-white focus:ring-2 focus:ring-[#84d64f]/20"
+                      className="w-full rounded-xl border border-[#eadecc] bg-[#faf8f5] px-4 py-2.5 text-xs sm:text-sm font-medium text-[#02110c] placeholder:text-[#495e54]/50 outline-none transition hover:border-[#008561]/40 focus:border-[#008561] focus:bg-white focus:ring-2 focus:ring-[#008561]/15"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[0.72rem] font-extrabold uppercase tracking-wider text-[#45524d] mb-1.5">
-                      Email Address <span className="text-red-500 font-bold">*</span>
+                    <label className="block text-[0.72rem] font-extrabold uppercase tracking-wider text-[#02110c] mb-1.5">
+                      Email Address <span className="text-rose-500 font-bold">*</span>
                     </label>
                     <input
                       type="email"
@@ -885,12 +949,12 @@ export default function LandingPage() {
                         setContactError(null);
                       }}
                       placeholder="you@domain.com"
-                      className="w-full rounded-xl border border-neutral-200 bg-[#fafcfa] px-4 py-2.5 text-xs sm:text-sm font-medium text-[#121816] placeholder:text-neutral-400 outline-none transition focus:border-[#84d64f] focus:bg-white focus:ring-2 focus:ring-[#84d64f]/20"
+                      className="w-full rounded-xl border border-[#eadecc] bg-[#faf8f5] px-4 py-2.5 text-xs sm:text-sm font-medium text-[#02110c] placeholder:text-[#495e54]/50 outline-none transition hover:border-[#008561]/40 focus:border-[#008561] focus:bg-white focus:ring-2 focus:ring-[#008561]/15"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[0.72rem] font-extrabold uppercase tracking-wider text-[#45524d] mb-1.5">
+                    <label className="block text-[0.72rem] font-extrabold uppercase tracking-wider text-[#02110c] mb-1.5">
                       Topic
                     </label>
                     <div className="grid grid-cols-3 gap-2">
@@ -901,8 +965,8 @@ export default function LandingPage() {
                           onClick={() => setContactCategory(cat)}
                           className={`rounded-lg py-1.5 px-2 text-[0.75rem] font-bold transition text-center cursor-pointer border ${
                             contactCategory === cat
-                              ? "bg-[#14281a] text-[#84d64f] border-[#14281a] shadow-2xs"
-                              : "bg-[#fafcfa] text-[#55615b] border-neutral-200 hover:border-neutral-300"
+                              ? "bg-[#02110c] text-white border-[#02110c] shadow-xs"
+                              : "bg-[#faf8f5] text-[#495e54] border-[#eadecc] hover:border-[#008561] hover:text-[#02110c]"
                           }`}
                         >
                           {cat}
@@ -912,8 +976,8 @@ export default function LandingPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[0.72rem] font-extrabold uppercase tracking-wider text-[#45524d] mb-1.5">
-                      Message <span className="text-red-500 font-bold">*</span>
+                    <label className="block text-[0.72rem] font-extrabold uppercase tracking-wider text-[#02110c] mb-1.5">
+                      Message <span className="text-rose-500 font-bold">*</span>
                     </label>
                     <textarea
                       required
@@ -924,7 +988,7 @@ export default function LandingPage() {
                         setContactError(null);
                       }}
                       placeholder="Tell us what you think or how we can help..."
-                      className="w-full rounded-xl border border-neutral-200 bg-[#fafcfa] p-3 text-xs sm:text-sm font-medium text-[#121816] placeholder:text-neutral-400 outline-none transition focus:border-[#84d64f] focus:bg-white focus:ring-2 focus:ring-[#84d64f]/20 resize-none"
+                      className="w-full rounded-xl border border-[#eadecc] bg-[#faf8f5] p-3 text-xs sm:text-sm font-medium text-[#02110c] placeholder:text-[#495e54]/50 outline-none transition hover:border-[#008561]/40 focus:border-[#008561] focus:bg-white focus:ring-2 focus:ring-[#008561]/15 resize-none"
                     />
                   </div>
 
@@ -938,11 +1002,11 @@ export default function LandingPage() {
                   <button
                     type="submit"
                     disabled={isSendingContact}
-                    className="w-full rounded-xl bg-[#84d64f] hover:bg-[#75c73d] text-[#14281a] font-bold text-xs sm:text-sm py-3 shadow-md shadow-[#84d64f]/25 transition active:scale-[0.98] disabled:opacity-60 cursor-pointer inline-flex items-center justify-center gap-2 mt-1"
+                    className="w-full rounded-xl bg-[#008561] hover:bg-[#006e50] text-white font-bold text-xs sm:text-sm py-3 shadow-md shadow-[#008561]/20 transition active:scale-[0.98] disabled:opacity-60 cursor-pointer inline-flex items-center justify-center gap-2 mt-1"
                   >
                     {isSendingContact ? (
                       <>
-                        <div className="w-4 h-4 rounded-full border-2 border-[#14281a] border-t-transparent animate-spin" />
+                        <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
                         <span>Sending message...</span>
                       </>
                     ) : (
@@ -955,12 +1019,12 @@ export default function LandingPage() {
                 </form>
               )}
 
-              <div className="mt-5 pt-4 border-t border-neutral-100 flex items-center justify-center text-[0.72rem] text-[#718276]">
+              <div className="mt-5 pt-4 border-t border-[#eadecc]/60 flex items-center justify-center text-[0.72rem] text-[#495e54]">
                 <a
                   href="mailto:support@siftrole.in"
-                  className="inline-flex items-center gap-1.5 hover:text-[#3c7818] transition-colors"
+                  className="inline-flex items-center gap-1.5 hover:text-[#008561] transition-colors font-semibold"
                 >
-                  <Mail className="w-3.5 h-3.5 text-[#3c7818]" />
+                  <Mail className="w-3.5 h-3.5 text-[#008561]" />
                   <span>support@siftrole.in</span>
                 </a>
               </div>
@@ -992,10 +1056,10 @@ export default function LandingPage() {
                 Company
               </h4>
               <ul className="space-y-2.5 text-xs font-semibold text-[#55615b]">
-                <li><Link href="/about" className="hover:text-[#3c7818] transition">About</Link></li>
-                <li><Link href="/jobs" className="hover:text-[#3c7818] transition">Opportunities</Link></li>
-                <li><a href="#faq" className="hover:text-[#3c7818] transition">FAQ</a></li>
-                <li><Link href="/cold-email" className="hover:text-[#3c7818] transition">Recruiter Outreach</Link></li>
+                <li><Link href="/about" className="hover:text-[#1a422f] transition">About</Link></li>
+                <li><Link href="/jobs" className="hover:text-[#1a422f] transition">Opportunities</Link></li>
+                <li><a href="#faq" className="hover:text-[#1a422f] transition">FAQ</a></li>
+                <li><Link href="/cold-email" className="hover:text-[#1a422f] transition">Recruiter Outreach</Link></li>
               </ul>
             </div>
 
@@ -1005,10 +1069,10 @@ export default function LandingPage() {
                 Legal & Support
               </h4>
               <ul className="space-y-2.5 text-xs font-semibold text-[#55615b]">
-                <li><Link href="/privacy" className="hover:text-[#3c7818] transition">Privacy Policy</Link></li>
-                <li><Link href="/terms" className="hover:text-[#3c7818] transition">Terms of Service</Link></li>
-                <li><Link href="/cold-email" className="hover:text-[#3c7818] transition">Recruiter Network</Link></li>
-                <li><Link href="/dashboard" className="hover:text-[#3c7818] transition">Member Dashboard</Link></li>
+                <li><Link href="/privacy" className="hover:text-[#1a422f] transition">Privacy Policy</Link></li>
+                <li><Link href="/terms" className="hover:text-[#1a422f] transition">Terms of Service</Link></li>
+                <li><Link href="/cold-email" className="hover:text-[#1a422f] transition">Recruiter Network</Link></li>
+                <li><Link href="/dashboard" className="hover:text-[#1a422f] transition">Member Dashboard</Link></li>
               </ul>
             </div>
 
@@ -1018,7 +1082,7 @@ export default function LandingPage() {
                 Social
               </h4>
               <ul className="space-y-2.5 text-xs font-semibold text-[#55615b]">
-                <li><a href="https://linkedin.com" target="_blank" rel="noreferrer" className="hover:text-[#3c7818] transition">LinkedIn</a></li>
+                <li><a href="https://linkedin.com" target="_blank" rel="noreferrer" className="hover:text-[#1a422f] transition">LinkedIn</a></li>
               </ul>
             </div>
           </div>
@@ -1029,7 +1093,7 @@ export default function LandingPage() {
               &copy; {new Date().getFullYear()} Siftrole. All rights reserved.
             </div>
             <div>
-              <a href="mailto:support@siftrole.in" className="hover:text-[#3c7818] transition">
+              <a href="mailto:support@siftrole.in" className="hover:text-[#1a422f] transition">
                 support@siftrole.in
               </a>
             </div>
@@ -1038,20 +1102,7 @@ export default function LandingPage() {
           {/* ======================================================== */}
           {/* MASSIVE BOTTOM SIFTR[O]LE WORDMARK WITH EMBEDDED LOGO */}
           {/* ======================================================== */}
-          <div className="pt-10 pb-4 select-none overflow-hidden flex items-center justify-center font-black uppercase text-[#14281a] leading-none tracking-[-0.04em]">
-            <span className="text-[12.5vw] sm:text-[13.5vw]">SIFTR</span>
-            <span className="inline-flex items-center justify-center w-[12.5vw] h-[12.5vw] sm:w-[13.5vw] sm:h-[13.5vw] max-w-[240px] max-h-[240px] min-w-[52px] min-h-[52px] mx-[0.02em] relative shrink-0">
-              <Image
-                src="/images/siftrole-logo.png"
-                alt="O"
-                width={400}
-                height={400}
-                className="w-full h-full object-contain drop-shadow-[0_12px_32px_rgba(132,214,79,0.38)]"
-                unoptimized
-              />
-            </span>
-            <span className="text-[12.5vw] sm:text-[13.5vw]">LE</span>
-          </div>
+          <SiftroleLogo variant="footer-emblem" />
         </footer>
 
       </div>
@@ -1065,6 +1116,18 @@ export default function LandingPage() {
           onClose={() => setSelectedListingModal(null)}
         />
       )}
+
+      {/* ======================================================== */}
+      {/* AUTH GATE MODAL */}
+      {/* ======================================================== */}
+      <AuthGateModal
+        isOpen={authGateConfig.isOpen}
+        onClose={() => setAuthGateConfig({ isOpen: false })}
+        title={authGateConfig.title}
+        description={authGateConfig.description}
+        badge={authGateConfig.badge}
+        primaryCta={authGateConfig.primaryCta}
+      />
     </main>
   );
 }

@@ -24,7 +24,11 @@ export async function GET(req: NextRequest) {
       orderBy: { name: "asc" },
       include: {
         _count: {
-          select: { listings: true },
+          select: {
+            listings: {
+              where: { status: "active" },
+            },
+          },
         },
       },
     });
