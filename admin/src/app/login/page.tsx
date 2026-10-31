@@ -68,7 +68,7 @@ export default function AdminLoginPage() {
         </div>
 
         <a
-          href="https://siftrole-user.vercel.app/
+          href="https://siftrole-user.vercel.app/"
           target="_blank"
           rel="noopener noreferrer"
           className="text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 shadow-xs"
